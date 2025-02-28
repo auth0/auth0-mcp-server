@@ -1,0 +1,52 @@
+#!/usr/bin/env node
+
+import { startServer } from '../dist/index.js';
+
+const args = process.argv.slice(2);
+const command = args[0] || 'help';
+
+switch (command) {
+  case 'run':
+    // Get any additional arguments (domain, token)
+    const serverArgs = args.slice(1);
+    
+    if (serverArgs.length >= 2) {
+      const domain = serverArgs[0];
+      const token = serverArgs[1];
+      
+      // Set environment variables
+      process.env.AUTH0_DOMAIN = domain;
+      process.env.AUTH0_TOKEN = token;
+      
+      console.error(`Using Auth0 domain: ${domain}`);
+      console.error('Using Auth0 token from command line arguments');
+    }
+    
+    startServer()
+      .catch(error => {
+        console.error('Error starting server:', error);
+        process.exit(1);
+      });
+    break;
+  
+  case 'version':
+    try {
+      const packageJson = await import('../package.json', { assert: { type: 'json' } });
+      console.error(`auth0-mcp-server v${packageJson.default.version}`);
+    } catch (error) {
+      console.error('Unable to determine version');
+    }
+    break;
+  
+  case 'help':
+  default:
+    console.error(`
+Auth0 MCP Server
+
+Usage:
+  auth0-mcp run [domain] [token]  Start the MCP server (optionally with Auth0 credentials)
+  auth0-mcp version               Display version information
+  auth0-mcp help                  Show this help message
+    `);
+    break;
+} 
