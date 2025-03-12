@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { startServer } from '../dist/index.js';
+import { startServer,run } from '../dist/index.js';
 
 const args = process.argv.slice(2);
 const command = args[0] || 'help';
@@ -22,7 +22,7 @@ switch (command) {
       console.error('Using Auth0 token from command line arguments');
     }
     
-    startServer()
+    run()
       .catch(error => {
         console.error('Error starting server:', error);
         process.exit(1);
@@ -40,13 +40,5 @@ switch (command) {
   
   case 'help':
   default:
-    console.error(`
-Auth0 MCP Server
-
-Usage:
-  auth0-mcp run [domain] [token]  Start the MCP server (optionally with Auth0 credentials)
-  auth0-mcp version               Display version information
-  auth0-mcp help                  Show this help message
-    `);
     break;
 } 

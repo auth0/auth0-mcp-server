@@ -1,5 +1,5 @@
 {
-  "name": "auth0-mcp-server",
+  "name": "@auth0/auth0-mcp-server",
   "version": "1.0.0",
   "description": "Auth0 MCP Server for Claude Desktop",
   "type": "module",
@@ -8,7 +8,7 @@
     "auth0-mcp": "./bin/auth0-mcp"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "rm -rf dist && tsc",
     "start": "node dist/index.js run",
     "test": "node examples/test-connection.js",
     "test:connection": "node examples/test-connection.js",
@@ -37,8 +37,11 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
     "axios": "^1.6.0",
+    "chalk": "^5.4.1",
     "debug": "^4.3.4",
     "dotenv": "^16.3.1",
+    "jwt-decode": "^4.0.0",
+    "keytar": "^7.9.0",
     "node-fetch": "^3.3.2"
   },
   "devDependencies": {

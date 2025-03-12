@@ -3,6 +3,8 @@ import debug from 'debug';
 import * as os from 'os';
 
 import { startServer } from './server.js';
+import { requestAuthorization } from './device-auth-flow.js';
+import { findAndUpdatedClaudeConfig } from './claude-init-config.js';
 
 // Set up debug logger that writes to stderr only
 const log = debug('auth0-mcp:index');
@@ -73,43 +75,22 @@ async function checkNetworkConnectivity() {
 // Main function to start server
 async function run(args: string[]) {
   try {
-    log('Starting Auth0 MCP server...');
-
-    // Platform info
     log(`Platform: ${process.platform} (${process.arch})`);
     log(`Node.js version: ${process.version}`);
     log(`Hostname: ${os.hostname()}`);
 
-    // Ensure HOME is set
     if (!process.env.HOME) {
       process.env.HOME = os.homedir();
       log(`Set HOME environment variable to ${process.env.HOME}`);
     }
 
-    // Extract domain and token from command line if provided
-    const domain = args[0];
-    const token = args[1];
-
-    if (domain && token) {
-      log(`Using provided domain: ${domain}`);
-      // Don't log the token for security reasons
-      log('Using provided token from command line');
-
-      // Set as environment variables for the config to pick up
-      process.env.AUTH0_DOMAIN = domain;
-      process.env.AUTH0_TOKEN = token;
-    } else {
-      log('No domain and token provided, will attempt to load from auth0-cli config');
-    }
-
-    // Check network connectivity
     const networkOk = await checkNetworkConnectivity();
     if (!networkOk) {
       log('Warning: Network connectivity issues detected. API calls might fail.');
     }
 
     await startServer();
-    log('Server started successfully');
+    log('✅ Server started successfully');
   } catch (error) {
     console.error('Fatal error starting server:', error);
     process.exit(1);
@@ -123,12 +104,12 @@ if (command === 'run') {
   const args = process.argv.slice(3);
   run(args);
 } else if (command === 'init') {
-  console.error('Initialization is handled by the Auth0 CLI');
-  process.exit(0);
+  await requestAuthorization();
+  await findAndUpdatedClaudeConfig();
 } else {
   console.error('Usage: auth0-mcp run [domain] [token]');
   process.exit(1);
 }
 
 // Export for use in bin script
-export { startServer };
+export { startServer, run };
