@@ -1,4 +1,4 @@
-name: SCA
+name: Snyk
 
 on:
   pull_request_target:
