@@ -35,8 +35,6 @@ export async function startServer() {
 
     if (!validateConfig(config)) {
       log('Failed to load valid Auth0 configuration');
-      log('Please set AUTH0_TOKEN and AUTH0_DOMAIN environment variables');
-      log('Or login using auth0-cli (`auth0 login`) and ensure your token is not expired');
       throw new Error('Invalid Auth0 configuration');
     }
 

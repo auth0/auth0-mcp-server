@@ -34,7 +34,11 @@ runs:
             state: 'all',
             head: `${process.env.REPO_OWNER}:release/${process.env.VERSION}`,
           });
-          core.setOutput('RELEASE_NOTES', pulls[0].body);
+          if (pulls.length > 0) {
+            core.setOutput('RELEASE_NOTES', pulls[0].body);
+          } else {
+            throw new Error('No pull request found for the specified release branch.');
+          }
       env:
         GITHUB_TOKEN: ${{ inputs.token }}
         REPO_OWNER: ${{ inputs.repo_owner }}

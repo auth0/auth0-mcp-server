@@ -170,10 +170,10 @@ export const LOG_HANDLERS: Record<
           // Add more context based on common error codes
           if (response.status === 401) {
             errorMessage +=
-              '\nError: Unauthorized. Your token might be expired or invalid. Try running "auth0 login" to refresh your token.';
+              '\nError: Unauthorized. Your token might be expired or invalid. Try running "npx @auth0/auth0-mcp-server init" to refresh your token.';
           } else if (response.status === 403) {
             errorMessage +=
-              '\nError: Forbidden. Your token might not have the required scopes (read:logs). Try running "auth0 login --scopes read:logs" to get the proper permissions.';
+              '\nError: Forbidden. Your token might not have the required scopes (read:logs). Try running "npx @auth0/auth0-mcp-server init" to see the proper permissions.';
           }
 
           return createErrorResponse(errorMessage);

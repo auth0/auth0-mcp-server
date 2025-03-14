@@ -12,18 +12,10 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import os from 'os';
 import { execSync } from 'child_process';
-import dotenv from 'dotenv';
 
 // Set up paths
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = path.resolve(__dirname, '..');
-
-// Load environment variables from .env if it exists
-const envPath = path.join(PROJECT_ROOT, '.env');
-if (fs.existsSync(envPath)) {
-  console.log(`Loading environment variables from ${envPath}`);
-  dotenv.config({ path: envPath });
-}
 
 // Validation functions
 function validateAuth0Domain() {

@@ -1,12 +1,11 @@
 import { exec } from 'child_process';
-import { promises as fs } from 'fs';
 import keytar from 'keytar';
 import debug from 'debug';
 import chalk from 'chalk';
 import { startSpinner, stopSpinner, getTenantFromToken } from './utility.js';
 
 const log = debug('auth0-mcp:device-auth-flows');
-const requiredScopes = `read:clients read:client_grants read:roles read:rules read:users read:branding read:email_templates read:email_provider read:flows read:forms read:flows_vault_connections read:connections read:client_keys read:logs read:tenant_settings read:custom_domains read:anomaly_blocks read:log_streams read:actions read:organizations read:organization_members read:organization_member_roles read:organization_connections read:prompts`;
+const requiredScopes = `offline_access read:clients read:client_grants read:roles read:rules read:users read:branding read:email_templates read:email_provider read:flows read:forms read:flows_vault_connections read:connections read:client_keys read:logs read:tenant_settings read:custom_domains read:anomaly_blocks read:log_streams read:actions read:organizations read:organization_members read:organization_member_roles read:organization_connections read:prompts`;
 
 function getConfig() {
   return {
@@ -119,32 +118,20 @@ async function fetchUserInfo(tokenSet: any) {
 
   await storeInKeychain('auth0-mcp', 'AUTH0_TOKEN', tokenSet.access_token);
   await storeInKeychain('auth0-mcp', 'AUTH0_DOMAIN', tenantName);
-
-  try {
-    let envContent = '';
-    try {
-      envContent = await fs.readFile('.env', 'utf-8');
-    } catch (error) {
-      log(JSON.stringify(error));
-    }
-
-    for (const [key, value] of Object.entries(envValues)) {
-      const regex = new RegExp(`^${key}=.*$`, 'm');
-      const newLine = `${key}=${value}`;
-
-      if (regex.test(envContent)) {
-        envContent = envContent.replace(regex, newLine);
-      } else {
-        envContent = envContent ? `${envContent}\n${newLine}` : newLine;
-      }
-    }
-    await fs.writeFile('.env', envContent);
-    log('Updated .env file successfully');
-
-    Object.assign(process.env, envValues);
-  } catch (error) {
-    log(' Error updating .env file:', error);
+  
+  if (tokenSet.refresh_token) {
+    await storeInKeychain('auth0-mcp', 'AUTH0_REFRESH_TOKEN', tokenSet.refresh_token);
+    log('Refresh token stored in keychain');
   }
+  
+  if (tokenSet.expires_in) {
+    const expiresAt = Date.now() + tokenSet.expires_in * 1000;
+    await storeInKeychain('auth0-mcp', 'AUTH0_TOKEN_EXPIRES_AT', expiresAt.toString());
+    log(`Token expires at: ${new Date(expiresAt).toISOString()}`);
+  }
+
+  Object.assign(process.env, envValues);
+  log('Updated environment variables');
 }
 
 async function storeInKeychain(app: string, key: string, value: string): Promise<boolean> {
@@ -155,6 +142,102 @@ async function storeInKeychain(app: string, key: string, value: string): Promise
   } catch (error) {
     log(`Error storing ${key} in keychain:`, error);
     return false;
+  }
+}
+
+export async function refreshAccessToken(): Promise<string | null> {
+  try {
+    log('Attempting to refresh access token');
+    
+    const refreshToken = await keytar.getPassword('auth0-mcp', 'AUTH0_REFRESH_TOKEN');
+    if (!refreshToken) {
+      log('No refresh token found in keychain');
+      return null;
+    }
+    
+    const config = getConfig();
+    const response = await fetch(`https://${config.tenant}/oauth/token`, {
+      method: 'POST',
+      body: new URLSearchParams({
+        grant_type: 'refresh_token',
+        client_id: config.clientId,
+        refresh_token: refreshToken,
+      }),
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+    });
+    
+    const tokenSet = await response.json();
+    
+    if (tokenSet.error) {
+      log(`Error refreshing token: ${tokenSet.error}`);
+      return null;
+    }
+    
+    const tenantName = getTenantFromToken(tokenSet.access_token);
+    await storeInKeychain('auth0-mcp', 'AUTH0_TOKEN', tokenSet.access_token);
+    
+    if (tokenSet.refresh_token) {
+      await storeInKeychain('auth0-mcp', 'AUTH0_REFRESH_TOKEN', tokenSet.refresh_token);
+    }
+    
+    if (tokenSet.expires_in) {
+      const expiresAt = Date.now() + tokenSet.expires_in * 1000;
+      await storeInKeychain('auth0-mcp', 'AUTH0_TOKEN_EXPIRES_AT', expiresAt.toString());
+    }
+    
+    process.env.AUTH0_TOKEN = tokenSet.access_token;
+    
+    log('Successfully refreshed access token');
+    return tokenSet.access_token;
+  } catch (error) {
+    log('Error refreshing access token:', error);
+    return null;
+  }
+}
+
+export async function isTokenExpired(bufferSeconds = 300): Promise<boolean> {
+  try {
+    const expiresAtStr = await keytar.getPassword('auth0-mcp', 'AUTH0_TOKEN_EXPIRES_AT');
+    if (!expiresAtStr) {
+      log('No token expiration time found');
+      return true;
+    }
+    
+    const expiresAt = parseInt(expiresAtStr, 10);
+    const now = Date.now();
+    const isExpired = now + bufferSeconds * 1000 >= expiresAt;
+    
+    if (isExpired) {
+      log(`Token is expired or will expire soon. Expires at: ${new Date(expiresAt).toISOString()}`);
+    }
+    
+    return isExpired;
+  } catch (error) {
+    log('Error checking token expiration:', error);
+    return true;
+  }
+}
+
+export async function getValidAccessToken(): Promise<string | null> {
+  try {
+    const expired = await isTokenExpired();
+    
+    if (expired) {
+      const newToken = await refreshAccessToken();
+      if (newToken) {
+        return newToken;
+      }
+      
+      log('Token refresh failed, trying to use existing token');
+    }
+    
+    const token = await keytar.getPassword('auth0-mcp', 'AUTH0_TOKEN');
+    return token;
+  } catch (error) {
+    log('Error getting valid access token:', error);
+    return null;
   }
 }
 

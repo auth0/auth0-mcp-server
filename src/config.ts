@@ -5,8 +5,8 @@ import * as os from 'os';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 import { promisify } from 'util';
-import * as dotenv from 'dotenv';
 import keytar from 'keytar';
+import { getValidAccessToken, isTokenExpired, refreshAccessToken } from './device-auth-flow.js';
 
 // Promisify exec
 const execAsync = promisify(exec);
@@ -17,10 +17,6 @@ const log = debug('auth0-mcp:config');
 // Handle ESM module __dirname equivalent
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-// Add this before the loadConfig function
-// Load .env file from the project root
-dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 // Ensure HOME is set
 if (!process.env.HOME) {
@@ -40,10 +36,26 @@ export interface Auth0Config {
 }
 
 export async function loadConfig(): Promise<Auth0Config | null> {
+  // Check if token is expired and refresh if needed
+  const isExpired = await isTokenExpired();
+  if (isExpired) {
+    log('Access token is expired or will expire soon, attempting to refresh');
+    const newToken = await refreshAccessToken();
+    if (newToken) {
+      log('Successfully refreshed access token');
+    } else {
+      log('Failed to refresh access token, will use existing token if available');
+    }
+  }
+
+  // Get the valid token (either refreshed or existing)
+  const token = await getValidAccessToken();
+  const domain = await keytar.getPassword('auth0-mcp', 'AUTH0_DOMAIN');
+  
   return {
-    token: (await keytar.getPassword('auth0-mcp', 'AUTH0_TOKEN')) || '',
-    domain: (await keytar.getPassword('auth0-mcp', 'AUTH0_DOMAIN')) || '',
-    tenantName: (await keytar.getPassword('auth0-mcp', 'AUTH0_DOMAIN')) || 'default',
+    token: token || '',
+    domain: domain || '',
+    tenantName: domain || 'default',
   };
 }
 
