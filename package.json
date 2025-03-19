@@ -14,18 +14,17 @@
     "test:connection": "node examples/test-connection.js",
     "test:mcp": "node examples/test-mcp-connection.js",
     "test:token": "node examples/test-token-retrieval.js",
-    "test:token-local": "node examples/test-token-local.js",
     "test:token-refresh": "node examples/test-token-refresh.js",
     "test:tools": "node examples/test-tool-call.js",
-    "test:device": "node examples/test-device-auth.js",
     "utils:fix-token": "node utils/fix-token-retrieval.js",
     "utils:setup-secure": "node utils/update-claude-config-secure.js",
     "utils:setup": "node utils/update-claude-config.js",
-    "setup": "chmod +x utils/setup-cli-path.js && node utils/setup-cli-path.js",
+    "utils:claude-path": "node utils/get-claude-config-path.js",
     "clean": "rm -rf logs/*.log",
     "debug-server": "DEBUG=auth0-mcp:* node dist/index.js run",
     "format": "prettier --write \"**/*.{js,ts,json}\"",
-    "format:check": "prettier --check \"**/*.{js,ts,json}\""
+    "format:check": "prettier --check \"**/*.{js,ts,json}\"",
+    "generate-notice": "node scripts/generate-notice.js"
   },
   "keywords": [
     "auth0",

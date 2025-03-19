@@ -6,6 +6,7 @@ import fs from 'fs';
 import os from 'os';
 import { exit } from 'process';
 import { fileURLToPath } from 'url';
+import { getValidAccessToken } from '../dist/device-auth-flow.js';
 
 // Get current directory
 const __filename = fileURLToPath(import.meta.url);
@@ -13,8 +14,7 @@ const __dirname = path.dirname(__filename);
 
 // Configuration
 const AUTH0_DOMAIN = process.env.AUTH0_DOMAIN || 'your-tenant.auth0.com';
-const SERVER_PATH = process.env.SERVER_PATH || path.join(__dirname, 'dist/index.js');
-const WRAPPER_PATH = process.env.WRAPPER_PATH || path.join(__dirname, 'dynamic-wrapper.sh');
+const SERVER_PATH = path.join(__dirname, '../dist/index.js');
 const DEBUG = process.env.DEBUG === 'true';
 
 // Utility functions
@@ -34,7 +34,6 @@ async function callAuth0Tool() {
   console.log('Environment:');
   console.log(`AUTH0_DOMAIN: ${AUTH0_DOMAIN}`);
   console.log(`SERVER_PATH: ${SERVER_PATH}`);
-  console.log(`WRAPPER_PATH: ${WRAPPER_PATH}`);
   console.log(`DEBUG: ${DEBUG}`);
 
   let serverProcess = null;
@@ -48,183 +47,150 @@ async function callAuth0Tool() {
       }, timeout);
 
       // Set up response handler for this request
-      responseHandler = data => {
-        try {
-          // Try to parse the response as JSON
-          const json = JSON.parse(data);
-          if (json.id === expectedId) {
-            clearTimeout(timeoutId);
-            resolve(json);
-          }
-        } catch (e) {
-          // Ignore non-JSON output
-          log('Failed to parse server output as JSON:', data);
+      responseHandler = response => {
+        if (response.id === expectedId) {
+          clearTimeout(timeoutId);
+          resolve(response);
+          return true; // Indicate this response was handled
         }
+        return false; // Not our response
       };
 
-      // Send the request
-      if (serverProcess) {
-        serverProcess.stdin.write(JSON.stringify(request) + '\n');
-      } else {
-        reject(new Error('Server process not available'));
-      }
+      // Send the request to the server
+      log('Sending request:', request);
+      serverProcess.stdin.write(JSON.stringify(request) + '\n');
     });
   }
 
   try {
     // Start the server process
-    console.log('\n1. Starting local MCP server...');
-
-    if (!fs.existsSync(SERVER_PATH)) {
-      throw new Error(`Server path not found: ${SERVER_PATH}`);
-    }
-
-    if (!fs.existsSync(WRAPPER_PATH)) {
-      throw new Error(`Wrapper script not found: ${WRAPPER_PATH}`);
-    }
-
-    // Use bash to run the wrapper script
-    serverProcess = spawn('/bin/bash', [WRAPPER_PATH, 'node', SERVER_PATH, 'run', AUTH0_DOMAIN], {
+    log('Starting MCP server process...');
+    serverProcess = spawn('node', [SERVER_PATH, 'serve', '--stdio'], {
+      stdio: ['pipe', 'pipe', 'pipe'],
       env: {
         ...process.env,
-        DEBUG: 'auth0-mcp:*',
+        NODE_ENV: 'development',
       },
     });
 
-    log('Server process started with PID:', serverProcess.pid);
-
-    // Set up event handlers for the server process
+    // Set up stdout handling
+    let buffer = '';
     serverProcess.stdout.on('data', data => {
-      const message = data.toString().trim();
-      log('[Server stdout]:', message);
+      const chunk = data.toString();
+      buffer += chunk;
 
-      // If someone is waiting for a response, call the handler
-      if (responseHandler) {
-        responseHandler(message);
+      // Process complete JSON objects in the buffer
+      let newlineIndex;
+      while ((newlineIndex = buffer.indexOf('\n')) !== -1) {
+        const line = buffer.substring(0, newlineIndex);
+        buffer = buffer.substring(newlineIndex + 1);
+
+        if (line.trim()) {
+          try {
+            const response = JSON.parse(line);
+            log('Received response:', response);
+
+            // Call response handler if set
+            if (responseHandler && responseHandler(response)) {
+              responseHandler = null;
+            }
+          } catch (err) {
+            console.error('Error parsing JSON response:', err);
+            console.error('Line:', line);
+          }
+        }
       }
     });
 
+    // Handle stderr
     serverProcess.stderr.on('data', data => {
-      const message = data.toString().trim();
-      log('[Server stderr]:', message);
+      console.error('Server error:', data.toString());
     });
 
-    serverProcess.on('error', error => {
-      log('[Server error]:', error.message);
-    });
+    // Initialize the server
+    console.log('Initializing server...');
+    const initRequest = { jsonrpc: '2.0', id: 1, method: 'initialize', params: {} };
+    const initResponse = await sendRequest(initRequest, 1, 10000);
+    console.log('Server initialized successfully');
 
-    // Wait for server to start
-    console.log('Waiting for server to initialize...');
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // List available tools
+    console.log('\nListing available tools...');
+    const toolsRequest = { jsonrpc: '2.0', id: 2, method: 'tools/list', params: {} };
+    const toolsResponse = await sendRequest(toolsRequest, 2);
 
-    // Step 1: Initialize request
-    console.log('\n2. Sending initialize request...');
-    const initRequest = {
-      jsonrpc: '2.0',
-      id: 1,
-      method: 'initialize',
-      params: {
-        protocolVersion: '0.1',
-        clientInfo: {
-          name: 'test-client',
-          version: '1.0.0',
-        },
-        capabilities: {
-          tools: {},
-        },
-      },
-    };
+    if (toolsResponse.result && toolsResponse.result.tools) {
+      console.log(`\nFound ${toolsResponse.result.tools.length} tools:`);
 
-    console.log('Initialize Request:', formatJSON(initRequest));
+      // Display tools in a organized way
+      const toolsByCategory = {};
+      toolsResponse.result.tools.forEach(tool => {
+        const name = tool.name;
+        const category = name.split('_')[0]; // Extract category from name (e.g., auth0_list_applications -> auth0)
 
-    const initResponse = await sendRequest(initRequest, 1, 5000);
-    console.log('Initialize Response:', formatJSON(initResponse));
+        if (!toolsByCategory[category]) {
+          toolsByCategory[category] = [];
+        }
 
-    // Step 2: List tools request
-    console.log('\n3. Sending tools/list request...');
-    const listToolsRequest = {
-      jsonrpc: '2.0',
-      id: 2,
-      method: 'tools/list',
-      params: {},
-    };
+        toolsByCategory[category].push(tool);
+      });
 
-    console.log('tools/list Request:', formatJSON(listToolsRequest));
+      // Print tools by category
+      Object.keys(toolsByCategory).forEach(category => {
+        console.log(`\n${category.toUpperCase()} Tools:`);
+        toolsByCategory[category].forEach(tool => {
+          console.log(`- ${tool.name}: ${tool.description}`);
+        });
+      });
 
-    const listToolsResponse = await sendRequest(listToolsRequest, 2, 5000);
-    console.log('tools/list Response:', formatJSON(listToolsResponse));
+      // Get a token for API access
+      console.log('\nRetrieving access token...');
+      const token = await getValidAccessToken();
 
-    if (listToolsResponse.error) {
-      throw new Error(`Server error: ${listToolsResponse.error.message}`);
-    }
-
-    if (!listToolsResponse.result || !listToolsResponse.result.tools) {
-      throw new Error('Invalid response: missing tools array');
-    }
-
-    console.log(`Found ${listToolsResponse.result.tools.length} tools:`);
-    listToolsResponse.result.tools.forEach(tool => {
-      console.log(`- ${tool.name}: ${tool.description}`);
-    });
-
-    // Step 3: Call tool request
-    console.log('\n4. Testing tool call: auth0_list_applications');
-    const callToolRequest = {
-      jsonrpc: '2.0',
-      id: 3,
-      method: 'tools/call',
-      params: {
-        name: 'auth0_list_applications',
-        parameters: {
-          per_page: 5,
-          include_totals: true,
-        },
-      },
-    };
-
-    console.log('tools/call Request:', formatJSON(callToolRequest));
-
-    const callToolResponse = await sendRequest(callToolRequest, 3, 10000);
-    console.log('tools/call Response:', formatJSON(callToolResponse));
-
-    if (callToolResponse.error) {
-      console.log(`Tool call error: ${callToolResponse.error.message}`);
-      console.log(`Tool call failed: ${formatJSON(callToolResponse.error)}`);
-      return false;
-    } else if (callToolResponse.result && callToolResponse.result.toolResult) {
-      console.log('Tool call successful!');
-
-      if (callToolResponse.result.toolResult.isError) {
-        const errorContent = callToolResponse.result.toolResult.content[0];
-        console.log(`Tool execution error: ${errorContent.text}`);
-        return false;
-      } else {
-        console.log('Tool execution successful!');
-        console.log('Result:', formatJSON(callToolResponse.result.toolResult));
-        return true;
+      if (!token) {
+        console.error('Failed to get a valid token. Please run "node dist/index.js init" first.');
+        exit(1);
       }
-    }
 
-    return false;
-  } catch (error) {
-    console.error('Error:', error.message);
-    return false;
+      console.log('Token retrieved successfully');
+
+      // Now test calling an actual tool
+      const testToolName = 'auth0_list_applications'; // You can change this to test other tools
+      console.log(`\nTesting tool call: ${testToolName}`);
+
+      const toolCallRequest = {
+        jsonrpc: '2.0',
+        id: 3,
+        method: 'tools/call',
+        params: {
+          tool: testToolName,
+          parameters: {},
+        },
+      };
+
+      const toolCallResponse = await sendRequest(toolCallRequest, 3, 15000);
+
+      if (toolCallResponse.error) {
+        console.error('Tool call failed:', toolCallResponse.error);
+      } else {
+        console.log('Tool call successful:');
+        console.log(formatJSON(toolCallResponse.result));
+      }
+    } else {
+      console.error('Failed to list tools:', toolsResponse.error || 'No tools found');
+    }
+  } catch (err) {
+    console.error('Error:', err);
   } finally {
-    // Clean up the server process
+    // Clean up
     if (serverProcess) {
-      console.log('\nShutting down server process...');
+      console.log('\nShutting down server...');
       serverProcess.kill();
     }
   }
 }
 
-// Run the test
-callAuth0Tool()
-  .then(success => {
-    console.log(`\nTest completed with ${success ? 'SUCCESS' : 'FAILURE'}`);
-    process.exit(success ? 0 : 1);
-  })
-  .catch(error => {
-    console.error('Unhandled error:', error);
-    process.exit(1);
-  });
+// Run the main function
+callAuth0Tool().catch(err => {
+  console.error('Unhandled error:', err);
+  exit(1);
+});

@@ -51,7 +51,7 @@ export async function loadConfig(): Promise<Auth0Config | null> {
   // Get the valid token (either refreshed or existing)
   const token = await getValidAccessToken();
   const domain = await keytar.getPassword('auth0-mcp', 'AUTH0_DOMAIN');
-  
+
   return {
     token: token || '',
     domain: domain || '',

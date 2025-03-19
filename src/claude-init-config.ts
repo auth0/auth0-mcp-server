@@ -25,7 +25,7 @@ export async function findAndUpdatedClaudeConfig() {
   );
 }
 
-async function getClaudeConfigPath(): Promise<string> {
+export async function getClaudeConfigPath(): Promise<string> {
   let configDir: string;
 
   switch (process.platform) {
