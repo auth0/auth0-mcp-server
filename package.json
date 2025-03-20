@@ -1,6 +1,6 @@
 {
   "name": "@auth0/auth0-mcp-server",
-  "version": "1.0.0",
+  "version": "0.1.0-beta.1",
   "description": "Auth0 MCP Server for Claude Desktop",
   "type": "module",
   "main": "dist/index.js",
@@ -18,7 +18,7 @@
     "test:tools": "node examples/test-tool-call.js",
     "utils:fix-token": "node utils/fix-token-retrieval.js",
     "utils:setup-secure": "node utils/update-claude-config-secure.js",
-    "utils:setup": "node utils/update-claude-config.js",
+    "utils:local-setup": "node utils/update-claude-config.js",
     "utils:claude-path": "node utils/get-claude-config-path.js",
     "clean": "rm -rf logs/*.log",
     "debug-server": "DEBUG=auth0-mcp:* node dist/index.js run",

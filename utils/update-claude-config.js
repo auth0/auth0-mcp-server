@@ -11,6 +11,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import os from 'os';
+import chalk from 'chalk';
 
 // Set up paths
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -22,7 +23,8 @@ const CLAUDE_CONFIG_PATH = path.join(
   'Claude',
   'claude_desktop_config.json'
 );
-const SIMPLE_SERVER_PATH = path.join(__dirname, 'simple-auth0-server.js');
+const SIMPLE_SERVER_PATH = path.join(__dirname, '..');
+console.log('SIMPLE_SERVER_PATH', SIMPLE_SERVER_PATH);
 const NODE_PATH = process.env.NODE_PATH || 'node';
 
 // Main function
@@ -78,13 +80,13 @@ async function updateConfig() {
   // Check if auth0 config already exists
   const existingConfig = config.mcpServers.auth0 ? 'updated' : 'created';
 
-  // Update the configuration with enhanced capabilities
+  //Update the configuration with enhanced capabilities
   config.mcpServers.auth0 = {
-    command: NODE_PATH,
-    args: [SIMPLE_SERVER_PATH],
-    capabilities: ['tools', 'externalCommunication'],
+    command: 'npx',
+    args: [SIMPLE_SERVER_PATH, 'run'],
+    capabilities: ['tools'],
     env: {
-      DEBUG: 'auth0-mcp:*',
+      DEBUG: 'auth0-mcp:*1',
       NODE_OPTIONS: '--no-warnings',
     },
   };
@@ -98,14 +100,15 @@ async function updateConfig() {
     return false;
   }
 
-  console.log('\n=== Configuration Updated Successfully ===');
+  console.log(chalk.green('\n=== Configuration Updated Successfully ==='));
   console.log('Configuration details:');
-  console.log(`- Command: ${NODE_PATH}`);
-  console.log(`- Script: ${SIMPLE_SERVER_PATH}`);
-  console.log('- Capabilities: tools, externalCommunication');
-  console.log('- Environment: DEBUG=auth0-mcp:*, NODE_OPTIONS=--no-warnings');
+  console.log(`${chalk.green('✓')} Script: ${SIMPLE_SERVER_PATH}`);
+  console.log(`${chalk.green('✓')} Capabilities: tools`);
+  console.log(`${chalk.green('✓')} Environment: DEBUG=auth0-mcp:*, NODE_OPTIONS=--no-warnings`);
 
-  console.log('\nIMPORTANT: You need to restart Claude Desktop for changes to take effect.');
+  console.log(
+    chalk.yellow('\nIMPORTANT: You need to restart Claude Desktop for changes to take effect.')
+  );
   return true;
 }
 

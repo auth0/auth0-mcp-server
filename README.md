@@ -146,6 +146,23 @@ The server supports two modes:
 
 The server stores configuration securely in your system's keychain. No configuration files or environment variables are needed for normal operation.
 
+#### Claude Desktop Configuration
+
+The Auth0 MCP Server provides utilities to configure Claude Desktop for seamless integration:
+
+```bash
+# Apply the local configuration to Claude Desktop
+npm run utils:local-setup
+```
+
+The configuration utility:
+- Simplifies the Auth0 MCP server integration with Claude Desktop
+- Enables the `tools` capability for Claude's tool-calling features
+- Sets up debug environment variables for better troubleshooting
+- Automatically backs up your existing configuration
+
+After running the configuration tool, you'll need to restart Claude Desktop for changes to take effect.
+
 ## Troubleshooting
 
 ### Common Issues
@@ -171,6 +188,22 @@ DEBUG=auth0-mcp:* npx @auth0/auth0-mcp-server run
 ```
 
 ## Development
+
+### Utility Scripts
+
+The Auth0 MCP Server provides several utility scripts to help with development and configuration:
+
+```bash
+# Update Claude config for local development
+npm run utils:local-setup
+
+# Check access token & refresh token status
+npm run test:token-refresh
+
+# Get the path to your Claude configuration
+npm run utils:claude-path
+
+```
 
 ### Building from Source
 
