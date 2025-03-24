@@ -35,7 +35,7 @@
   "license": "ISC",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
-    "axios": "^1.6.0",
+    "axios": "^1.8.2",
     "chalk": "^5.4.1",
     "debug": "^4.3.4",
     "jwt-decode": "^4.0.0",
