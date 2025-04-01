@@ -1,6 +1,6 @@
-import { exec } from 'child_process';
 import keytar from 'keytar';
 import chalk from 'chalk';
+import open from 'open';
 import { startSpinner, stopSpinner, getTenantFromToken } from '../cli-utility.js';
 import { log } from '../logger.js';
 
@@ -41,7 +41,7 @@ async function requestAuthorization() {
     const jsonRes = await response.json();
     if (!jsonRes.error) {
       console.log('Verify this code on screen', chalk.bold.green(jsonRes.user_code));
-      openChrome(jsonRes.verification_uri_complete);
+      openBrowser(jsonRes.verification_uri_complete);
       await exchangeDeviceCodeForToken(jsonRes);
     } else {
       console.log('Error', jsonRes);
@@ -57,14 +57,29 @@ function wait(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function openChrome(url: string) {
-  exec(`open -a "Google Chrome" ${url}`, (err) => {
-    if (err) {
-      console.error('Failed to open Chrome:', err);
-    } else {
-      log('Chrome opened successfully');
-    }
-  });
+function isValidUrl(url: string): boolean {
+  try {
+    const parsedUrl = new URL(url);
+    // Check for safe protocols
+    return ['http:', 'https:'].includes(parsedUrl.protocol);
+  } catch (error) {
+    return false;
+  }
+}
+
+function openBrowser(url: string) {
+  if (!url || !isValidUrl(url)) {
+    console.error('Invalid URL provided:', url);
+    return;
+  }
+
+  open(url)
+    .then(() => {
+      log('Browser opened successfully');
+    })
+    .catch((err) => {
+      console.error('Failed to open browser:', err);
+    });
 }
 
 async function exchangeDeviceCodeForToken(deviceCode: any) {

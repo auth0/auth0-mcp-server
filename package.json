@@ -38,6 +38,7 @@
     "jwt-decode": "^4.0.0",
     "keytar": "^7.9.0",
     "node-fetch": "^3.3.2",
+    "open": "^10.1.0",
     "which": "^5.0.0"
   },
   "devDependencies": {

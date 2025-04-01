@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import init from './init.js';
 import run from './run.js';
+import help from './help.js';
 
 // Enable all debug logs for this package by default
 //process.env.DEBUG = (process.env.DEBUG || '') + ',auth0-mcp:*';
@@ -30,8 +31,11 @@ if (command === 'run') {
 } else if (command === 'init') {
   const args = process.argv.slice(3);
   await init(args);
+} else if (command === 'help') {
+  await help();
 } else {
-  console.error(`Usage: auth0-mcp run 'init' or 'run'.`);
+  console.error(`Usage: auth0-mcp <command>\nValid commands: 'init', 'run', or 'help'`);
+  console.error(`Run 'auth0-mcp help' for more information.`);
   process.exit(1);
 }
 
