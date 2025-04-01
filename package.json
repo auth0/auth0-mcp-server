@@ -5,26 +5,23 @@
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "auth0-mcp": "./bin/auth0-mcp"
+    "auth0-mcp": "dist/index.js"
   },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "rm -rf dist && tsc",
+    "postbuild": "shx chmod +x dist/*.js",
     "start": "node dist/index.js run",
-    "test": "node examples/test-connection.js",
-    "test:connection": "node examples/test-connection.js",
-    "test:mcp": "node examples/test-mcp-connection.js",
-    "test:token": "node examples/test-token-retrieval.js",
-    "test:token-refresh": "node examples/test-token-refresh.js",
-    "test:tools": "node examples/test-tool-call.js",
-    "utils:fix-token": "node utils/fix-token-retrieval.js",
-    "utils:setup-secure": "node utils/update-claude-config-secure.js",
-    "utils:local-setup": "node utils/update-claude-config.js",
-    "utils:claude-path": "node utils/get-claude-config-path.js",
-    "clean": "rm -rf logs/*.log",
-    "debug-server": "DEBUG=auth0-mcp:* node dist/index.js run",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "local-setup": "node utils/local-setup.js",
+    "debug-server": "DEBUG=auth0-mcp node dist/index.js run",
     "format": "prettier --write \"**/*.{js,ts,json}\"",
     "format:check": "prettier --check \"**/*.{js,ts,json}\"",
-    "generate-notice": "node scripts/generate-notice.js"
+    "generate-notice": "node utils/generate-notice.js"
   },
   "keywords": [
     "auth0",
@@ -34,24 +31,29 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.0.0",
-    "axios": "^1.8.2",
+    "@modelcontextprotocol/sdk": "^1.8.0",
     "chalk": "^5.4.1",
-    "debug": "^4.3.4",
+    "debug": "^4.4.0",
     "jwt-decode": "^4.0.0",
     "keytar": "^7.9.0",
-    "node-fetch": "^3.3.2"
+    "node-fetch": "^3.3.2",
+    "which": "^5.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.21.0",
     "@types/debug": "^4.1.12",
-    "@types/node": "^20.11.5",
-    "eslint": "^9.21.0",
-    "eslint-config-prettier": "^10.0.2",
+    "@types/node": "^22.13.14",
+    "@vitest/coverage-v8": "^3.1.1",
+    "@vitest/ui": "^3.1.1",
+    "eslint": "^9.23.0",
+    "eslint-config-prettier": "^10.1.1",
     "globals": "^16.0.0",
+    "msw": "^2.2.0",
     "prettier": "^3.5.2",
+    "shx": "^0.4.0",
     "typescript": "^5.3.3",
-    "typescript-eslint": "^8.25.0"
+    "typescript-eslint": "^8.29.0",
+    "vitest": "^3.1.1"
   },
   "engines": {
     "node": ">=18.0.0"

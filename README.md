@@ -1,27 +1,54 @@
 # Auth0 MCP Server
 
-
-
 A Model Context Protocol (MCP) server implementation that integrates Auth0 Management API with Claude Desktop, enabling AI-assisted management of your Auth0 tenant.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
 
+## Table of Contents
+
+- [Overview](#overview)
+- [Quick Start](#quick-start)
+  - [Prerequisites](#prerequisites)
+  - [Installation](#installation)
+  - [Connecting to Claude Desktop](#connecting-to-claude-desktop)
+- [Supported Tools](#supported-tools)
+  - [Applications](#applications)
+  - [Resource Servers](#resource-servers)
+  - [Actions](#actions)
+  - [Logs](#logs)
+  - [Forms](#forms)
+- [Architecture](#architecture)
+- [Authentication](#authentication)
+- [Advanced Usage](#advanced-usage)
+  - [Command Line Interface](#command-line-interface)
+  - [Operation Modes](#operation-modes)
+  - [Configuration](#configuration)
+- [Troubleshooting](#troubleshooting)
+- [Development](#development)
+- [Security](#security)
+- [Feedback and Contributing](#feedback-and-contributing)
+- [What is Auth0?](#what-is-auth0)
+- [License](#license)
+
 ## Overview
 
 The Auth0 MCP Server allows Claude AI to interact with your Auth0 tenant through the Model Context Protocol. This enables Claude to help you manage applications, resource servers, actions, logs, forms, and more within your Auth0 environment.
 
-Key features:
-- Secure authentication using device authorization flow
-- Credential storage in system keychain for enhanced security
-- Comprehensive set of tools for Auth0 tenant management
-- Seamless integration with Claude Desktop
+### Key Features
+
+- **Secure Authentication**: Uses device authorization flow for enhanced security
+- **Protected Credentials**: Stores credentials in system keychain
+- **Comprehensive Tools**: Complete set of tools for Auth0 tenant management
+- **Seamless Integration**: Works directly with Claude Desktop
+
+**_NOTE:_** This server requires Node.js v18 or higher and appropriate Auth0 permissions to function correctly.
 
 ## Quick Start
 
 ### Prerequisites
 
-- Node.js v18 or higher
+- [Node.js v18 or higher](https://nodejs.org/en/download)
 - Claude Desktop application
 - Auth0 account with appropriate permissions
 
@@ -33,11 +60,20 @@ Install and initialize the Auth0 MCP Server with a single command:
 npx @auth0/auth0-mcp-server init
 ```
 
+<br/>
+
+<div align="center">
+  <img src="assets/auth0-mcp-example-demo.gif" alt="Auth0 MCP Server Demo" width="600">
+</div>
+
 This will:
+
 1. Start the device authorization flow
 2. Open your browser to authenticate with Auth0
 3. Store your credentials securely in your system's keychain
 4. Configure Claude Desktop to use the Auth0 MCP Server
+
+**_NOTE:_** You'll need to restart Claude Desktop after installation for the changes to take effect.
 
 ### Connecting to Claude Desktop
 
@@ -46,6 +82,69 @@ After installation:
 1. Restart Claude Desktop
 2. In a conversation with Claude, ask it to help you manage your Auth0 tenant
 3. Claude will now have access to your Auth0 environment through the MCP server
+
+<div align="center">
+  <img src="assets/help-image-1.png" alt="Claude installed Help Image" width="400">
+</div>
+
+## Supported Tools
+
+The Auth0 MCP Server provides the following tools for Claude to interact with your Auth0 tenant:
+
+<div align="center">
+  <img src="assets/help-image-2.png" alt="Supported Tools img" width="600">
+</div>
+
+### Applications
+
+| Tool Name                   | Description                                    |
+| --------------------------- | ---------------------------------------------- |
+| `auth0_list_applications`   | List all applications in the Auth0 tenant      |
+| `auth0_get_application`     | Get details about a specific Auth0 application |
+| `auth0_search_applications` | Search for applications by name                |
+| `auth0_create_application`  | Create a new Auth0 application                 |
+| `auth0_update_application`  | Update an existing Auth0 application           |
+| `auth0_delete_application`  | Delete an Auth0 application                    |
+
+### Resource Servers
+
+| Tool Name                      | Description                                          |
+| ------------------------------ | ---------------------------------------------------- |
+| `auth0_list_resource_servers`  | List all resource servers (APIs) in the Auth0 tenant |
+| `auth0_get_resource_server`    | Get details about a specific Auth0 resource server   |
+| `auth0_create_resource_server` | Create a new Auth0 resource server (API)             |
+| `auth0_update_resource_server` | Update an existing Auth0 resource server             |
+| `auth0_delete_resource_server` | Delete an Auth0 resource server                      |
+
+### Actions
+
+| Tool Name             | Description                               |
+| --------------------- | ----------------------------------------- |
+| `auth0_list_actions`  | List all actions in the Auth0 tenant      |
+| `auth0_get_action`    | Get details about a specific Auth0 action |
+| `auth0_create_action` | Create a new Auth0 action                 |
+| `auth0_update_action` | Update an existing Auth0 action           |
+| `auth0_delete_action` | Delete an Auth0 action                    |
+| `auth0_deploy_action` | Deploy an Auth0 action                    |
+
+### Logs
+
+| Tool Name           | Description                        |
+| ------------------- | ---------------------------------- |
+| `auth0_list_logs`   | List logs from the Auth0 tenant    |
+| `auth0_get_log`     | Get a specific log entry by ID     |
+| `auth0_search_logs` | Search logs with specific criteria |
+
+### Forms
+
+| Tool Name            | Description                             |
+| -------------------- | --------------------------------------- |
+| `auth0_list_forms`   | List all forms in the Auth0 tenant      |
+| `auth0_get_form`     | Get details about a specific Auth0 form |
+| `auth0_create_form`  | Create a new Auth0 form                 |
+| `auth0_update_form`  | Update an existing Auth0 form           |
+| `auth0_delete_form`  | Delete an Auth0 form                    |
+| `auth0_publish_form` | Publish an Auth0 form                   |
 
 ## Architecture
 
@@ -57,64 +156,28 @@ The Auth0 MCP Server implements the Model Context Protocol, allowing Claude to:
 
 The server handles authentication, request validation, and secure communication with the Auth0 Management API.
 
+**_NOTE:_** The server operates as a local process that connects to Claude Desktop, enabling secure communication without exposing your Auth0 credentials.
+
 ## Authentication
 
 The server uses OAuth 2.0 device authorization flow for secure authentication with Auth0. Your credentials are stored securely in your system's keychain and are never exposed in plain text.
 
-## Supported Tools
+```mermaid
+sequenceDiagram
+    participant User
+    participant Auth0MCP as Auth0 MCP Server
+    participant Auth0
+    participant Keychain
 
-The Auth0 MCP Server provides the following tools for Claude to interact with your Auth0 tenant:
-
-### Applications
-
-| Tool Name | Description |
-|-----------|-------------|
-| `auth0_list_applications` | List all applications in the Auth0 tenant |
-| `auth0_get_application` | Get details about a specific Auth0 application |
-| `auth0_search_applications` | Search for applications by name |
-| `auth0_create_application` | Create a new Auth0 application |
-| `auth0_update_application` | Update an existing Auth0 application |
-| `auth0_delete_application` | Delete an Auth0 application |
-
-### Resource Servers
-
-| Tool Name | Description |
-|-----------|-------------|
-| `auth0_list_resource_servers` | List all resource servers (APIs) in the Auth0 tenant |
-| `auth0_get_resource_server` | Get details about a specific Auth0 resource server |
-| `auth0_create_resource_server` | Create a new Auth0 resource server (API) |
-| `auth0_update_resource_server` | Update an existing Auth0 resource server |
-| `auth0_delete_resource_server` | Delete an Auth0 resource server |
-
-### Actions
-
-| Tool Name | Description |
-|-----------|-------------|
-| `auth0_list_actions` | List all actions in the Auth0 tenant |
-| `auth0_get_action` | Get details about a specific Auth0 action |
-| `auth0_create_action` | Create a new Auth0 action |
-| `auth0_update_action` | Update an existing Auth0 action |
-| `auth0_delete_action` | Delete an Auth0 action |
-| `auth0_deploy_action` | Deploy an Auth0 action |
-
-### Logs
-
-| Tool Name | Description |
-|-----------|-------------|
-| `auth0_list_logs` | List logs from the Auth0 tenant |
-| `auth0_get_log` | Get a specific log entry by ID |
-| `auth0_search_logs` | Search logs with specific criteria |
-
-### Forms
-
-| Tool Name | Description |
-|-----------|-------------|
-| `auth0_list_forms` | List all forms in the Auth0 tenant |
-| `auth0_get_form` | Get details about a specific Auth0 form |
-| `auth0_create_form` | Create a new Auth0 form |
-| `auth0_update_form` | Update an existing Auth0 form |
-| `auth0_delete_form` | Delete an Auth0 form |
-| `auth0_publish_form` | Publish an Auth0 form |
+    User->>Auth0MCP: Initialize server
+    Auth0MCP->>Auth0: Request device code
+    Auth0-->>Auth0MCP: Return device code & verification URI
+    Auth0MCP->>User: Display code & open browser
+    User->>Auth0: Authenticate & authorize
+    Auth0-->>Auth0MCP: Send access & refresh tokens
+    Auth0MCP->>Keychain: Store tokens securely
+    Auth0MCP-->>User: Confirmation of successful setup
+```
 
 ## Advanced Usage
 
@@ -132,15 +195,12 @@ npx @auth0/auth0-mcp-server run
 
 ### Operation Modes
 
-The server supports two modes:
-
-#### Production Mode (Default)
-- Uses the global Auth0 CLI in your PATH
-- Minimal logging
-
 #### Debug Mode
+
 - More detailed logging
-- Enable by setting environment variable: `export DEBUG=auth0-mcp:*`
+- Enable by setting environment variable: `export DEBUG=auth0-mcp`
+
+**_NOTE:_** Debug mode is particularly useful when troubleshooting connection or authentication issues.
 
 ### Configuration
 
@@ -148,62 +208,80 @@ The server stores configuration securely in your system's keychain. No configura
 
 #### Claude Desktop Configuration
 
-The Auth0 MCP Server provides utilities to configure Claude Desktop for seamless integration:
+Add this to your `claude_desktop_config.json`:
 
-```bash
-# Apply the local configuration to Claude Desktop
-npm run utils:local-setup
+```json
+{
+  "mcpServers": {
+    "auth0": {
+      "command": "npx",
+      "args": ["-y", "@auth0/auth0-mcp-server", "run"],
+      "capabilities": ["tools"],
+      "env": {
+        "DEBUG": "auth0-mcp"
+      }
+    }
+  }
+}
 ```
 
-The configuration utility:
-- Simplifies the Auth0 MCP server integration with Claude Desktop
-- Enables the `tools` capability for Claude's tool-calling features
-- Sets up debug environment variables for better troubleshooting
-- Automatically backs up your existing configuration
+#### Windsurf Desktop Configuration
 
-After running the configuration tool, you'll need to restart Claude Desktop for changes to take effect.
+The `~/.codeium/windsurf/mcp_config.json` file is a JSON file that contains a list of servers that Cascade can connect to.
+
+Add this to your `mcp_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "auth0": {
+      "command": "npx",
+      "args": ["-y", "@auth0/auth0-mcp-server", "run"],
+      "env": {
+        "DEBUG": "auth0-mcp"
+      }
+    }
+  }
+}
+```
 
 ## Troubleshooting
 
 ### Common Issues
 
 1. **Authentication Failures**
+
    - Ensure you have the correct permissions in your Auth0 tenant
    - Try re-initializing with `npx @auth0/auth0-mcp-server init`
 
 2. **Claude Can't Connect to the Server**
+
    - Restart Claude Desktop after installation
    - Check that the server is running with `ps aux | grep auth0-mcp`
 
 3. **API Errors**
-   - Enable debug mode with `export DEBUG=auth0-mcp:*`
+   - Enable debug mode with `export DEBUG=auth0-mcp`
    - Check your Auth0 token permissions and expiration
+
+**_NOTE:_** Most connection issues can be resolved by restarting both the server and Claude Desktop.
+
+#### MCP Inspector
+
+For advanced troubleshooting, use the MCP Inspector:
+
+```sh
+npx @modelcontextprotocol/inspector -e DEBUG='auth0-mcp' @auth0/auth0-mcp-server run
+```
 
 ### Logs
 
 For detailed logs, run the server in debug mode:
 
 ```bash
-DEBUG=auth0-mcp:* npx @auth0/auth0-mcp-server run
+DEBUG=auth0-mcp npx @auth0/auth0-mcp-server run
 ```
 
 ## Development
-
-### Utility Scripts
-
-The Auth0 MCP Server provides several utility scripts to help with development and configuration:
-
-```bash
-# Update Claude config for local development
-npm run utils:local-setup
-
-# Check access token & refresh token status
-npm run test:token-refresh
-
-# Get the path to your Claude configuration
-npm run utils:claude-path
-
-```
 
 ### Building from Source
 
@@ -222,6 +300,23 @@ npm run build
 npm start
 ```
 
+### Configuration Utilities
+
+The Auth0 MCP Server provides utilities to configure Claude Desktop for seamless integration:
+
+```bash
+# Update Claude config for local development
+npm run local-setup
+```
+
+The configuration utility:
+
+- Simplifies the Auth0 MCP server integration with Claude Desktop
+- Enables the `tools` capability for Claude's tool-calling features
+- Sets up debug environment variables for better troubleshooting
+- Automatically backs up your existing configuration
+
+**_NOTE:_** After running the configuration tool, you'll need to restart Claude Desktop for changes to take effect.
 
 ## Security
 
@@ -231,6 +326,8 @@ The Auth0 MCP Server prioritizes security:
 - No sensitive information is stored in plain text
 - Authentication uses OAuth 2.0 device authorization flow
 - Minimal permissions are requested for API access
+
+**_NOTE:_** Always review the permissions requested during the authentication process to ensure they align with your security requirements.
 
 ## Feedback and Contributing
 
@@ -248,6 +345,7 @@ To provide feedback or report a bug, please [raise an issue on our issue tracker
 Please do not report security vulnerabilities on the public GitHub issue tracker. The [Responsible Disclosure Program](https://auth0.com/whitehat) details the procedure for disclosing security issues.
 
 ## What is Auth0?
+
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://cdn.auth0.com/website/sdks/logos/auth0_dark_mode.png" width="150">
@@ -256,10 +354,8 @@ Please do not report security vulnerabilities on the public GitHub issue tracker
   </picture>
 </p>
 
-
 Auth0 is an easy to implement, adaptable authentication and authorization platform. To learn more checkout [Why Auth0?](https://auth0.com/why-auth0)
 
 ## License
 
 This project is licensed under the MIT license. See the [LICENSE](https://github.com/auth0/node-auth0/blob/master/LICENSE) file for more info.
-

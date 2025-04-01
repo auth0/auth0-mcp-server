@@ -1,24 +1,11 @@
-import debug from 'debug';
-
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 
-import { Auth0Config, loadConfig, validateConfig } from './config.js';
-import { HANDLERS, TOOLS } from './tools.js';
-
-// Set up debug logger
-const log = debug('auth0-mcp:server');
-
-// Make sure debug output goes to stderr
-debug.log = (...args) => {
-  const msg = args.join(' ');
-  process.stderr.write(msg + '\n');
-  return true;
-};
-
-// Enable additional debug for stdio transport
-process.env.DEBUG = (process.env.DEBUG || '') + ',auth0-mcp:*,mcp:transport:*';
+import { loadConfig, validateConfig } from './utils/config.js';
+import { HANDLERS, TOOLS } from './tools/index.js';
+import { log, logInfo } from './utils/logger.js';
+import { formatDomain } from './utils/http-utility.js';
 
 // Server implementation
 export async function startServer() {
@@ -51,7 +38,7 @@ export async function startServer() {
     });
 
     // Handle tool calls
-    server.setRequestHandler(CallToolRequestSchema, async request => {
+    server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const toolName = request.params.name;
       log(`Received tool call: ${toolName}`);
 
@@ -80,9 +67,15 @@ export async function startServer() {
           parameters: request.params.arguments || {},
         };
 
+        if (!config.domain) {
+          throw new Error('Error: AUTH0_DOMAIN environment variable is not set');
+        }
+
+        const domain = formatDomain(config.domain);
+
         // Execute handler
         log(`Executing handler for tool: ${toolName}`);
-        const result = await HANDLERS[toolName](requestWithToken, { domain: config.domain });
+        const result = await HANDLERS[toolName](requestWithToken, { domain: domain });
         log(`Handler execution completed for: ${toolName}`);
 
         return {
@@ -108,12 +101,6 @@ export async function startServer() {
     log('Creating stdio transport...');
     const transport = new StdioServerTransport();
 
-    // Additional transport diagnostics
-    log('Checking stdio streams:');
-    log(`- process.stdin.isTTY: ${process.stdin.isTTY}`);
-    log(`- process.stdout.isTTY: ${process.stdout.isTTY}`);
-    log(`- process.stderr.isTTY: ${process.stderr.isTTY}`);
-
     // Connection with timeout
     log('Connecting server to transport...');
     try {
@@ -121,6 +108,8 @@ export async function startServer() {
         server.connect(transport),
         new Promise((_, reject) => setTimeout(() => reject(new Error('Connection timeout')), 5000)),
       ]);
+
+      //logInfo('Server started and running');
       log('Server connected and running');
       return server;
     } catch (connectError) {
