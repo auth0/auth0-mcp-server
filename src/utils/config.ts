@@ -8,7 +8,7 @@ import {
   getValidAccessToken,
   isTokenExpired,
   refreshAccessToken,
-} from './auth/device-auth-flow.js';
+} from '../auth/device-auth-flow.js';
 import { log } from './logger.js';
 
 // Promisify exec
@@ -32,7 +32,7 @@ log(`Debug mode: ${isDebugMode}`);
 export interface Auth0Config {
   token: string;
   domain: string;
-  tenantName: string;
+  tenantName?: string;
 }
 
 export async function loadConfig(): Promise<Auth0Config | null> {

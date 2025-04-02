@@ -2,6 +2,7 @@
 import init from './init.js';
 import run from './run.js';
 import help from './help.js';
+import { logError } from './utils/logger.js';
 
 // Enable all debug logs for this package by default
 //process.env.DEBUG = (process.env.DEBUG || '') + ',auth0-mcp:*';
@@ -11,12 +12,12 @@ process.title = 'auth0-mcp-server';
 
 // Handle process events
 process.on('uncaughtException', (error) => {
-  console.error('Uncaught exception:', error);
+  logError('Uncaught exception:', error);
   process.exit(1);
 });
 
 process.on('unhandledRejection', (error) => {
-  console.error('Unhandled rejection:', error);
+  logError('Unhandled rejection:', error);
   process.exit(1);
 });
 
@@ -34,8 +35,8 @@ if (command === 'run') {
 } else if (command === 'help') {
   await help();
 } else {
-  console.error(`Usage: auth0-mcp <command>\nValid commands: 'init', 'run', or 'help'`);
-  console.error(`Run 'auth0-mcp help' for more information.`);
+  logError(`Usage: auth0-mcp <command>\nValid commands: 'init', 'run', or 'help'`);
+  logError(`Run 'auth0-mcp help' for more information.`);
   process.exit(1);
 }
 

@@ -10,3 +10,4 @@ dist/
 /tmp
 .npmrc
 coverage/
+.vscode/

@@ -1,20 +1,15 @@
-import fetch from 'node-fetch';
-
+import { ResourceServerCreate, ResourceServerUpdate } from 'auth0';
 import {
   Auth0PaginatedResponse,
-  Auth0ResourceServer,
   HandlerConfig,
   HandlerRequest,
   HandlerResponse,
   Tool,
 } from '../utils/types.js';
 import { log } from '../utils/logger.js';
-import {
-  createErrorResponse,
-  createSuccessResponse,
-  formatDomain,
-  handleNetworkError,
-} from '../utils/http-utility.js';
+import { createErrorResponse, createSuccessResponse } from '../utils/http-utility.js';
+import { Auth0Config } from '../utils/config.js';
+import { getManagementClient } from '../utils/management-client.js';
 
 // Define all available resource server tools
 export const RESOURCE_SERVER_TOOLS: Tool[] = [
@@ -47,35 +42,69 @@ export const RESOURCE_SERVER_TOOLS: Tool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        name: { type: 'string', description: 'Name of the resource server' },
+        name: {
+          type: 'string',
+          description: 'Friendly name for the resource server. Required.',
+        },
         identifier: {
           type: 'string',
-          description: 'Unique identifier for the API (usually a URL)',
+          description: 'Unique identifier for the API (e.g., https://api.example.com). Required.',
         },
         scopes: {
           type: 'array',
+          description: 'List of permissions (scopes) that this API uses.',
           items: {
             type: 'object',
             properties: {
-              value: { type: 'string', description: 'The scope value (e.g., read:users)' },
-              description: { type: 'string', description: 'Description of what the scope allows' },
+              value: { type: 'string' },
+              description: { type: 'string' },
             },
-            required: ['value'],
           },
-          description: 'Array of scopes that define the permissions for the API',
         },
         signing_alg: {
           type: 'string',
-          description: 'Algorithm used to sign tokens',
-          enum: ['HS256', 'RS256'],
+          description: 'Algorithm used to sign JWTs. Can be HS256 or RS256.',
+          enum: ['HS256', 'RS256', 'PS256'],
         },
-        token_lifetime: {
-          type: 'number',
-          description: 'Token lifetime in seconds',
+        signing_secret: {
+          type: 'string',
+          description: 'Secret used to sign tokens when using symmetric algorithms (HS256).',
         },
         allow_offline_access: {
           type: 'boolean',
-          description: 'Whether to allow offline access (refresh tokens)',
+          description: 'Whether refresh tokens can be issued for this API.',
+        },
+        token_lifetime: {
+          type: 'number',
+          description: 'Expiration value (in seconds) for access tokens.',
+        },
+        token_dialect: {
+          type: 'string',
+          description: 'Dialect of issued access token.',
+        },
+        skip_consent_for_verifiable_first_party_clients: {
+          type: 'boolean',
+          description: 'Whether to skip user consent for applications flagged as first party.',
+        },
+        enforce_policies: {
+          type: 'boolean',
+          description: 'Whether to enforce authorization policies.',
+        },
+        token_encryption: {
+          type: 'object',
+          description: 'Token encryption configuration.',
+        },
+        consent_policy: {
+          type: 'string',
+          description: 'Policy for obtaining consent.',
+        },
+        authorization_details: {
+          type: 'array',
+          description: 'Authorization details for the resource server.',
+        },
+        proof_of_possession: {
+          type: 'object',
+          description: 'Proof of possession configuration.',
         },
       },
       required: ['name', 'identifier'],
@@ -87,39 +116,70 @@ export const RESOURCE_SERVER_TOOLS: Tool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        id: { type: 'string', description: 'ID of the resource server to update' },
-        name: { type: 'string', description: 'New name of the resource server' },
+        id: {
+          type: 'string',
+          description: 'ID of the resource server to update. Required.',
+        },
+        name: {
+          type: 'string',
+          description: 'New friendly name for the resource server.',
+        },
         scopes: {
           type: 'array',
+          description: 'List of permissions (scopes) that this API uses.',
           items: {
             type: 'object',
             properties: {
-              value: { type: 'string', description: 'The scope value (e.g., read:users)' },
-              description: { type: 'string', description: 'Description of what the scope allows' },
+              value: { type: 'string' },
+              description: { type: 'string' },
             },
-            required: ['value'],
           },
-          description: 'Array of scopes that define the permissions for the API',
         },
-        token_lifetime: {
-          type: 'number',
-          description: 'Token lifetime in seconds',
+        signing_alg: {
+          type: 'string',
+          description: 'Algorithm used to sign JWTs. Can be HS256 or RS256.',
+          enum: ['HS256', 'RS256', 'PS256'],
+        },
+        signing_secret: {
+          type: 'string',
+          description: 'Secret used to sign tokens when using symmetric algorithms (HS256).',
         },
         allow_offline_access: {
           type: 'boolean',
-          description: 'Whether to allow offline access (refresh tokens)',
+          description: 'Whether refresh tokens can be issued for this API.',
         },
-      },
-      required: ['id'],
-    },
-  },
-  {
-    name: 'auth0_delete_resource_server',
-    description: 'Delete an Auth0 resource server',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        id: { type: 'string', description: 'ID of the resource server to delete' },
+        token_lifetime: {
+          type: 'number',
+          description: 'Expiration value (in seconds) for access tokens.',
+        },
+        token_dialect: {
+          type: 'string',
+          description: 'Dialect of issued access token.',
+        },
+        skip_consent_for_verifiable_first_party_clients: {
+          type: 'boolean',
+          description: 'Whether to skip user consent for applications flagged as first party.',
+        },
+        enforce_policies: {
+          type: 'boolean',
+          description: 'Whether to enforce authorization policies.',
+        },
+        token_encryption: {
+          type: 'object',
+          description: 'Token encryption configuration.',
+        },
+        consent_policy: {
+          type: 'string',
+          description: 'Policy for obtaining consent.',
+        },
+        authorization_details: {
+          type: 'array',
+          description: 'Authorization details for the resource server.',
+        },
+        proof_of_possession: {
+          type: 'object',
+          description: 'Proof of possession configuration.',
+        },
       },
       required: ['id'],
     },
@@ -145,80 +205,51 @@ export const RESOURCE_SERVER_HANDLERS: Record<
         );
       } else {
         log('Warning: Token is empty or undefined');
+        return createErrorResponse('Error: Missing authentication token');
+      }
+
+      // Check if domain is configured
+      if (!config.domain) {
+        log('Error: Auth0 domain is not configured');
+        return createErrorResponse('Error: Auth0 domain is not configured');
       }
 
       // Build query parameters
-      const params = new URLSearchParams();
+      const options: Record<string, any> = {};
       if (request.parameters.page !== undefined) {
-        params.append('page', request.parameters.page.toString());
+        options.page = request.parameters.page;
       }
       if (request.parameters.per_page !== undefined) {
-        params.append('per_page', request.parameters.per_page.toString());
+        options.per_page = request.parameters.per_page;
       } else {
         // Default to 5 items per page if not specified
-        params.append('per_page', '5');
+        options.per_page = 5;
       }
       if (request.parameters.include_totals !== undefined) {
-        params.append('include_totals', request.parameters.include_totals.toString());
+        options.include_totals = request.parameters.include_totals;
       } else {
         // Default to include totals
-        params.append('include_totals', 'true');
+        options.include_totals = true;
       }
 
-      // Full URL for debugging
-      const apiUrl = `https://${config.domain}/api/v2/resource-servers?${params.toString()}`;
-      log(`Making API request to ${apiUrl}`);
-
       try {
-        // Make API request to Auth0 Management API with timeout
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 15000);
+        const managementClientConfig: Auth0Config = {
+          domain: config.domain,
+          token: request.token,
+        };
+        const managementClient = await getManagementClient(managementClientConfig);
 
-        const startTime = Date.now();
+        log(`Fetching resource servers with options: ${JSON.stringify(options)}`);
 
-        const response = await fetch(apiUrl, {
-          headers: {
-            Authorization: `Bearer ${request.token}`,
-            'Content-Type': 'application/json',
-            Accept: 'application/json',
-          },
-          signal: controller.signal,
-        });
+        // Use the Auth0 SDK to get all resource servers
+        const responseData = await managementClient.resourceServers.getAll(options);
 
-        const elapsed = Date.now() - startTime;
-
-        clearTimeout(timeoutId);
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          log(`API request failed with status ${response.status}: ${errorText}`);
-
-          let errorMessage = `Failed to list resource servers: ${response.status} ${response.statusText}`;
-
-          // Add more context based on common error codes
-          if (response.status === 401) {
-            errorMessage +=
-              '\nError: Unauthorized. Your token might be expired or invalid. Try running "npx @auth0/auth0-mcp-server init" to refresh your token.';
-          } else if (response.status === 403) {
-            errorMessage +=
-              '\nError: Forbidden. Your token might not have the required scopes (read:resource_servers). Try running "npx @auth0/auth0-mcp-server init" to see the proper permissions.';
-          } else if (response.status === 429) {
-            errorMessage +=
-              '\nError: Rate limited. You have made too many requests to the Auth0 API. Please try again later.';
-          } else if (response.status >= 500) {
-            errorMessage +=
-              '\nError: Auth0 server error. The Auth0 API might be experiencing issues. Please try again later.';
-          }
-
-          return createErrorResponse(errorMessage);
-        }
-
-        // Parse the response
-        const parseStartTime = Date.now();
-        const responseData = (await response.json()) as Auth0PaginatedResponse;
-        const parseElapsed = Date.now() - parseStartTime;
-
-        if (!responseData.resource_servers || !Array.isArray(responseData.resource_servers)) {
+        if (
+          !responseData ||
+          (typeof responseData === 'object' &&
+            !('resource_servers' in responseData) &&
+            !Array.isArray(responseData))
+        ) {
           log('Invalid response format - missing resource_servers array');
           log('Response data:', responseData);
 
@@ -228,22 +259,31 @@ export const RESOURCE_SERVER_HANDLERS: Record<
         }
 
         // Format resource servers list
-        const resourceServers = responseData.resource_servers.map((server) => ({
-          id: server.id,
-          name: server.name,
-          identifier: server.identifier,
-          scopes: server.scopes?.length || 0,
-        }));
+        const resourceServers = Array.isArray(responseData)
+          ? responseData.map(formatResourceServer)
+          : ((responseData as Auth0PaginatedResponse)?.resource_servers || []).map(
+              formatResourceServer
+            );
 
         // Get pagination info
-        const total = responseData.total || resourceServers.length;
-        const page = responseData.page !== undefined ? responseData.page : 0;
-        const perPage = responseData.per_page || resourceServers.length;
+        const total = Array.isArray(responseData)
+          ? resourceServers.length
+          : (responseData as Auth0PaginatedResponse)?.total || resourceServers.length;
+
+        const page = Array.isArray(responseData)
+          ? 0
+          : (responseData as Auth0PaginatedResponse)?.page !== undefined
+            ? (responseData as Auth0PaginatedResponse).page
+            : 0;
+
+        const perPage = Array.isArray(responseData)
+          ? resourceServers.length
+          : (responseData as Auth0PaginatedResponse)?.per_page || resourceServers.length;
+
         const totalPages = Math.ceil(total / perPage);
-        const nextPage = page + 1 < totalPages ? page + 1 : 0;
 
         log(
-          `Successfully retrieved ${resourceServers.length} resource servers (page ${page + 1} of ${totalPages}, total: ${total})`
+          `Successfully retrieved ${resourceServers.length} resource servers (page ${(page || 0) + 1} of ${totalPages}, total: ${total})`
         );
 
         // Create a result object with all the necessary information
@@ -252,18 +292,34 @@ export const RESOURCE_SERVER_HANDLERS: Record<
           count: resourceServers.length,
           total: total,
           pagination: {
-            page: page,
+            page: page || 0,
             per_page: perPage,
             total_pages: totalPages,
-            has_next: page + 1 < totalPages,
+            has_next: (page || 0) + 1 < totalPages,
           },
         };
 
         return createSuccessResponse(result);
-      } catch (fetchError: any) {
-        // Handle network-specific errors
+      } catch (sdkError: any) {
+        // Handle SDK errors
+        log('Auth0 SDK error:', sdkError);
 
-        const errorMessage = handleNetworkError(fetchError);
+        let errorMessage = `Failed to list resource servers: ${sdkError.message || 'Unknown error'}`;
+
+        // Add context based on common error scenarios
+        if (sdkError.statusCode === 401) {
+          errorMessage +=
+            '\nError: Unauthorized. Your token might be expired or invalid. Try running "npx @auth0/auth0-mcp-server init" to refresh your token.';
+        } else if (sdkError.statusCode === 403) {
+          errorMessage +=
+            '\nError: Forbidden. Your token might not have the required scopes (read:resource_servers). Try running "npx @auth0/auth0-mcp-server init" to check the proper permissions.';
+        } else if (sdkError.statusCode === 429) {
+          errorMessage +=
+            '\nError: Rate limited. You have made too many requests to the Auth0 API. Please try again later.';
+        } else if (sdkError.statusCode >= 500) {
+          errorMessage +=
+            '\nError: Auth0 server error. The Auth0 API might be experiencing issues. Please try again later.';
+        }
 
         return createErrorResponse(errorMessage);
       }
@@ -286,52 +342,48 @@ export const RESOURCE_SERVER_HANDLERS: Record<
         return createErrorResponse('Error: id is required');
       }
 
-      // API URL for getting a resource server
-      const apiUrl = `https://${config.domain}/api/v2/resource-servers/${id}`;
-      log(`Making API request to ${apiUrl}`);
+      // Check for token
+      if (!request.token) {
+        log('Warning: Token is empty or undefined');
+        return createErrorResponse('Error: Missing authentication token');
+      }
+
+      // Check if domain is configured
+      if (!config.domain) {
+        log('Error: Auth0 domain is not configured');
+        return createErrorResponse('Error: Auth0 domain is not configured');
+      }
 
       try {
-        // Make API request to Auth0 Management API
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 15000);
+        const managementClientConfig: Auth0Config = {
+          domain: config.domain,
+          token: request.token,
+        };
+        const managementClient = await getManagementClient(managementClientConfig);
 
-        const response = await fetch(apiUrl, {
-          headers: {
-            Authorization: `Bearer ${request.token}`,
-            'Content-Type': 'application/json',
-          },
-          signal: controller.signal,
-        });
+        log(`Fetching resource server with ID: ${id}`);
 
-        clearTimeout(timeoutId);
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          log(`API request failed with status ${response.status}: ${errorText}`);
-
-          let errorMessage = `Failed to get resource server: ${response.status} ${response.statusText}`;
-
-          if (response.status === 404) {
-            errorMessage = `Resource server with id '${id}' not found.`;
-          } else if (response.status === 401) {
-            errorMessage +=
-              '\nError: Unauthorized. Your token might be expired or invalid or missing read:resource_servers scope.';
-          }
-
-          return createErrorResponse(errorMessage);
-        }
-
-        // Parse the response
-        const resourceServer = (await response.json()) as Auth0ResourceServer;
+        // Use the Auth0 SDK to get a specific resource server
+        const resourceServer = await managementClient.resourceServers.get({ id });
 
         log(
-          `Successfully retrieved resource server: ${resourceServer.name} (${resourceServer.id})`
+          `Successfully retrieved resource server: ${(resourceServer as any).name || 'Unknown'} (${(resourceServer as any).id || id})`
         );
 
         return createSuccessResponse(resourceServer);
-      } catch (fetchError: any) {
-        // Handle network-specific errors
-        const errorMessage = handleNetworkError(fetchError);
+      } catch (sdkError: any) {
+        // Handle SDK errors
+        log('Auth0 SDK error:', sdkError);
+
+        let errorMessage = `Failed to get resource server: ${sdkError.message || 'Unknown error'}`;
+
+        // Add context based on common error codes
+        if (sdkError.statusCode === 404) {
+          errorMessage = `Resource server with id '${id}' not found.`;
+        } else if (sdkError.statusCode === 401) {
+          errorMessage +=
+            '\nError: Unauthorized. Your token might be expired or invalid or missing read:resource_servers scope.';
+        }
 
         return createErrorResponse(errorMessage);
       }
@@ -349,81 +401,107 @@ export const RESOURCE_SERVER_HANDLERS: Record<
     config: HandlerConfig
   ): Promise<HandlerResponse> => {
     try {
-      const { name, identifier, scopes, signing_alg, token_lifetime, allow_offline_access } =
-        request.parameters;
+      // Get request parameters
+      const {
+        name,
+        identifier,
+        scopes,
+        signing_alg,
+        signing_secret,
+        token_lifetime,
+        allow_offline_access,
+        token_dialect,
+        skip_consent_for_verifiable_first_party_clients,
+        enforce_policies,
+        client,
+        token_encryption,
+        consent_policy,
+        authorization_details,
+        proof_of_possession,
+      } = request.parameters;
+
+      // Validate required fields
+      if (!identifier) {
+        return createErrorResponse('Error: identifier is required');
+      }
 
       if (!name) {
         return createErrorResponse('Error: name is required');
       }
 
-      if (!identifier) {
-        return createErrorResponse('Error: identifier is required');
+      // Check for token
+      if (!request.token) {
+        log('Warning: Token is empty or undefined');
+        return createErrorResponse('Error: Missing authentication token');
       }
 
-      // API URL for creating a resource server
-      const apiUrl = `https://${config.domain}/api/v2/resource-servers`;
-      log(`Making API request to ${apiUrl}`);
-
-      // Prepare request body
-      const requestBody: Record<string, any> = {
-        name,
-        identifier,
-      };
-
-      // Add optional fields if provided
-      if (scopes !== undefined) requestBody.scopes = scopes;
-      if (signing_alg !== undefined) requestBody.signing_alg = signing_alg;
-      if (token_lifetime !== undefined) requestBody.token_lifetime = token_lifetime;
-      if (allow_offline_access !== undefined)
-        requestBody.allow_offline_access = allow_offline_access;
+      // Check if domain is configured
+      if (!config.domain) {
+        log('Error: Auth0 domain is not configured');
+        return createErrorResponse('Error: Auth0 domain is not configured');
+      }
 
       try {
-        // Make API request to Auth0 Management API
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 15000);
+        const managementClientConfig: Auth0Config = {
+          domain: config.domain,
+          token: request.token,
+        };
+        const managementClient = await getManagementClient(managementClientConfig);
 
-        const response = await fetch(apiUrl, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${request.token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(requestBody),
-          signal: controller.signal,
-        });
+        log(`Creating resource server with identifier: ${identifier}`);
 
-        clearTimeout(timeoutId);
+        // Prepare the resource server data
+        const resourceServerData: ResourceServerCreate = {
+          name,
+          identifier,
+        };
 
-        if (!response.ok) {
-          const errorText = await response.text();
-          log(`API request failed with status ${response.status}: ${errorText}`);
+        // Add optional fields if provided
+        if (scopes !== undefined) resourceServerData.scopes = scopes;
+        if (signing_alg !== undefined) resourceServerData.signing_alg = signing_alg;
+        if (signing_secret !== undefined) resourceServerData.signing_secret = signing_secret;
+        if (token_lifetime !== undefined) resourceServerData.token_lifetime = token_lifetime;
+        if (allow_offline_access !== undefined)
+          resourceServerData.allow_offline_access = allow_offline_access;
+        if (token_dialect !== undefined) resourceServerData.token_dialect = token_dialect;
+        if (skip_consent_for_verifiable_first_party_clients !== undefined)
+          resourceServerData.skip_consent_for_verifiable_first_party_clients =
+            skip_consent_for_verifiable_first_party_clients;
+        if (enforce_policies !== undefined) resourceServerData.enforce_policies = enforce_policies;
+        if (client !== undefined) resourceServerData.client = client;
+        if (token_encryption !== undefined) resourceServerData.token_encryption = token_encryption;
+        if (consent_policy !== undefined) resourceServerData.consent_policy = consent_policy;
+        if (authorization_details !== undefined)
+          resourceServerData.authorization_details = authorization_details;
+        if (proof_of_possession !== undefined)
+          resourceServerData.proof_of_possession = proof_of_possession;
 
-          let errorMessage = `Failed to create resource server: ${response.status} ${response.statusText}`;
-
-          if (response.status === 401) {
-            errorMessage +=
-              '\nError: Unauthorized. Your token might be expired or invalid or missing create:resource_servers scope.';
-          } else if (response.status === 422) {
-            errorMessage +=
-              '\nError: Validation errors in your request. Check that your parameters are valid.';
-          } else if (response.status === 409) {
-            errorMessage += '\nError: A resource server with this identifier already exists.';
-          }
-
-          return createErrorResponse(errorMessage);
-        }
-
-        // Parse the response
-        const newResourceServer = (await response.json()) as Auth0ResourceServer;
+        // Use the Auth0 SDK to create a resource server
+        const resourceServer = await managementClient.resourceServers.create(resourceServerData);
 
         log(
-          `Successfully created resource server: ${newResourceServer.name} (${newResourceServer.id})`
+          `Successfully created resource server: ${(resourceServer as any).name || 'Unknown'} (${(resourceServer as any).id || 'Unknown ID'})`
         );
 
-        return createSuccessResponse(newResourceServer);
-      } catch (fetchError: any) {
-        // Handle network-specific errors
-        const errorMessage = handleNetworkError(fetchError);
+        return createSuccessResponse(resourceServer);
+      } catch (sdkError: any) {
+        // Handle SDK errors
+        log('Auth0 SDK error:', sdkError);
+
+        let errorMessage = `Failed to create resource server: ${sdkError.message || 'Unknown error'}`;
+
+        // Add context based on common error codes
+        if (sdkError.statusCode === 409) {
+          errorMessage = `Resource server with identifier '${identifier}' already exists.`;
+        } else if (sdkError.statusCode === 401) {
+          errorMessage +=
+            '\nError: Unauthorized. Your token might be expired or invalid or missing create:resource_servers scope.';
+        } else if (sdkError.statusCode === 403) {
+          errorMessage +=
+            '\nError: Forbidden. You do not have permission to create resource servers.';
+        } else if (sdkError.statusCode === 429) {
+          errorMessage += '\nError: Too many requests. Rate limit exceeded.';
+        }
 
         return createErrorResponse(errorMessage);
       }
@@ -447,137 +525,89 @@ export const RESOURCE_SERVER_HANDLERS: Record<
       }
 
       // Extract other parameters to update
-      const { name, scopes, token_lifetime, allow_offline_access } = request.parameters;
+      const {
+        name,
+        scopes,
+        signing_alg,
+        signing_secret,
+        token_lifetime,
+        allow_offline_access,
+        token_dialect,
+        skip_consent_for_verifiable_first_party_clients,
+        enforce_policies,
+        client,
+        token_encryption,
+        consent_policy,
+        authorization_details,
+        proof_of_possession,
+      } = request.parameters;
 
-      // Prepare update body, only including fields that are present
-      const updateBody: Record<string, any> = {};
-      if (name !== undefined) updateBody.name = name;
-      if (scopes !== undefined) updateBody.scopes = scopes;
-      if (token_lifetime !== undefined) updateBody.token_lifetime = token_lifetime;
-      if (allow_offline_access !== undefined)
-        updateBody.allow_offline_access = allow_offline_access;
+      // Check for token
+      if (!request.token) {
+        log('Warning: Token is empty or undefined');
+        return createErrorResponse('Error: Missing authentication token');
+      }
 
-      // API URL for updating a resource server
-      const apiUrl = `https://${config.domain}/api/v2/resource-servers/${id}`;
-      log(`Making API request to ${apiUrl}`);
+      // Check if domain is configured
+      if (!config.domain) {
+        log('Error: Auth0 domain is not configured');
+        return createErrorResponse('Error: Auth0 domain is not configured');
+      }
 
       try {
-        // Make API request to Auth0 Management API
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 15000);
+        const managementClientConfig: Auth0Config = {
+          domain: config.domain,
+          token: request.token,
+        };
+        const managementClient = await getManagementClient(managementClientConfig);
 
-        const response = await fetch(apiUrl, {
-          method: 'PATCH',
-          headers: {
-            Authorization: `Bearer ${request.token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(updateBody),
-          signal: controller.signal,
-        });
+        log(`Updating resource server with ID: ${id}`);
 
-        clearTimeout(timeoutId);
+        // Prepare update body, only including fields that are present
+        const updateData: Partial<ResourceServerUpdate> = {};
+        if (name !== undefined) updateData.name = name;
+        if (scopes !== undefined) updateData.scopes = scopes;
+        if (signing_alg !== undefined) updateData.signing_alg = signing_alg;
+        if (signing_secret !== undefined) updateData.signing_secret = signing_secret;
+        if (token_lifetime !== undefined) updateData.token_lifetime = token_lifetime;
+        if (allow_offline_access !== undefined)
+          updateData.allow_offline_access = allow_offline_access;
+        if (token_dialect !== undefined) updateData.token_dialect = token_dialect;
+        if (skip_consent_for_verifiable_first_party_clients !== undefined)
+          updateData.skip_consent_for_verifiable_first_party_clients =
+            skip_consent_for_verifiable_first_party_clients;
+        if (enforce_policies !== undefined) updateData.enforce_policies = enforce_policies;
+        if (client !== undefined) updateData.client = client;
+        if (token_encryption !== undefined) updateData.token_encryption = token_encryption;
+        if (consent_policy !== undefined) updateData.consent_policy = consent_policy;
+        if (authorization_details !== undefined)
+          updateData.authorization_details = authorization_details;
+        if (proof_of_possession !== undefined) updateData.proof_of_possession = proof_of_possession;
 
-        if (!response.ok) {
-          const errorText = await response.text();
-          log(`API request failed with status ${response.status}: ${errorText}`);
-
-          let errorMessage = `Failed to update resource server: ${response.status} ${response.statusText}`;
-
-          if (response.status === 404) {
-            errorMessage = `Resource server with id '${id}' not found.`;
-          } else if (response.status === 401) {
-            errorMessage +=
-              '\nError: Unauthorized. Your token might be expired or invalid or missing update:resource_servers scope.';
-          } else if (response.status === 422) {
-            errorMessage +=
-              '\nError: Validation errors in your request. Check that your parameters are valid.';
-          }
-
-          return createErrorResponse(errorMessage);
-        }
-
-        // Parse the response
-        const updatedResourceServer = (await response.json()) as Auth0ResourceServer;
+        // Use the Auth0 SDK to update the resource server
+        const resourceServer = await managementClient.resourceServers.update({ id }, updateData);
 
         log(
-          `Successfully updated resource server: ${updatedResourceServer.name} (${updatedResourceServer.id})`
+          `Successfully updated resource server: ${(resourceServer as any).name || 'Unknown'} (${(resourceServer as any).id || id})`
         );
 
-        return createSuccessResponse(updatedResourceServer);
-      } catch (fetchError: any) {
-        // Handle network-specific errors
-        const errorMessage = handleNetworkError(fetchError);
+        return createSuccessResponse(resourceServer);
+      } catch (sdkError: any) {
+        // Handle SDK errors
+        log('Auth0 SDK error:', sdkError);
 
-        return createErrorResponse(errorMessage);
-      }
-    } catch (error: any) {
-      // Handle any other errors
-      log('Error processing request:', error);
+        let errorMessage = `Failed to update resource server: ${sdkError.message || 'Unknown error'}`;
 
-      return createErrorResponse(
-        `Error: ${error instanceof Error ? error.message : String(error)}`
-      );
-    }
-  },
-  auth0_delete_resource_server: async (
-    request: HandlerRequest,
-    config: HandlerConfig
-  ): Promise<HandlerResponse> => {
-    try {
-      const id = request.parameters.id;
-      if (!id) {
-        return createErrorResponse('Error: id is required');
-      }
-
-      // API URL for deleting a resource server
-      const apiUrl = `https://${config.domain}/api/v2/resource-servers/${id}`;
-      log(`Making API request to ${apiUrl}`);
-
-      try {
-        // Make API request to Auth0 Management API
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 15000);
-
-        const response = await fetch(apiUrl, {
-          method: 'DELETE',
-          headers: {
-            Authorization: `Bearer ${request.token}`,
-            'Content-Type': 'application/json',
-          },
-          signal: controller.signal,
-        });
-
-        clearTimeout(timeoutId);
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          log(`API request failed with status ${response.status}: ${errorText}`);
-
-          let errorMessage = `Failed to delete resource server: ${response.status} ${response.statusText}`;
-
-          if (response.status === 404) {
-            errorMessage = `Resource server with id '${id}' not found.`;
-          } else if (response.status === 401) {
-            errorMessage +=
-              '\nError: Unauthorized. Your token might be expired or invalid or missing delete:resource_servers scope.';
-          } else if (response.status === 403) {
-            errorMessage +=
-              '\nError: Forbidden. You cannot delete the Auth0 Management API resource server.';
-          }
-
-          return createErrorResponse(errorMessage);
+        // Add context based on common error codes
+        if (sdkError.statusCode === 404) {
+          errorMessage = `Resource server with id '${id}' not found.`;
+        } else if (sdkError.statusCode === 401) {
+          errorMessage +=
+            '\nError: Unauthorized. Your token might be expired or invalid or missing update:resource_servers scope.';
+        } else if (sdkError.statusCode === 422) {
+          errorMessage +=
+            '\nError: Validation errors in your request. Check that your parameters are valid.';
         }
-
-        log(`Successfully deleted resource server with id: ${id}`);
-
-        return createSuccessResponse({
-          message: `Resource server with id '${id}' has been deleted.`,
-          id: id,
-        });
-      } catch (fetchError: any) {
-        // Handle network-specific errors
-        const errorMessage = handleNetworkError(fetchError);
 
         return createErrorResponse(errorMessage);
       }
@@ -591,3 +621,13 @@ export const RESOURCE_SERVER_HANDLERS: Record<
     }
   },
 };
+
+// Helper function to format a resource server
+function formatResourceServer(server: any) {
+  return {
+    id: server.id,
+    name: server.name,
+    identifier: server.identifier,
+    scopes: server.scopes?.length || 0,
+  };
+}

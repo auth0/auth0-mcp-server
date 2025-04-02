@@ -1,15 +1,10 @@
-import fetch from 'node-fetch';
-
 import { HandlerConfig, HandlerRequest, HandlerResponse, Tool } from '../utils/types.js';
 import { log } from '../utils/logger.js';
-import {
-  createErrorResponse,
-  createSuccessResponse,
-  formatDomain,
-  handleNetworkError,
-} from '../utils/http-utility.js';
+import { createErrorResponse, createSuccessResponse } from '../utils/http-utility.js';
+import { Auth0Config } from '../utils/config.js';
+import { getManagementClient } from '../utils/management-client.js';
+import { PatchActionRequest, PostActionRequest } from 'auth0/dist/cjs/management/index.js';
 
-// Define Auth0 Action interfaces
 interface Auth0Action {
   id: string;
   name: string;
@@ -81,28 +76,45 @@ export const ACTION_TOOLS: Tool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        name: { type: 'string', description: 'Name of the action' },
-        trigger_id: { type: 'string', description: 'ID of the trigger (e.g., post-login)' },
-        code: { type: 'string', description: 'JavaScript code for the action' },
-        runtime: {
+        name: {
           type: 'string',
-          description: 'Runtime for the action',
-          enum: ['node12', 'node16', 'node18'],
+          description: 'Name of the action. Required.',
         },
-        dependencies: {
+        supported_triggers: {
           type: 'array',
+          description: 'The list of triggers that this action supports. Required.',
           items: {
             type: 'object',
             properties: {
-              name: { type: 'string', description: 'Name of the dependency' },
-              version: { type: 'string', description: 'Version of the dependency' },
+              id: { type: 'string', description: 'ID of the trigger' },
+              version: { type: 'string', description: 'Version of the trigger (e.g., "v2")' },
+            },
+            required: ['id', 'version'],
+          },
+        },
+        code: {
+          type: 'string',
+          description: 'The source code of the action. Required.',
+        },
+        runtime: {
+          type: 'string',
+          description: 'The Node runtime. For example: "node18" or "node16". Defaults to "node18".',
+        },
+        dependencies: {
+          type: 'array',
+          description: 'List of third party npm modules that this action depends on.',
+          items: {
+            type: 'object',
+            properties: {
+              name: { type: 'string', description: 'Name of the NPM package' },
+              version: { type: 'string', description: 'Version of the NPM package' },
             },
             required: ['name', 'version'],
           },
-          description: 'NPM dependencies for the action',
         },
         secrets: {
           type: 'array',
+          description: 'List of secrets that are included in the action.',
           items: {
             type: 'object',
             properties: {
@@ -111,10 +123,9 @@ export const ACTION_TOOLS: Tool[] = [
             },
             required: ['name', 'value'],
           },
-          description: 'Secrets for the action',
         },
       },
-      required: ['name', 'trigger_id', 'code'],
+      required: ['name', 'supported_triggers'],
     },
   },
   {
@@ -123,44 +134,70 @@ export const ACTION_TOOLS: Tool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        id: { type: 'string', description: 'ID of the action to update' },
-        name: { type: 'string', description: 'New name of the action' },
-        code: { type: 'string', description: 'New JavaScript code for the action' },
+        id: {
+          type: 'string',
+          description: 'ID of the action to update. Required.',
+        },
+        name: {
+          type: 'string',
+          description: 'New name of the action. Optional.',
+        },
+        supported_triggers: {
+          type: 'array',
+          description: 'The list of triggers that this action supports. Optional.',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string', description: 'ID of the trigger' },
+              version: { type: 'string', description: 'Version of the trigger (e.g., "v2")' },
+            },
+            required: ['id', 'version'],
+          },
+        },
+        code: {
+          type: 'string',
+          description: 'New JavaScript code for the action. Optional.',
+        },
+        runtime: {
+          type: 'string',
+          description: 'The Node runtime. For example: "node18" or "node16".',
+        },
         dependencies: {
           type: 'array',
           items: {
             type: 'object',
             properties: {
-              name: { type: 'string', description: 'Name of the dependency' },
-              version: { type: 'string', description: 'Version of the dependency' },
+              name: {
+                type: 'string',
+                description: 'Name of the NPM dependency',
+              },
+              version: {
+                type: 'string',
+                description: 'Version of the NPM dependency',
+              },
             },
             required: ['name', 'version'],
           },
-          description: 'New NPM dependencies for the action',
+          description: 'Updated NPM dependencies for the action. Optional.',
         },
         secrets: {
           type: 'array',
           items: {
             type: 'object',
             properties: {
-              name: { type: 'string', description: 'Name of the secret' },
-              value: { type: 'string', description: 'Value of the secret' },
+              name: {
+                type: 'string',
+                description: 'Name of the secret variable',
+              },
+              value: {
+                type: 'string',
+                description: 'Value of the secret. If omitted, the existing value is retained.',
+              },
             },
             required: ['name'],
           },
-          description: 'Secrets to update for the action',
+          description: 'Secrets to update for the action. Optional.',
         },
-      },
-      required: ['id'],
-    },
-  },
-  {
-    name: 'auth0_delete_action',
-    description: 'Delete an Auth0 action',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        id: { type: 'string', description: 'ID of the action to delete' },
       },
       required: ['id'],
     },
@@ -188,111 +225,74 @@ export const ACTION_HANDLERS: Record<
     config: HandlerConfig
   ): Promise<HandlerResponse> => {
     try {
-      // Build query parameters - Fix parameter names to match Auth0 API requirements
-      const params = new URLSearchParams();
+      // Check for token
+      if (!request.token) {
+        log('Warning: Token is empty or undefined');
+        return createErrorResponse('Error: Missing authentication token');
+      }
 
-      // Check Auth0 API docs for correct parameter names
+      // Check if domain is configured
+      if (!config.domain) {
+        log('Error: Auth0 domain is not configured');
+        return createErrorResponse('Error: Auth0 domain is not configured');
+      }
+
+      // Build query parameters
+      const options: Record<string, any> = {};
+
       if (request.parameters.page !== undefined) {
-        params.append('page', request.parameters.page.toString());
+        options.page = request.parameters.page;
       }
 
       if (request.parameters.per_page !== undefined) {
-        params.append('per_page', request.parameters.per_page.toString());
+        options.per_page = request.parameters.per_page;
       } else {
         // Default to 5 items per page
-        params.append('per_page', '5');
+        options.per_page = 5;
       }
 
-      // The parameter name should be include_totals, not include_total
       if (request.parameters.include_totals !== undefined) {
-        params.append('include_totals', request.parameters.include_totals.toString());
+        options.include_totals = request.parameters.include_totals;
       } else {
         // Default to include totals
-        params.append('include_totals', 'true');
+        options.include_totals = true;
       }
 
-      // The parameter name should be triggerId, not trigger_id
       if (request.parameters.trigger_id) {
-        // This might be the issue - check Auth0 API docs for correct parameter name
-        params.append('triggerId', request.parameters.trigger_id);
+        options.triggerId = request.parameters.trigger_id;
       }
-
-      // Full URL for debugging
-      const apiUrl = `https://${config.domain}/api/v2/actions/actions?${params.toString()}`;
-      log(`Making API request to ${apiUrl}`);
-
-      // Try a simpler request first to debug
-      const simpleApiUrl = `https://${config.domain}/api/v2/actions/actions`;
-      log(`Making simplified API request to ${simpleApiUrl}`);
 
       try {
-        // Make API request to Auth0 Management API with timeout
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 15000);
+        const managementClientConfig: Auth0Config = {
+          domain: config.domain,
+          token: request.token,
+        };
+        const managementClient = await getManagementClient(managementClientConfig);
 
-        // Try with a simpler request first
-        const response = await fetch(simpleApiUrl, {
-          headers: {
-            Authorization: `Bearer ${request.token}`,
-            'Content-Type': 'application/json',
-            Accept: 'application/json',
-          },
-          signal: controller.signal,
-        });
-
-        clearTimeout(timeoutId);
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          log(`API request failed with status ${response.status}: ${errorText}`);
-
-          let errorMessage = `Failed to list actions: ${response.status} ${response.statusText}`;
-
-          if (response.status === 401) {
-            errorMessage +=
-              '\nError: Unauthorized. Your token might be expired or invalid or missing read:actions scope.';
-          } else if (response.status === 400) {
-            // Log more details about the 400 error
-            errorMessage += `\nError: Bad Request. Details: ${errorText}`;
-            log('Request URL was:', simpleApiUrl);
-            log('Request headers:', {
-              Authorization: 'Bearer [token redacted]',
-              'Content-Type': 'application/json',
-              Accept: 'application/json',
-            });
-          }
-
-          return createErrorResponse(errorMessage);
-        }
-
-        // Parse the response
-        const responseData = (await response.json()) as unknown;
-        log('Response data:', JSON.stringify(responseData).substring(0, 200) + '...');
+        // Use the Auth0 SDK to get all actions
+        const responseData = await managementClient.actions.getAll(options);
 
         // Handle different response formats
         let actions: Auth0Action[] = [];
         let total = 0;
         let page = 0;
-        let perPage = 5;
+        let perPage = options.per_page || 5;
 
         if (Array.isArray(responseData)) {
           // Simple array response
           actions = responseData as Auth0Action[];
           total = actions.length;
-        } else if (typeof responseData === 'object' && responseData !== null) {
-          // Check if it has an 'actions' property that is an array
-          if ('actions' in responseData && Array.isArray((responseData as any).actions)) {
-            actions = (responseData as any).actions;
-            total = (responseData as any).total || actions.length;
-            page = (responseData as any).page || 0;
-            perPage = (responseData as any).per_page || actions.length;
-          } else {
-            // Log the actual structure to help debug
-            log('Response structure:', Object.keys(responseData));
-            return createErrorResponse(
-              'Error: Unexpected response format from Auth0 API. Missing actions array.'
-            );
-          }
+        } else if (
+          typeof responseData === 'object' &&
+          responseData !== null &&
+          'actions' in responseData &&
+          Array.isArray((responseData as any).actions)
+        ) {
+          // Paginated response with totals
+          actions = (responseData as any).actions;
+          total = (responseData as any).total || actions.length;
+          page = (responseData as any).page || 0;
+          perPage = (responseData as any).per_page || actions.length;
         } else {
           log('Invalid response format:', responseData);
           return createErrorResponse('Error: Received invalid response format from Auth0 API.');
@@ -321,10 +321,26 @@ export const ACTION_HANDLERS: Record<
         log(`Successfully retrieved ${actions.length} actions`);
 
         return createSuccessResponse(result);
-      } catch (fetchError: any) {
-        // Handle network-specific errors
-        log('Fetch error:', fetchError);
-        const errorMessage = handleNetworkError(fetchError);
+      } catch (sdkError: any) {
+        // Handle SDK errors
+        log('Auth0 SDK error:', sdkError);
+
+        let errorMessage = `Failed to list actions: ${sdkError.message || 'Unknown error'}`;
+
+        // Add context based on common error codes
+        if (sdkError.statusCode === 401) {
+          errorMessage +=
+            '\nError: Unauthorized. Your token might be expired or invalid or missing read:actions scope.';
+        } else if (sdkError.statusCode === 403) {
+          errorMessage +=
+            '\nError: Forbidden. Your token might not have the required scopes (read:actions).';
+        } else if (sdkError.statusCode === 429) {
+          errorMessage +=
+            '\nError: Rate limited. You have made too many requests to the Auth0 API. Please try again later.';
+        } else if (sdkError.statusCode >= 500) {
+          errorMessage +=
+            '\nError: Auth0 server error. The Auth0 API might be experiencing issues. Please try again later.';
+        }
 
         return createErrorResponse(errorMessage);
       }
@@ -347,50 +363,48 @@ export const ACTION_HANDLERS: Record<
         return createErrorResponse('Error: id is required');
       }
 
-      // API URL for getting an action
-      const apiUrl = `https://${config.domain}/api/v2/actions/actions/${id}`;
-      log(`Making API request to ${apiUrl}`);
+      // Check for token
+      if (!request.token) {
+        log('Warning: Token is empty or undefined');
+        return createErrorResponse('Error: Missing authentication token');
+      }
+
+      // Check if domain is configured
+      if (!config.domain) {
+        log('Error: Auth0 domain is not configured');
+        return createErrorResponse('Error: Auth0 domain is not configured');
+      }
 
       try {
-        // Make API request to Auth0 Management API
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 15000);
+        const managementClientConfig: Auth0Config = {
+          domain: config.domain,
+          token: request.token,
+        };
+        const managementClient = await getManagementClient(managementClientConfig);
 
-        const response = await fetch(apiUrl, {
-          headers: {
-            Authorization: `Bearer ${request.token}`,
-            'Content-Type': 'application/json',
-          },
-          signal: controller.signal,
-        });
+        log(`Fetching action with ID: ${id}`);
 
-        clearTimeout(timeoutId);
+        // Use the Auth0 SDK to get a specific action
+        const action = await managementClient.actions.get({ id });
 
-        if (!response.ok) {
-          const errorText = await response.text();
-          log(`API request failed with status ${response.status}: ${errorText}`);
-
-          let errorMessage = `Failed to get action: ${response.status} ${response.statusText}`;
-
-          if (response.status === 404) {
-            errorMessage = `Action with id '${id}' not found.`;
-          } else if (response.status === 401) {
-            errorMessage +=
-              '\nError: Unauthorized. Your token might be expired or invalid or missing read:actions scope.';
-          }
-
-          return createErrorResponse(errorMessage);
-        }
-
-        // Parse the response
-        const action = (await response.json()) as Auth0Action;
-
-        log(`Successfully retrieved action: ${action.name} (${action.id})`);
+        log(
+          `Successfully retrieved action: ${(action as any).name || 'Unknown'} (${(action as any).id || id})`
+        );
 
         return createSuccessResponse(action);
-      } catch (fetchError: any) {
-        // Handle network-specific errors
-        const errorMessage = handleNetworkError(fetchError);
+      } catch (sdkError: any) {
+        // Handle SDK errors
+        log('Auth0 SDK error:', sdkError);
+
+        let errorMessage = `Failed to get action: ${sdkError.message || 'Unknown error'}`;
+
+        // Add context based on common error codes
+        if (sdkError.statusCode === 404) {
+          errorMessage = `Action with id '${id}' not found.`;
+        } else if (sdkError.statusCode === 401) {
+          errorMessage +=
+            '\nError: Unauthorized. Your token might be expired or invalid or missing read:actions scope.';
+        }
 
         return createErrorResponse(errorMessage);
       }
@@ -410,7 +424,7 @@ export const ACTION_HANDLERS: Record<
     try {
       const {
         name,
-        trigger_id,
+        supported_triggers,
         code,
         runtime = 'node18',
         dependencies = [],
@@ -421,27 +435,36 @@ export const ACTION_HANDLERS: Record<
         return createErrorResponse('Error: name is required');
       }
 
-      if (!trigger_id) {
-        return createErrorResponse('Error: trigger_id is required');
+      if (
+        !supported_triggers ||
+        !Array.isArray(supported_triggers) ||
+        supported_triggers.length === 0
+      ) {
+        return createErrorResponse(
+          'Error: supported_triggers is required and must be a non-empty array'
+        );
       }
 
       if (!code) {
         return createErrorResponse('Error: code is required');
       }
 
-      // API URL for creating an action
-      const apiUrl = `https://${config.domain}/api/v2/actions/actions`;
-      log(`Making API request to ${apiUrl}`);
+      // Check for token
+      if (!request.token) {
+        log('Warning: Token is empty or undefined');
+        return createErrorResponse('Error: Missing authentication token');
+      }
+
+      // Check if domain is configured
+      if (!config.domain) {
+        log('Error: Auth0 domain is not configured');
+        return createErrorResponse('Error: Auth0 domain is not configured');
+      }
 
       // Prepare request body
-      const requestBody = {
+      const actionData: PostActionRequest = {
         name,
-        supported_triggers: [
-          {
-            id: trigger_id,
-            version: 'v2', // Default to v2 for most triggers
-          },
-        ],
+        supported_triggers,
         code,
         runtime,
         dependencies,
@@ -449,48 +472,36 @@ export const ACTION_HANDLERS: Record<
       };
 
       try {
-        // Make API request to Auth0 Management API
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 15000);
+        const managementClientConfig: Auth0Config = {
+          domain: config.domain,
+          token: request.token,
+        };
+        const managementClient = await getManagementClient(managementClientConfig);
 
-        const response = await fetch(apiUrl, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${request.token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(requestBody),
-          signal: controller.signal,
-        });
+        log(`Creating new action with name: ${name}`);
 
-        clearTimeout(timeoutId);
+        // Use the Auth0 SDK to create an action
+        const newAction = await managementClient.actions.create(actionData);
 
-        if (!response.ok) {
-          const errorText = await response.text();
-          log(`API request failed with status ${response.status}: ${errorText}`);
-
-          let errorMessage = `Failed to create action: ${response.status} ${response.statusText}`;
-
-          if (response.status === 401) {
-            errorMessage +=
-              '\nError: Unauthorized. Your token might be expired or invalid or missing create:actions scope.';
-          } else if (response.status === 422) {
-            errorMessage +=
-              '\nError: Validation errors in your request. Check that your parameters are valid.';
-          }
-
-          return createErrorResponse(errorMessage);
-        }
-
-        // Parse the response
-        const newAction = (await response.json()) as Auth0Action;
-
-        log(`Successfully created action: ${newAction.name} (${newAction.id})`);
+        log(
+          `Successfully created action: ${(newAction as any).name || name} (${(newAction as any).id || 'new action'})`
+        );
 
         return createSuccessResponse(newAction);
-      } catch (fetchError: any) {
-        // Handle network-specific errors
-        const errorMessage = handleNetworkError(fetchError);
+      } catch (sdkError: any) {
+        // Handle SDK errors
+        log('Auth0 SDK error:', sdkError);
+
+        let errorMessage = `Failed to create action: ${sdkError.message || 'Unknown error'}`;
+
+        // Add context based on common error codes
+        if (sdkError.statusCode === 401) {
+          errorMessage +=
+            '\nError: Unauthorized. Your token might be expired or invalid or missing create:actions scope.';
+        } else if (sdkError.statusCode === 422) {
+          errorMessage +=
+            '\nError: Validation errors in your request. Check that your parameters are valid.';
+        }
 
         return createErrorResponse(errorMessage);
       }
@@ -514,163 +525,67 @@ export const ACTION_HANDLERS: Record<
       }
 
       // Extract other parameters to update
-      const { name, code, dependencies, secrets } = request.parameters;
+      const { name, supported_triggers, code, runtime, dependencies, secrets } = request.parameters;
 
       // Prepare update body, only including fields that are present
-      const updateBody: Record<string, any> = {};
-      if (name !== undefined) updateBody.name = name;
-      if (code !== undefined) updateBody.code = code;
-      if (dependencies !== undefined) updateBody.dependencies = dependencies;
+      const updateData: Partial<PatchActionRequest> = {};
+      if (name !== undefined) updateData.name = name;
+      if (supported_triggers !== undefined) updateData.supported_triggers = supported_triggers;
+      if (code !== undefined) updateData.code = code;
+      if (runtime !== undefined) updateData.runtime = runtime;
+      if (dependencies !== undefined) updateData.dependencies = dependencies;
+      if (secrets !== undefined) updateData.secrets = secrets;
 
-      // API URL for updating an action
-      const apiUrl = `https://${config.domain}/api/v2/actions/actions/${id}`;
-      log(`Making API request to ${apiUrl}`);
+      // Check for token
+      if (!request.token) {
+        log('Warning: Token is empty or undefined');
+        return createErrorResponse('Error: Missing authentication token');
+      }
+
+      // Check if domain is configured
+      if (!config.domain) {
+        log('Error: Auth0 domain is not configured');
+        return createErrorResponse('Error: Auth0 domain is not configured');
+      }
 
       try {
-        // Make API request to Auth0 Management API
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 15000);
+        const managementClientConfig: Auth0Config = {
+          domain: config.domain,
+          token: request.token,
+        };
+        const managementClient = await getManagementClient(managementClientConfig);
 
-        const response = await fetch(apiUrl, {
-          method: 'PATCH',
-          headers: {
-            Authorization: `Bearer ${request.token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(updateBody),
-          signal: controller.signal,
-        });
+        log(`Updating action with ID: ${id}`);
 
-        clearTimeout(timeoutId);
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          log(`API request failed with status ${response.status}: ${errorText}`);
-
-          let errorMessage = `Failed to update action: ${response.status} ${response.statusText}`;
-
-          if (response.status === 404) {
-            errorMessage = `Action with id '${id}' not found.`;
-          } else if (response.status === 401) {
-            errorMessage +=
-              '\nError: Unauthorized. Your token might be expired or invalid or missing update:actions scope.';
-          } else if (response.status === 422) {
-            errorMessage +=
-              '\nError: Validation errors in your request. Check that your parameters are valid.';
-          }
-
-          return createErrorResponse(errorMessage);
-        }
-
-        // Parse the response
-        const updatedAction = (await response.json()) as Auth0Action;
-
-        // Handle secrets separately if provided (they need to be updated one by one)
-        let secretsUpdated = false;
-        if (secrets && secrets.length > 0) {
-          secretsUpdated = true;
-          for (const secret of secrets) {
-            const secretUrl = `https://${config.domain}/api/v2/actions/actions/${id}/secrets`;
-
-            const secretResponse = await fetch(secretUrl, {
-              method: 'PATCH',
-              headers: {
-                Authorization: `Bearer ${request.token}`,
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                secrets: [secret],
-              }),
-            });
-
-            if (!secretResponse.ok) {
-              log(`Failed to update secret ${secret.name}: ${secretResponse.status}`);
-            }
-          }
-        }
+        // Use the Auth0 SDK to update the action
+        const updatedAction = await managementClient.actions.update({ id }, updateData);
 
         // Add information about secrets update to the result
         const result = {
           ...updatedAction,
-          secrets_updated: secretsUpdated,
         };
 
-        log(`Successfully updated action: ${updatedAction.name} (${updatedAction.id})`);
+        log(
+          `Successfully updated action: ${(result as any).name || 'Unknown'} (${(result as any).id || id})`
+        );
 
         return createSuccessResponse(result);
-      } catch (fetchError: any) {
-        // Handle network-specific errors
-        const errorMessage = handleNetworkError(fetchError);
+      } catch (sdkError: any) {
+        // Handle SDK errors
+        log('Auth0 SDK error:', sdkError);
 
-        return createErrorResponse(errorMessage);
-      }
-    } catch (error: any) {
-      // Handle any other errors
-      log('Error processing request:', error);
+        let errorMessage = `Failed to update action: ${sdkError.message || 'Unknown error'}`;
 
-      return createErrorResponse(
-        `Error: ${error instanceof Error ? error.message : String(error)}`
-      );
-    }
-  },
-  auth0_delete_action: async (
-    request: HandlerRequest,
-    config: HandlerConfig
-  ): Promise<HandlerResponse> => {
-    try {
-      const id = request.parameters.id;
-      if (!id) {
-        return createErrorResponse('Error: id is required');
-      }
-
-      // API URL for deleting an action
-      const apiUrl = `https://${config.domain}/api/v2/actions/actions/${id}`;
-      log(`Making API request to ${apiUrl}`);
-
-      try {
-        // Make API request to Auth0 Management API
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 15000);
-
-        const response = await fetch(apiUrl, {
-          method: 'DELETE',
-          headers: {
-            Authorization: `Bearer ${request.token}`,
-            'Content-Type': 'application/json',
-          },
-          signal: controller.signal,
-        });
-
-        clearTimeout(timeoutId);
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          log(`API request failed with status ${response.status}: ${errorText}`);
-
-          let errorMessage = `Failed to delete action: ${response.status} ${response.statusText}`;
-
-          if (response.status === 404) {
-            errorMessage = `Action with id '${id}' not found.`;
-          } else if (response.status === 401) {
-            errorMessage +=
-              '\nError: Unauthorized. Your token might be expired or invalid or missing delete:actions scope.';
-          } else if (response.status === 409) {
-            errorMessage +=
-              '\nError: Cannot delete an action that is currently bound to a trigger.';
-          }
-
-          return createErrorResponse(errorMessage);
+        // Add context based on common error codes
+        if (sdkError.statusCode === 404) {
+          errorMessage = `Action with id '${id}' not found.`;
+        } else if (sdkError.statusCode === 401) {
+          errorMessage +=
+            '\nError: Unauthorized. Your token might be expired or invalid or missing update:actions scope.';
+        } else if (sdkError.statusCode === 422) {
+          errorMessage +=
+            '\nError: Validation errors in your request. Check that your parameters are valid.';
         }
-
-        log(`Successfully deleted action with id: ${id}`);
-
-        return createSuccessResponse({
-          message: `Action with id '${id}' has been deleted.`,
-          id: id,
-        });
-      } catch (fetchError: any) {
-        // Handle network-specific errors
-        const errorMessage = handleNetworkError(fetchError);
 
         return createErrorResponse(errorMessage);
       }
@@ -693,53 +608,40 @@ export const ACTION_HANDLERS: Record<
         return createErrorResponse('Error: id is required');
       }
 
-      // API URL for deploying an action
-      const apiUrl = `https://${config.domain}/api/v2/actions/actions/${id}/deploy`;
-      log(`Making API request to ${apiUrl}`);
+      // Check for token
+      if (!request.token) {
+        log('Warning: Token is empty or undefined');
+        return createErrorResponse('Error: Missing authentication token');
+      }
+
+      // Check if domain is configured
+      if (!config.domain) {
+        log('Error: Auth0 domain is not configured');
+        return createErrorResponse('Error: Auth0 domain is not configured');
+      }
 
       try {
-        // Make API request to Auth0 Management API
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 15000);
+        const managementClientConfig: Auth0Config = {
+          domain: config.domain,
+          token: request.token,
+        };
+        const managementClient = await getManagementClient(managementClientConfig);
 
-        const response = await fetch(apiUrl, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${request.token}`,
-            'Content-Type': 'application/json',
-          },
-          signal: controller.signal,
-        });
+        log(`Deploying action with ID: ${id}`);
 
-        clearTimeout(timeoutId);
+        // Use the Auth0 SDK to deploy the action
+        const deployedAction = await managementClient.actions.deploy({ id });
 
-        if (!response.ok) {
-          const errorText = await response.text();
-          log(`API request failed with status ${response.status}: ${errorText}`);
-
-          let errorMessage = `Failed to deploy action: ${response.status} ${response.statusText}`;
-
-          if (response.status === 404) {
-            errorMessage = `Action with id '${id}' not found.`;
-          } else if (response.status === 401) {
-            errorMessage +=
-              '\nError: Unauthorized. Your token might be expired or invalid or missing update:actions scope.';
-          } else if (response.status === 422) {
-            errorMessage += '\nError: The action has validation errors and cannot be deployed.';
-          }
-
-          return createErrorResponse(errorMessage);
-        }
-
-        // Parse the response (deployment returns the updated action)
-        const deployedAction = (await response.json()) as Auth0Action;
-
-        log(`Successfully deployed action: ${deployedAction.name} (${deployedAction.id})`);
+        log(
+          `Successfully deployed action: ${(deployedAction as any).name || 'Unknown'} (${(deployedAction as any).id || id})`
+        );
 
         return createSuccessResponse(deployedAction);
-      } catch (fetchError: any) {
-        // Handle network-specific errors
-        const errorMessage = handleNetworkError(fetchError);
+      } catch (error: any) {
+        // Handle SDK errors
+        log('Error deploying action:', error);
+
+        const errorMessage = `Failed to deploy action: ${error.message || 'Unknown error'}`;
 
         return createErrorResponse(errorMessage);
       }

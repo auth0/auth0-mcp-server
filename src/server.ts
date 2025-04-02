@@ -109,7 +109,8 @@ export async function startServer() {
         new Promise((_, reject) => setTimeout(() => reject(new Error('Connection timeout')), 5000)),
       ]);
 
-      //logInfo('Server started and running');
+      logInfo('Server started and running');
+
       log('Server connected and running');
       return server;
     } catch (connectError) {

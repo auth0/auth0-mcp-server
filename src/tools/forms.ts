@@ -1,34 +1,12 @@
-import fetch from 'node-fetch';
-
 import { HandlerConfig, HandlerRequest, HandlerResponse, Tool } from '../utils/types.js';
 import { log } from '../utils/logger.js';
+import { createErrorResponse, createSuccessResponse } from '../utils/http-utility.js';
+import { Auth0Config } from '../utils/config.js';
+import { getManagementClient } from '../utils/management-client.js';
 import {
-  createErrorResponse,
-  createSuccessResponse,
-  formatDomain,
-  handleNetworkError,
-} from '../utils/http-utility.js';
-
-// Define Auth0 Form interfaces
-interface Auth0Form {
-  id: string;
-  name: string;
-  status: string;
-  type: string;
-  template_id?: string;
-  client_id?: string;
-  is_published?: boolean;
-  content?: Record<string, any>;
-  [key: string]: any;
-}
-
-interface Auth0PaginatedFormsResponse {
-  forms: Auth0Form[];
-  total?: number;
-  page?: number;
-  per_page?: number;
-  [key: string]: any;
-}
+  GetForms200ResponseOneOfInner,
+  PostFormsRequest,
+} from 'auth0/dist/cjs/management/index.js';
 
 // Define all available form tools
 export const FORM_TOOLS: Tool[] = [
@@ -41,11 +19,6 @@ export const FORM_TOOLS: Tool[] = [
         page: { type: 'number', description: 'Page number (0-based)' },
         per_page: { type: 'number', description: 'Number of forms per page' },
         include_totals: { type: 'boolean', description: 'Include total count' },
-        type: {
-          type: 'string',
-          description: 'Filter by form type',
-          enum: ['login', 'signup', 'reset-password', 'mfa', 'custom'],
-        },
       },
     },
   },
@@ -66,20 +39,43 @@ export const FORM_TOOLS: Tool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        name: { type: 'string', description: 'Name of the form' },
-        type: {
+        name: {
           type: 'string',
-          description: 'Type of form',
-          enum: ['login', 'signup', 'reset-password', 'mfa', 'custom'],
+          description: 'Name of the form. Required.',
         },
-        template_id: { type: 'string', description: 'ID of the template to use' },
-        client_id: { type: 'string', description: 'Client ID to associate with the form' },
-        content: {
+        messages: {
           type: 'object',
-          description: 'Form content and configuration',
+          description: 'Message settings for the form',
+        },
+        languages: {
+          type: 'object',
+          description: 'Language settings for the form',
+        },
+        translations: {
+          type: 'object',
+          description: 'Translations for form content',
+        },
+        nodes: {
+          type: 'array',
+          description: 'Nodes defining form structure and behavior',
+          items: {
+            type: 'object',
+          },
+        },
+        start: {
+          type: 'object',
+          description: 'Settings for form start configuration',
+        },
+        ending: {
+          type: 'object',
+          description: 'Settings for form completion',
+        },
+        style: {
+          type: 'object',
+          description: 'Style settings for the form',
         },
       },
-      required: ['name', 'type'],
+      required: ['name'],
     },
   },
   {
@@ -88,34 +84,45 @@ export const FORM_TOOLS: Tool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        id: { type: 'string', description: 'ID of the form to update' },
-        name: { type: 'string', description: 'New name of the form' },
-        content: {
-          type: 'object',
-          description: 'Updated form content and configuration',
+        id: {
+          type: 'string',
+          description: 'ID of the form to update. Required.',
         },
-      },
-      required: ['id'],
-    },
-  },
-  {
-    name: 'auth0_delete_form',
-    description: 'Delete an Auth0 form',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        id: { type: 'string', description: 'ID of the form to delete' },
-      },
-      required: ['id'],
-    },
-  },
-  {
-    name: 'auth0_publish_form',
-    description: 'Publish an Auth0 form',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        id: { type: 'string', description: 'ID of the form to publish' },
+        name: {
+          type: 'string',
+          description: 'Name of the form',
+        },
+        messages: {
+          type: 'object',
+          description: 'Message settings for the form',
+        },
+        languages: {
+          type: 'object',
+          description: 'Language settings for the form',
+        },
+        translations: {
+          type: 'object',
+          description: 'Translations for form content',
+        },
+        nodes: {
+          type: 'array',
+          description: 'Nodes defining form structure and behavior',
+          items: {
+            type: 'object',
+          },
+        },
+        start: {
+          type: 'object',
+          description: 'Settings for form start configuration',
+        },
+        ending: {
+          type: 'object',
+          description: 'Settings for form completion',
+        },
+        style: {
+          type: 'object',
+          description: 'Style settings for the form',
+        },
       },
       required: ['id'],
     },
@@ -132,83 +139,67 @@ export const FORM_HANDLERS: Record<
     config: HandlerConfig
   ): Promise<HandlerResponse> => {
     try {
+      // Check for token
+      if (!request.token) {
+        log('Warning: Token is empty or undefined');
+        return createErrorResponse('Error: Missing authentication token');
+      }
+
+      // Check if domain is configured
+      if (!config.domain) {
+        log('Error: Auth0 domain is not configured');
+        return createErrorResponse('Error: Auth0 domain is not configured');
+      }
+
       // Build query parameters
-      const params = new URLSearchParams();
+      const options: Record<string, any> = {};
 
       if (request.parameters.page !== undefined) {
-        params.append('page', request.parameters.page.toString());
+        options.page = request.parameters.page;
       }
 
       if (request.parameters.per_page !== undefined) {
-        params.append('per_page', request.parameters.per_page.toString());
+        options.per_page = request.parameters.per_page;
       } else {
         // Default to 10 forms per page
-        params.append('per_page', '10');
+        options.per_page = 10;
       }
 
       if (request.parameters.include_totals !== undefined) {
-        params.append('include_totals', request.parameters.include_totals.toString());
+        options.include_totals = request.parameters.include_totals;
       } else {
         // Default to include totals
-        params.append('include_totals', 'true');
+        options.include_totals = true;
       }
-
-      if (request.parameters.type) {
-        params.append('type', request.parameters.type);
-      }
-
-      // Full URL for debugging
-      const apiUrl = `https://${config.domain}/api/v2/branding/forms?${params.toString()}`;
-      log(`Making API request to ${apiUrl}`);
 
       try {
-        // Make API request to Auth0 Management API with timeout
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 15000);
+        const managementClientConfig: Auth0Config = {
+          domain: config.domain,
+          token: request.token,
+        };
+        const managementClient = await getManagementClient(managementClientConfig);
 
-        const response = await fetch(apiUrl, {
-          headers: {
-            Authorization: `Bearer ${request.token}`,
-            'Content-Type': 'application/json',
-          },
-          signal: controller.signal,
-        });
+        log(`Fetching forms with options: ${JSON.stringify(options)}`);
 
-        clearTimeout(timeoutId);
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          log(`API request failed with status ${response.status}: ${errorText}`);
-
-          let errorMessage = `Failed to list forms: ${response.status} ${response.statusText}`;
-
-          if (response.status === 401) {
-            errorMessage +=
-              '\nError: Unauthorized. Your token might be expired or invalid or missing read:branding scope.';
-          }
-
-          return createErrorResponse(errorMessage);
-        }
-
-        // Parse the response
-        const responseData = (await response.json()) as unknown;
+        // Use the Auth0 SDK to get all forms
+        const responseData = await managementClient.forms.getAll(options);
 
         // Handle different response formats
-        let forms: Auth0Form[] = [];
+        let forms: GetForms200ResponseOneOfInner[] = [];
         let total = 0;
 
         if (Array.isArray(responseData)) {
           // Simple array response
-          forms = responseData as Auth0Form[];
+          forms = responseData as GetForms200ResponseOneOfInner[];
           total = forms.length;
         } else if (
           typeof responseData === 'object' &&
           responseData !== null &&
           'forms' in responseData &&
-          Array.isArray((responseData as any).forms)
+          Array.isArray(responseData.forms)
         ) {
           // Paginated response with totals
-          forms = (responseData as any).forms;
+          forms = responseData.forms;
           total = (responseData as any).total || forms.length;
         } else {
           log('Invalid response format:', responseData);
@@ -237,9 +228,20 @@ export const FORM_HANDLERS: Record<
         log(`Successfully retrieved ${forms.length} forms`);
 
         return createSuccessResponse(result);
-      } catch (fetchError: any) {
-        // Handle network-specific errors
-        const errorMessage = handleNetworkError(fetchError);
+      } catch (sdkError: any) {
+        // Handle SDK errors
+        log('Auth0 SDK error:', sdkError);
+
+        let errorMessage = `Failed to list forms: ${sdkError.message || 'Unknown error'}`;
+
+        // Add context based on common error codes
+        if (sdkError.statusCode === 401) {
+          errorMessage +=
+            '\nError: Unauthorized. Your token might be expired or invalid or missing read:branding scope.';
+        } else if (sdkError.statusCode === 403) {
+          errorMessage +=
+            '\nError: Forbidden. Your token might not have the required scopes (read:branding).';
+        }
 
         return createErrorResponse(errorMessage);
       }
@@ -262,50 +264,46 @@ export const FORM_HANDLERS: Record<
         return createErrorResponse('Error: id is required');
       }
 
-      // API URL for getting a form
-      const apiUrl = `https://${config.domain}/api/v2/branding/forms/${id}`;
-      log(`Making API request to ${apiUrl}`);
+      // Check for token
+      if (!request.token) {
+        log('Warning: Token is empty or undefined');
+        return createErrorResponse('Error: Missing authentication token');
+      }
+
+      // Check if domain is configured
+      if (!config.domain) {
+        log('Error: Auth0 domain is not configured');
+        return createErrorResponse('Error: Auth0 domain is not configured');
+      }
 
       try {
-        // Make API request to Auth0 Management API
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 15000);
+        const managementClientConfig: Auth0Config = {
+          domain: config.domain,
+          token: request.token,
+        };
+        const managementClient = await getManagementClient(managementClientConfig);
 
-        const response = await fetch(apiUrl, {
-          headers: {
-            Authorization: `Bearer ${request.token}`,
-            'Content-Type': 'application/json',
-          },
-          signal: controller.signal,
-        });
+        log(`Fetching form with ID: ${id}`);
 
-        clearTimeout(timeoutId);
+        // Use the Auth0 SDK to get a specific form
+        const form = await managementClient.forms.get({ id });
 
-        if (!response.ok) {
-          const errorText = await response.text();
-          log(`API request failed with status ${response.status}: ${errorText}`);
+        log(`Successfully retrieved form: ${(form as any).name} (${(form as any).id})`);
 
-          let errorMessage = `Failed to get form: ${response.status} ${response.statusText}`;
+        return createSuccessResponse(form as any);
+      } catch (sdkError: any) {
+        // Handle SDK errors
+        log('Auth0 SDK error:', sdkError);
 
-          if (response.status === 404) {
-            errorMessage = `Form with id '${id}' not found.`;
-          } else if (response.status === 401) {
-            errorMessage +=
-              '\nError: Unauthorized. Your token might be expired or invalid or missing read:branding scope.';
-          }
+        let errorMessage = `Failed to get form: ${sdkError.message || 'Unknown error'}`;
 
-          return createErrorResponse(errorMessage);
+        // Add context based on common error codes
+        if (sdkError.statusCode === 404) {
+          errorMessage = `Form with id '${id}' not found.`;
+        } else if (sdkError.statusCode === 401) {
+          errorMessage +=
+            '\nError: Unauthorized. Your token might be expired or invalid or missing read:branding scope.';
         }
-
-        // Parse the response
-        const form = (await response.json()) as Auth0Form;
-
-        log(`Successfully retrieved form: ${form.name} (${form.id})`);
-
-        return createSuccessResponse(form);
-      } catch (fetchError: any) {
-        // Handle network-specific errors
-        const errorMessage = handleNetworkError(fetchError);
 
         return createErrorResponse(errorMessage);
       }
@@ -323,81 +321,70 @@ export const FORM_HANDLERS: Record<
     config: HandlerConfig
   ): Promise<HandlerResponse> => {
     try {
-      const { name, type, template_id, client_id, content } = request.parameters;
+      const { name, messages, languages, translations, nodes, start, ending, style } =
+        request.parameters;
 
       if (!name) {
         return createErrorResponse('Error: name is required');
       }
 
-      if (!type) {
-        return createErrorResponse('Error: type is required');
+      // Check for token
+      if (!request.token) {
+        log('Warning: Token is empty or undefined');
+        return createErrorResponse('Error: Missing authentication token');
       }
 
-      // API URL for creating a form
-      const apiUrl = `https://${config.domain}/api/v2/branding/forms`;
-      log(`Making API request to ${apiUrl}`);
+      // Check if domain is configured
+      if (!config.domain) {
+        log('Error: Auth0 domain is not configured');
+        return createErrorResponse('Error: Auth0 domain is not configured');
+      }
 
-      // Prepare request body
-      const requestBody: Record<string, any> = {
-        name,
-        type,
+      // Prepare request body with required properties according to PostFormsRequest interface
+      const formData: PostFormsRequest = {
+        name: name,
       };
 
-      if (template_id) {
-        requestBody.template_id = template_id;
-      }
-
-      if (client_id) {
-        requestBody.client_id = client_id;
-      }
-
-      if (content) {
-        requestBody.content = content;
-      }
+      // Add optional properties if defined
+      if (messages !== undefined) formData.messages = messages;
+      if (languages !== undefined) formData.languages = languages;
+      if (translations !== undefined) formData.translations = translations;
+      if (nodes !== undefined) formData.nodes = nodes;
+      if (start !== undefined) formData.start = start;
+      if (ending !== undefined) formData.ending = ending;
+      if (style !== undefined) formData.style = style;
 
       try {
-        // Make API request to Auth0 Management API
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 15000);
+        const managementClientConfig: Auth0Config = {
+          domain: config.domain,
+          token: request.token,
+        };
+        const managementClient = await getManagementClient(managementClientConfig);
 
-        const response = await fetch(apiUrl, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${request.token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(requestBody),
-          signal: controller.signal,
-        });
+        log(`Creating new form with name: ${name}`);
 
-        clearTimeout(timeoutId);
+        // Use the Auth0 SDK to create a form
+        const newForm = await managementClient.forms.create(formData);
 
-        if (!response.ok) {
-          const errorText = await response.text();
-          log(`API request failed with status ${response.status}: ${errorText}`);
+        log(
+          `Successfully created form: ${(newForm as any).name || name} (${(newForm as any).id || 'new form'})`
+        );
 
-          let errorMessage = `Failed to create form: ${response.status} ${response.statusText}`;
+        return createSuccessResponse(newForm as any);
+      } catch (sdkError: any) {
+        // Handle SDK errors
+        log('Auth0 SDK error:', sdkError);
 
-          if (response.status === 401) {
-            errorMessage +=
-              '\nError: Unauthorized. Your token might be expired or invalid or missing create:branding scope.';
-          } else if (response.status === 422) {
-            errorMessage +=
-              '\nError: Validation errors in your request. Check that your parameters are valid.';
-          }
+        let errorMessage = `Failed to create form: ${sdkError.message || 'Unknown error'}`;
 
-          return createErrorResponse(errorMessage);
+        // Add context based on common error codes
+        if (sdkError.statusCode === 401) {
+          errorMessage +=
+            '\nError: Unauthorized. Your token might be expired or invalid or missing create:branding scope.';
+        } else if (sdkError.statusCode === 422) {
+          errorMessage +=
+            '\nError: Validation errors in your request. Check that your parameters are valid.';
         }
-
-        // Parse the response
-        const newForm = (await response.json()) as Auth0Form;
-
-        log(`Successfully created form: ${newForm.name} (${newForm.id})`);
-
-        return createSuccessResponse(newForm);
-      } catch (fetchError: any) {
-        // Handle network-specific errors
-        const errorMessage = handleNetworkError(fetchError);
 
         return createErrorResponse(errorMessage);
       }
@@ -415,208 +402,71 @@ export const FORM_HANDLERS: Record<
     config: HandlerConfig
   ): Promise<HandlerResponse> => {
     try {
-      const { id, name, content } = request.parameters;
+      const { id, name, messages, languages, translations, nodes, start, ending, style } =
+        request.parameters;
 
       if (!id) {
         return createErrorResponse('Error: id is required');
       }
 
-      // API URL for updating a form
-      const apiUrl = `https://${config.domain}/api/v2/branding/forms/${id}`;
-      log(`Making API request to ${apiUrl}`);
-
-      // Prepare request body
-      const requestBody: Record<string, any> = {};
-
-      if (name) {
-        requestBody.name = name;
+      // Check for token
+      if (!request.token) {
+        log('Warning: Token is empty or undefined');
+        return createErrorResponse('Error: Missing authentication token');
       }
 
-      if (content) {
-        requestBody.content = content;
+      // Check if domain is configured
+      if (!config.domain) {
+        log('Error: Auth0 domain is not configured');
+        return createErrorResponse('Error: Auth0 domain is not configured');
       }
+
+      // Prepare request body - partial PostFormsRequest
+      const updateData: Partial<PostFormsRequest> = {};
+
+      // Add properties if defined
+      if (name !== undefined) updateData.name = name;
+      if (messages !== undefined) updateData.messages = messages;
+      if (languages !== undefined) updateData.languages = languages;
+      if (translations !== undefined) updateData.translations = translations;
+      if (nodes !== undefined) updateData.nodes = nodes;
+      if (start !== undefined) updateData.start = start;
+      if (ending !== undefined) updateData.ending = ending;
+      if (style !== undefined) updateData.style = style;
 
       try {
-        // Make API request to Auth0 Management API
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 15000);
+        const managementClientConfig: Auth0Config = {
+          domain: config.domain,
+          token: request.token,
+        };
+        const managementClient = await getManagementClient(managementClientConfig);
 
-        const response = await fetch(apiUrl, {
-          method: 'PATCH',
-          headers: {
-            Authorization: `Bearer ${request.token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(requestBody),
-          signal: controller.signal,
-        });
+        log(`Updating form with ID: ${id}`);
 
-        clearTimeout(timeoutId);
+        // Use the Auth0 SDK to update a form
+        const updatedForm = await managementClient.forms.update({ id }, updateData);
 
-        if (!response.ok) {
-          const errorText = await response.text();
-          log(`API request failed with status ${response.status}: ${errorText}`);
+        log(
+          `Successfully updated form: ${(updatedForm as any).name || 'Unknown'} (${(updatedForm as any).id || id})`
+        );
 
-          let errorMessage = `Failed to update form: ${response.status} ${response.statusText}`;
+        return createSuccessResponse(updatedForm as any);
+      } catch (sdkError: any) {
+        // Handle SDK errors
+        log('Auth0 SDK error:', sdkError);
 
-          if (response.status === 404) {
-            errorMessage = `Form with id '${id}' not found.`;
-          } else if (response.status === 401) {
-            errorMessage +=
-              '\nError: Unauthorized. Your token might be expired or invalid or missing update:branding scope.';
-          } else if (response.status === 422) {
-            errorMessage +=
-              '\nError: Validation errors in your request. Check that your parameters are valid.';
-          }
+        let errorMessage = `Failed to update form: ${sdkError.message || 'Unknown error'}`;
 
-          return createErrorResponse(errorMessage);
+        // Add context based on common error codes
+        if (sdkError.statusCode === 404) {
+          errorMessage = `Form with id '${id}' not found.`;
+        } else if (sdkError.statusCode === 401) {
+          errorMessage +=
+            '\nError: Unauthorized. Your token might be expired or invalid or missing update:branding scope.';
+        } else if (sdkError.statusCode === 422) {
+          errorMessage +=
+            '\nError: Validation errors in your request. Check that your parameters are valid.';
         }
-
-        // Parse the response
-        const updatedForm = (await response.json()) as Auth0Form;
-
-        log(`Successfully updated form: ${updatedForm.name} (${updatedForm.id})`);
-
-        return createSuccessResponse(updatedForm);
-      } catch (fetchError: any) {
-        // Handle network-specific errors
-        const errorMessage = handleNetworkError(fetchError);
-
-        return createErrorResponse(errorMessage);
-      }
-    } catch (error: any) {
-      // Handle any other errors
-      log('Error processing request:', error);
-
-      return createErrorResponse(
-        `Error: ${error instanceof Error ? error.message : String(error)}`
-      );
-    }
-  },
-  auth0_delete_form: async (
-    request: HandlerRequest,
-    config: HandlerConfig
-  ): Promise<HandlerResponse> => {
-    try {
-      const id = request.parameters.id;
-      if (!id) {
-        return createErrorResponse('Error: id is required');
-      }
-
-      // API URL for deleting a form
-      const apiUrl = `https://${config.domain}/api/v2/branding/forms/${id}`;
-      log(`Making API request to ${apiUrl}`);
-
-      try {
-        // Make API request to Auth0 Management API
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 15000);
-
-        const response = await fetch(apiUrl, {
-          method: 'DELETE',
-          headers: {
-            Authorization: `Bearer ${request.token}`,
-            'Content-Type': 'application/json',
-          },
-          signal: controller.signal,
-        });
-
-        clearTimeout(timeoutId);
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          log(`API request failed with status ${response.status}: ${errorText}`);
-
-          let errorMessage = `Failed to delete form: ${response.status} ${response.statusText}`;
-
-          if (response.status === 404) {
-            errorMessage = `Form with id '${id}' not found.`;
-          } else if (response.status === 401) {
-            errorMessage +=
-              '\nError: Unauthorized. Your token might be expired or invalid or missing delete:branding scope.';
-          }
-
-          return createErrorResponse(errorMessage);
-        }
-
-        log(`Successfully deleted form with id: ${id}`);
-
-        return createSuccessResponse({
-          message: `Form with id '${id}' has been deleted.`,
-          id: id,
-        });
-      } catch (fetchError: any) {
-        // Handle network-specific errors
-        const errorMessage = handleNetworkError(fetchError);
-
-        return createErrorResponse(errorMessage);
-      }
-    } catch (error: any) {
-      // Handle any other errors
-      log('Error processing request:', error);
-
-      return createErrorResponse(
-        `Error: ${error instanceof Error ? error.message : String(error)}`
-      );
-    }
-  },
-  auth0_publish_form: async (
-    request: HandlerRequest,
-    config: HandlerConfig
-  ): Promise<HandlerResponse> => {
-    try {
-      const id = request.parameters.id;
-      if (!id) {
-        return createErrorResponse('Error: id is required');
-      }
-
-      // API URL for publishing a form
-      const apiUrl = `https://${config.domain}/api/v2/branding/forms/${id}/publish`;
-      log(`Making API request to ${apiUrl}`);
-
-      try {
-        // Make API request to Auth0 Management API
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 15000);
-
-        const response = await fetch(apiUrl, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${request.token}`,
-            'Content-Type': 'application/json',
-          },
-          signal: controller.signal,
-        });
-
-        clearTimeout(timeoutId);
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          log(`API request failed with status ${response.status}: ${errorText}`);
-
-          let errorMessage = `Failed to publish form: ${response.status} ${response.statusText}`;
-
-          if (response.status === 404) {
-            errorMessage = `Form with id '${id}' not found.`;
-          } else if (response.status === 401) {
-            errorMessage +=
-              '\nError: Unauthorized. Your token might be expired or invalid or missing update:branding scope.';
-          } else if (response.status === 422) {
-            errorMessage += '\nError: The form has validation errors and cannot be published.';
-          }
-
-          return createErrorResponse(errorMessage);
-        }
-
-        // Parse the response (publish returns the updated form)
-        const publishedForm = (await response.json()) as Auth0Form;
-
-        log(`Successfully published form: ${publishedForm.name} (${publishedForm.id})`);
-
-        return createSuccessResponse(publishedForm);
-      } catch (fetchError: any) {
-        // Handle network-specific errors
-        const errorMessage = handleNetworkError(fetchError);
 
         return createErrorResponse(errorMessage);
       }

@@ -60,6 +60,20 @@ Install and initialize the Auth0 MCP Server with a single command:
 npx @auth0/auth0-mcp-server init
 ```
 
+_*Note*: Default configutation is for **Claude Desktop**_
+
+##### For Windsurf
+
+```bash
+npx @auth0/auth0-mcp-server init --client windsurf
+```
+
+##### For Cursor
+
+```bash
+npx @auth0/auth0-mcp-server init --client cursor
+```
+
 <br/>
 
 <div align="center">
@@ -71,9 +85,9 @@ This will:
 1. Start the device authorization flow
 2. Open your browser to authenticate with Auth0
 3. Store your credentials securely in your system's keychain
-4. Configure Claude Desktop to use the Auth0 MCP Server
+4. Configure Claude/Windsurf/Cursor Desktop to use the Auth0 MCP Server
 
-**_NOTE:_** You'll need to restart Claude Desktop after installation for the changes to take effect.
+**_NOTE:_** You'll need to restart Claude/Windsurf/Cursor Desktop after installation for the changes to take effect.
 
 ### Connecting to Claude Desktop
 
@@ -104,7 +118,6 @@ The Auth0 MCP Server provides the following tools for Claude to interact with yo
 | `auth0_search_applications` | Search for applications by name                |
 | `auth0_create_application`  | Create a new Auth0 application                 |
 | `auth0_update_application`  | Update an existing Auth0 application           |
-| `auth0_delete_application`  | Delete an Auth0 application                    |
 
 ### Resource Servers
 
@@ -114,7 +127,6 @@ The Auth0 MCP Server provides the following tools for Claude to interact with yo
 | `auth0_get_resource_server`    | Get details about a specific Auth0 resource server   |
 | `auth0_create_resource_server` | Create a new Auth0 resource server (API)             |
 | `auth0_update_resource_server` | Update an existing Auth0 resource server             |
-| `auth0_delete_resource_server` | Delete an Auth0 resource server                      |
 
 ### Actions
 
@@ -124,7 +136,6 @@ The Auth0 MCP Server provides the following tools for Claude to interact with yo
 | `auth0_get_action`    | Get details about a specific Auth0 action |
 | `auth0_create_action` | Create a new Auth0 action                 |
 | `auth0_update_action` | Update an existing Auth0 action           |
-| `auth0_delete_action` | Delete an Auth0 action                    |
 | `auth0_deploy_action` | Deploy an Auth0 action                    |
 
 ### Logs
@@ -143,8 +154,6 @@ The Auth0 MCP Server provides the following tools for Claude to interact with yo
 | `auth0_get_form`     | Get details about a specific Auth0 form |
 | `auth0_create_form`  | Create a new Auth0 form                 |
 | `auth0_update_form`  | Update an existing Auth0 form           |
-| `auth0_delete_form`  | Delete an Auth0 form                    |
-| `auth0_publish_form` | Publish an Auth0 form                   |
 
 ## Architecture
 
@@ -186,6 +195,9 @@ sequenceDiagram
 The server provides a CLI with the following commands:
 
 ```bash
+# Command help
+npx @auth0/auth0-mcp-server help
+
 # Initialize the server (authenticate and configure)
 npx @auth0/auth0-mcp-server init
 
@@ -224,6 +236,7 @@ Add this to your `claude_desktop_config.json`:
   }
 }
 ```
+**_NOTE:_** _Users would need to do this manually only when they run into unforseen errors._
 
 #### Windsurf Desktop Configuration
 
@@ -244,6 +257,28 @@ Add this to your `mcp_config.json`:
   }
 }
 ```
+**_NOTE:_** _Users would need to do this manually only when they run into unforseen errors._
+
+#### Cursor Configuration
+
+The `~/.cursor/mcp.json` file is a JSON file that contains a list of MCP servers.
+
+Add this to your `mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "auth0": {
+      "command": "npx",
+      "args": ["-y", "@auth0/auth0-mcp-server", "run"],
+      "env": {
+        "DEBUG": "auth0-mcp"
+      }
+    }
+  }
+}
+```
+**_NOTE:_** _Users would need to do this manually only when they run into unforseen errors._
 
 ## Troubleshooting
 
@@ -264,6 +299,15 @@ Add this to your `mcp_config.json`:
    - Check your Auth0 token permissions and expiration
 
 **_NOTE:_** Most connection issues can be resolved by restarting both the server and Claude Desktop.
+
+#### Debug logs
+
+Get detailed MCP logs from Claude Desktop:
+
+```sh
+# Follow logs in real-time
+tail -n 20 -F ~/Library/Logs/Claude/mcp*.log
+```
 
 #### MCP Inspector
 

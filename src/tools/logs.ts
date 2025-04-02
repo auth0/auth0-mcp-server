@@ -1,12 +1,8 @@
-import fetch from 'node-fetch';
 import { HandlerConfig, HandlerRequest, HandlerResponse, Tool } from '../utils/types.js';
 import { log } from '../utils/logger.js';
-import {
-  createErrorResponse,
-  createSuccessResponse,
-  formatDomain,
-  handleNetworkError,
-} from '../utils/http-utility.js';
+import { createErrorResponse, createSuccessResponse } from '../utils/http-utility.js';
+import { Auth0Config } from '../utils/config.js';
+import { getManagementClient } from '../utils/management-client.js';
 
 // Define Auth0 Log interfaces
 interface Auth0Log {
@@ -39,16 +35,31 @@ export const LOG_TOOLS: Tool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        from: { type: 'string', description: 'Log ID to start from' },
-        take: { type: 'number', description: 'Number of logs to retrieve (max 100)' },
-        q: { type: 'string', description: 'Query in Lucene query string syntax' },
+        from: {
+          type: 'string',
+          description: 'Log ID to start retrieving logs from. Optional, used for pagination.',
+        },
+        take: {
+          type: 'number',
+          description: 'Number of logs to retrieve (1-100). Optional, defaults to 10.',
+        },
+        q: {
+          type: 'string',
+          description: 'Query in Lucene query string syntax. Optional, used for filtering logs.',
+        },
         sort: {
           type: 'string',
-          description: 'Field to sort by',
+          description: 'Field to sort by. Optional, defaults to date:-1 (newest first).',
           enum: ['date:1', 'date:-1'],
         },
-        include_fields: { type: 'boolean', description: 'Whether to include all fields' },
-        include_totals: { type: 'boolean', description: 'Whether to include totals' },
+        include_fields: {
+          type: 'boolean',
+          description: 'Whether to include all fields. Optional, defaults to true.',
+        },
+        include_totals: {
+          type: 'boolean',
+          description: 'Whether to include total count. Optional, defaults to true.',
+        },
       },
     },
   },
@@ -58,7 +69,10 @@ export const LOG_TOOLS: Tool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        id: { type: 'string', description: 'ID of the log entry to retrieve' },
+        id: {
+          type: 'string',
+          description: 'ID of the log entry to retrieve. Required.',
+        },
       },
       required: ['id'],
     },
@@ -69,14 +83,44 @@ export const LOG_TOOLS: Tool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        user_id: { type: 'string', description: 'Filter logs by user ID' },
-        client_id: { type: 'string', description: 'Filter logs by client ID' },
-        type: { type: 'string', description: 'Filter logs by type (e.g., "s", "f", "fp", etc.)' },
-        from: { type: 'string', description: 'Start date (ISO format)' },
-        to: { type: 'string', description: 'End date (ISO format)' },
-        page: { type: 'number', description: 'Page number' },
-        per_page: { type: 'number', description: 'Items per page (max 100)' },
-        include_totals: { type: 'boolean', description: 'Whether to include totals' },
+        user_id: {
+          type: 'string',
+          description: 'Filter logs by user ID. Optional.',
+        },
+        client_id: {
+          type: 'string',
+          description: 'Filter logs by client ID (application). Optional.',
+        },
+        type: {
+          type: 'string',
+          description:
+            'Filter logs by type (e.g., "s" for success, "f" for failure, "fp" for failed ping). Optional.',
+        },
+        from: {
+          type: 'string',
+          description:
+            'Start date in ISO format (YYYY-MM-DD or YYYY-MM-DDThh:mm:ss.sssZ). Optional.',
+        },
+        to: {
+          type: 'string',
+          description: 'End date in ISO format (YYYY-MM-DD or YYYY-MM-DDThh:mm:ss.sssZ). Optional.',
+        },
+        page: {
+          type: 'number',
+          description: 'Page number. Optional, starts at 0.',
+        },
+        per_page: {
+          type: 'number',
+          description: 'Items per page (1-100). Optional, defaults to 10.',
+        },
+        include_totals: {
+          type: 'boolean',
+          description: 'Whether to include total count. Optional, defaults to true.',
+        },
+        fields: {
+          type: 'string',
+          description: 'Comma-separated list of fields to include in the result. Optional.',
+        },
       },
     },
   },
@@ -92,83 +136,66 @@ export const LOG_HANDLERS: Record<
     config: HandlerConfig
   ): Promise<HandlerResponse> => {
     try {
+      // Check for token
+      if (!request.token) {
+        log('Warning: Token is empty or undefined');
+        return createErrorResponse('Error: Missing authentication token');
+      }
+
+      // Check if domain is configured
+      if (!config.domain) {
+        log('Error: Auth0 domain is not configured');
+        return createErrorResponse('Error: Auth0 domain is not configured');
+      }
+
       // Build query parameters
-      const params = new URLSearchParams();
+      const options: Record<string, any> = {};
 
       if (request.parameters.from) {
-        params.append('from', request.parameters.from);
+        options.from = request.parameters.from;
       }
 
       if (request.parameters.take !== undefined) {
         const take = Math.min(request.parameters.take, 100); // Max 100 logs
-        params.append('take', take.toString());
+        options.take = take;
       } else {
         // Default to 10 logs
-        params.append('take', '10');
+        options.take = 10;
       }
 
       if (request.parameters.q) {
-        params.append('q', request.parameters.q);
+        options.q = request.parameters.q;
       }
 
       if (request.parameters.sort) {
-        params.append('sort', request.parameters.sort);
+        options.sort = request.parameters.sort;
       } else {
         // Default to newest first
-        params.append('sort', 'date:-1');
+        options.sort = 'date:-1';
       }
 
       if (request.parameters.include_fields !== undefined) {
-        params.append('include_fields', request.parameters.include_fields.toString());
+        options.include_fields = request.parameters.include_fields;
       }
 
       if (request.parameters.include_totals !== undefined) {
-        params.append('include_totals', request.parameters.include_totals.toString());
+        options.include_totals = request.parameters.include_totals;
       } else {
         // Default to include totals
-        params.append('include_totals', 'true');
+        options.include_totals = true;
       }
 
-      // Full URL for debugging
-      const apiUrl = `https://${config.domain}/api/v2/logs?${params.toString()}`;
-      log(`Making API request to ${apiUrl}`);
-
       try {
-        // Make API request to Auth0 Management API with timeout
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 15000);
+        const managementClientConfig: Auth0Config = {
+          domain: config.domain,
+          token: request.token,
+        };
+        const managementClient = await getManagementClient(managementClientConfig);
 
-        const response = await fetch(apiUrl, {
-          headers: {
-            Authorization: `Bearer ${request.token}`,
-            'Content-Type': 'application/json',
-            Accept: 'application/json',
-          },
-          signal: controller.signal,
-        });
+        log(`Fetching logs with options: ${JSON.stringify(options)}`);
 
-        clearTimeout(timeoutId);
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          log(`API request failed with status ${response.status}: ${errorText}`);
-
-          let errorMessage = `Failed to list logs: ${response.status} ${response.statusText}`;
-
-          // Add more context based on common error codes
-          if (response.status === 401) {
-            errorMessage +=
-              '\nError: Unauthorized. Your token might be expired or invalid. Try running "npx @auth0/auth0-mcp-server init" to refresh your token.';
-          } else if (response.status === 403) {
-            errorMessage +=
-              '\nError: Forbidden. Your token might not have the required scopes (read:logs). Try running "npx @auth0/auth0-mcp-server init" to see the proper permissions.';
-          }
-
-          return createErrorResponse(errorMessage);
-        }
-
-        // Parse the response
-        const responseData = (await response.json()) as unknown;
+        // Use the Auth0 SDK to get logs
+        const responseData = await managementClient.logs.getAll(options);
 
         // Handle different response formats
         let logs: Auth0Log[] = [];
@@ -212,9 +239,20 @@ export const LOG_HANDLERS: Record<
         log(`Successfully retrieved ${logs.length} logs`);
 
         return createSuccessResponse(result);
-      } catch (fetchError: any) {
-        // Handle network-specific errors
-        const errorMessage = handleNetworkError(fetchError);
+      } catch (sdkError: any) {
+        // Handle SDK errors
+        log('Auth0 SDK error:', sdkError);
+
+        let errorMessage = `Failed to list logs: ${sdkError.message || 'Unknown error'}`;
+
+        // Add context based on common error codes
+        if (sdkError.statusCode === 401) {
+          errorMessage +=
+            '\nError: Unauthorized. Your token might be expired or invalid. Try running "npx @auth0/auth0-mcp-server init" to refresh your token.';
+        } else if (sdkError.statusCode === 403) {
+          errorMessage +=
+            '\nError: Forbidden. Your token might not have the required scopes (read:logs). Try running "npx @auth0/auth0-mcp-server init" to see the proper permissions.';
+        }
 
         return createErrorResponse(errorMessage);
       }
@@ -237,50 +275,46 @@ export const LOG_HANDLERS: Record<
         return createErrorResponse('Error: id is required');
       }
 
-      // API URL for getting a log
-      const apiUrl = `https://${config.domain}/api/v2/logs/${id}`;
-      log(`Making API request to ${apiUrl}`);
+      // Check for token
+      if (!request.token) {
+        log('Warning: Token is empty or undefined');
+        return createErrorResponse('Error: Missing authentication token');
+      }
+
+      // Check if domain is configured
+      if (!config.domain) {
+        log('Error: Auth0 domain is not configured');
+        return createErrorResponse('Error: Auth0 domain is not configured');
+      }
 
       try {
-        // Make API request to Auth0 Management API
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 15000);
+        const managementClientConfig: Auth0Config = {
+          domain: config.domain,
+          token: request.token,
+        };
+        const managementClient = await getManagementClient(managementClientConfig);
 
-        const response = await fetch(apiUrl, {
-          headers: {
-            Authorization: `Bearer ${request.token}`,
-            'Content-Type': 'application/json',
-          },
-          signal: controller.signal,
-        });
+        log(`Fetching log entry with ID: ${id}`);
 
-        clearTimeout(timeoutId);
+        // Use the Auth0 SDK to get a specific log entry
+        const logEntry = await managementClient.logs.get({ id });
 
-        if (!response.ok) {
-          const errorText = await response.text();
-          log(`API request failed with status ${response.status}: ${errorText}`);
-
-          let errorMessage = `Failed to get log: ${response.status} ${response.statusText}`;
-
-          if (response.status === 404) {
-            errorMessage = `Log with id '${id}' not found.`;
-          } else if (response.status === 401) {
-            errorMessage +=
-              '\nError: Unauthorized. Your token might be expired or invalid or missing read:logs scope.';
-          }
-
-          return createErrorResponse(errorMessage);
-        }
-
-        // Parse the response
-        const logEntry = (await response.json()) as Auth0Log;
-
-        log(`Successfully retrieved log: ${logEntry._id}`);
+        log(`Successfully retrieved log entry: ${(logEntry as any)._id || id}`);
 
         return createSuccessResponse(logEntry);
-      } catch (fetchError: any) {
-        // Handle network-specific errors
-        const errorMessage = handleNetworkError(fetchError);
+      } catch (sdkError: any) {
+        // Handle SDK errors
+        log('Auth0 SDK error:', sdkError);
+
+        let errorMessage = `Failed to get log: ${sdkError.message || 'Unknown error'}`;
+
+        // Add context based on common error codes
+        if (sdkError.statusCode === 404) {
+          errorMessage = `Log with id '${id}' not found.`;
+        } else if (sdkError.statusCode === 401) {
+          errorMessage +=
+            '\nError: Unauthorized. Your token might be expired or invalid or missing read:logs scope.';
+        }
 
         return createErrorResponse(errorMessage);
       }
@@ -298,8 +332,17 @@ export const LOG_HANDLERS: Record<
     config: HandlerConfig
   ): Promise<HandlerResponse> => {
     try {
-      // Build query parameters
-      const params = new URLSearchParams();
+      // Check for token
+      if (!request.token) {
+        log('Warning: Token is empty or undefined');
+        return createErrorResponse('Error: Missing authentication token');
+      }
+
+      // Check if domain is configured
+      if (!config.domain) {
+        log('Error: Auth0 domain is not configured');
+        return createErrorResponse('Error: Auth0 domain is not configured');
+      }
 
       // Build query string (q parameter) from search criteria
       const queryParts = [];
@@ -325,69 +368,47 @@ export const LOG_HANDLERS: Record<
         queryParts.push(dateRange);
       }
 
+      // Build query parameters
+      const options: Record<string, any> = {};
+
       if (queryParts.length > 0) {
-        params.append('q', queryParts.join(' AND '));
+        options.q = queryParts.join(' AND ');
       }
 
       // Add pagination parameters
       if (request.parameters.page !== undefined) {
-        params.append('page', request.parameters.page.toString());
+        options.page = request.parameters.page;
       }
 
       if (request.parameters.per_page !== undefined) {
         const perPage = Math.min(request.parameters.per_page, 100); // Max 100 logs
-        params.append('per_page', perPage.toString());
+        options.per_page = perPage;
       } else {
         // Default to 10 logs per page
-        params.append('per_page', '10');
+        options.per_page = 10;
       }
 
       // Default to include totals
       if (request.parameters.include_totals !== undefined) {
-        params.append('include_totals', request.parameters.include_totals.toString());
+        options.include_totals = request.parameters.include_totals;
       } else {
-        params.append('include_totals', 'true');
+        options.include_totals = true;
       }
 
       // Sort by date descending by default
-      params.append('sort', 'date:-1');
-
-      // Full URL for debugging
-      const apiUrl = `https://${config.domain}/api/v2/logs?${params.toString()}`;
-      log(`Making API request to ${apiUrl}`);
+      options.sort = 'date:-1';
 
       try {
-        // Make API request to Auth0 Management API with timeout
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 15000);
+        const managementClientConfig: Auth0Config = {
+          domain: config.domain,
+          token: request.token,
+        };
+        const managementClient = await getManagementClient(managementClientConfig);
 
-        const response = await fetch(apiUrl, {
-          headers: {
-            Authorization: `Bearer ${request.token}`,
-            'Content-Type': 'application/json',
-            Accept: 'application/json',
-          },
-          signal: controller.signal,
-        });
+        log(`Searching logs with options: ${JSON.stringify(options)}`);
 
-        clearTimeout(timeoutId);
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          log(`API request failed with status ${response.status}: ${errorText}`);
-
-          let errorMessage = `Failed to search logs: ${response.status} ${response.statusText}`;
-
-          if (response.status === 401) {
-            errorMessage +=
-              '\nError: Unauthorized. Your token might be expired or invalid or missing read:logs scope.';
-          }
-
-          return createErrorResponse(errorMessage);
-        }
-
-        // Parse the response
-        const responseData = (await response.json()) as unknown;
+        // Use the Auth0 SDK to search logs
+        const responseData = await managementClient.logs.getAll(options);
 
         // Handle different response formats
         let logs: Auth0Log[] = [];
@@ -440,9 +461,17 @@ export const LOG_HANDLERS: Record<
         log(`Successfully retrieved ${logs.length} logs matching search criteria`);
 
         return createSuccessResponse(result);
-      } catch (fetchError: any) {
-        // Handle network-specific errors
-        const errorMessage = handleNetworkError(fetchError);
+      } catch (sdkError: any) {
+        // Handle SDK errors
+        log('Auth0 SDK error:', sdkError);
+
+        let errorMessage = `Failed to search logs: ${sdkError.message || 'Unknown error'}`;
+
+        // Add context based on common error codes
+        if (sdkError.statusCode === 401) {
+          errorMessage +=
+            '\nError: Unauthorized. Your token might be expired or invalid or missing read:logs scope.';
+        }
 
         return createErrorResponse(errorMessage);
       }

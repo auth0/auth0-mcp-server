@@ -1,5 +1,7 @@
+import chalk from 'chalk';
 import { startServer } from './server.js';
-import { log } from './utils/logger.js';
+import { cliOutput } from './utils/cli-utility.js';
+import { log, logError } from './utils/logger.js';
 import * as os from 'os';
 
 // Main function to start server
@@ -11,9 +13,9 @@ const run = async (args: string[]) => {
     }
 
     await startServer();
-    log('✅ Server started successfully');
+    cliOutput(`${chalk.green('✓')} Server started successfully`);
   } catch (error) {
-    console.error('Fatal error starting server:', error);
+    logError('Fatal error starting server:', error);
     process.exit(1);
   }
 };

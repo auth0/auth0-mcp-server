@@ -6,6 +6,11 @@ let spinnerInterval: NodeJS.Timeout;
 let currentMessage: string;
 const audiencePath = '/api/v2/';
 
+export function cliOutput(message: string) {
+  process.stdout.write(message);
+  return true;
+}
+
 export function startSpinner(message: string) {
   let i = 0;
   currentMessage = message;
@@ -27,7 +32,7 @@ export function stopSpinner() {
     clearInterval(spinnerInterval);
     // Clear the spinner line
     process.stdout.write('\r\x1B[K');
-    console.log(`${chalk.green('✓')} ${currentMessage}`);
+    cliOutput(`${chalk.green('✓')} ${currentMessage}`);
   }
 }
 

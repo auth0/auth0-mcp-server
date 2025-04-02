@@ -1,7 +1,8 @@
 import { findAndUpdatedClaudeConfig } from './clients/claude.js';
 import { findAndUpdateWindsurfConfig } from './clients/windsurf.js';
+import { findAndUpdateCursorConfig } from './clients/cursor.js';
 import { log } from './utils/logger.js';
-import { requestAuthorization } from './utils/auth/device-auth-flow.js';
+import { requestAuthorization } from './auth/device-auth-flow.js';
 
 const init = async (args: string[]) => {
   try {
@@ -19,6 +20,9 @@ const init = async (args: string[]) => {
     if (clientValue === 'windsurf') {
       log('Configuring Windsurf as client...');
       await findAndUpdateWindsurfConfig();
+    } else if (clientValue === 'cursor') {
+      log('Configuring Cursor as client...');
+      await findAndUpdateCursorConfig();
     } else {
       // Default to Claude for any other value or if no client specified
       log('Configuring Claude as client default...');

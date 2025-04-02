@@ -8,6 +8,7 @@ vi.mock('../src/server', () => ({
 
 vi.mock('../src/utils/logger', () => ({
   log: vi.fn(),
+  logError: vi.fn(),
 }));
 
 vi.mock('os', () => ({
@@ -16,7 +17,7 @@ vi.mock('os', () => ({
 
 // Import mocked modules
 import { startServer } from '../src/server';
-import { log } from '../src/utils/logger';
+import { log, logError } from '../src/utils/logger';
 import * as os from 'os';
 
 describe('Run Module', () => {
@@ -83,7 +84,7 @@ describe('Run Module', () => {
 
     await run([]);
 
-    expect(console.error).toHaveBeenCalledWith('Fatal error starting server:', mockError);
+    expect(logError).toHaveBeenCalledWith('Fatal error starting server:', mockError);
     expect(process.exit).toHaveBeenCalledWith(1);
   });
 });

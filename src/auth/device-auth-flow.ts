@@ -1,8 +1,8 @@
 import keytar from 'keytar';
 import chalk from 'chalk';
 import open from 'open';
-import { startSpinner, stopSpinner, getTenantFromToken } from '../cli-utility.js';
-import { log } from '../logger.js';
+import { startSpinner, stopSpinner, getTenantFromToken, cliOutput } from '../utils/cli-utility.js';
+import { log, logError } from '../utils/logger.js';
 
 const requiredScopes = `offline_access create:clients read:clients read:client_grants read:roles read:rules read:users read:branding read:email_templates read:email_provider read:flows read:forms read:flows_vault_connections read:connections read:client_keys read:logs read:tenant_settings read:custom_domains read:anomaly_blocks read:log_streams read:actions read:organizations read:organization_members read:organization_member_roles read:organization_connections read:prompts`;
 
@@ -40,15 +40,15 @@ async function requestAuthorization() {
 
     const jsonRes = await response.json();
     if (!jsonRes.error) {
-      console.log('Verify this code on screen', chalk.bold.green(jsonRes.user_code));
+      cliOutput(`Verify this code on screen ${chalk.bold.green(jsonRes.user_code)}`);
       openBrowser(jsonRes.verification_uri_complete);
       await exchangeDeviceCodeForToken(jsonRes);
     } else {
-      console.log('Error', jsonRes);
+      logError('Error', jsonRes);
       process.exit(1);
     }
   } catch (err) {
-    console.log('Error', err);
+    logError('Error', err);
     process.exit(1);
   }
 }
@@ -69,7 +69,7 @@ function isValidUrl(url: string): boolean {
 
 function openBrowser(url: string) {
   if (!url || !isValidUrl(url)) {
-    console.error('Invalid URL provided:', url);
+    logError('Invalid URL provided:', url);
     return;
   }
 
@@ -78,7 +78,7 @@ function openBrowser(url: string) {
       log('Browser opened successfully');
     })
     .catch((err) => {
-      console.error('Failed to open browser:', err);
+      logError('Failed to open browser:', err);
     });
 }
 
@@ -109,12 +109,12 @@ async function exchangeDeviceCodeForToken(deviceCode: any) {
         await wait(5000); // Wait before polling again
       } else {
         stopSpinner();
-        console.error('Unexpected error:', jsonRes.error);
+        logError('Unexpected error:', jsonRes.error);
         break; // Exit loop on unknown error
       }
     } catch (err) {
       stopSpinner();
-      console.error('Error in token exchange:', err);
+      logError('Error in token exchange:', err);
       break; // Exit loop on fetch failure
     }
   }
