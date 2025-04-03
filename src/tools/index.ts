@@ -1,6 +1,6 @@
 import { ACTION_HANDLERS, ACTION_TOOLS } from './actions.js';
 import { APPLICATION_HANDLERS, APPLICATION_TOOLS } from './applications.js';
-import { HandlerConfig, HandlerRequest, HandlerResponse, Tool } from '../utils/types.js';
+import type { HandlerConfig, HandlerRequest, HandlerResponse, Tool } from '../utils/types.js';
 import { FORM_HANDLERS, FORM_TOOLS } from './forms.js';
 import { LOG_HANDLERS, LOG_TOOLS } from './logs.js';
 import { RESOURCE_SERVER_HANDLERS, RESOURCE_SERVER_TOOLS } from './resource-servers.js';

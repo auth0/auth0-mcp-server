@@ -44,7 +44,7 @@ export function createSuccessResponse(result: object): HandlerResponse {
 }
 
 // Helper function to create error response
-export function createErrorResponse(errorString: String): HandlerResponse {
+export function createErrorResponse(errorString: string): HandlerResponse {
   return {
     toolResult: {
       content: [

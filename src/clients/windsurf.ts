@@ -31,13 +31,15 @@ export async function getWindsurfConfigPath(): Promise<string> {
     case 'darwin': // macOS
       configDir = path.join(os.homedir(), '.codeium', 'windsurf');
       break;
-    case 'win32': // Windows
-      const appData = process.env.APPDATA;
-      if (!appData) {
+    case 'win32': {
+      // Windows
+      const APPDATA = process.env.APPDATA;
+      if (!APPDATA) {
         throw new Error('APPDATA environment variable not set');
       }
-      configDir = path.join(appData, '.codeium', 'windsurf');
+      configDir = path.join(APPDATA, '.codeium', 'windsurf');
       break;
+    }
     case 'linux': // Linux
       configDir = path.join(os.homedir(), '.codeium', 'windsurf');
       break;

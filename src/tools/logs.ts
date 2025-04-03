@@ -1,7 +1,7 @@
-import { HandlerConfig, HandlerRequest, HandlerResponse, Tool } from '../utils/types.js';
+import type { HandlerConfig, HandlerRequest, HandlerResponse, Tool } from '../utils/types.js';
 import { log } from '../utils/logger.js';
 import { createErrorResponse, createSuccessResponse } from '../utils/http-utility.js';
-import { Auth0Config } from '../utils/config.js';
+import type { Auth0Config } from '../utils/config.js';
 import { getManagementClient } from '../utils/management-client.js';
 
 // Define Auth0 Log interfaces
@@ -15,7 +15,7 @@ interface Auth0Log {
   ip?: string;
   user_id?: string;
   user_name?: string;
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
   [key: string]: any;
 }
 

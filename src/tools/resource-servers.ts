@@ -1,5 +1,5 @@
-import { ResourceServerCreate, ResourceServerUpdate } from 'auth0';
-import {
+import type { ResourceServerCreate, ResourceServerUpdate } from 'auth0';
+import type {
   Auth0PaginatedResponse,
   HandlerConfig,
   HandlerRequest,
@@ -8,7 +8,7 @@ import {
 } from '../utils/types.js';
 import { log } from '../utils/logger.js';
 import { createErrorResponse, createSuccessResponse } from '../utils/http-utility.js';
-import { Auth0Config } from '../utils/config.js';
+import type { Auth0Config } from '../utils/config.js';
 import { getManagementClient } from '../utils/management-client.js';
 
 // Define all available resource server tools

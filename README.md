@@ -1,11 +1,11 @@
-# Auth0 MCP Server
+# 🔐 Auth0 MCP Server
 
 A Model Context Protocol (MCP) server implementation that integrates Auth0 Management API with Claude Desktop, enabling AI-assisted management of your Auth0 tenant.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
 
-## Table of Contents
+## 📑 Table of Contents
 
 - [Overview](#overview)
 - [Quick Start](#quick-start)
@@ -31,28 +31,28 @@ A Model Context Protocol (MCP) server implementation that integrates Auth0 Manag
 - [What is Auth0?](#what-is-auth0)
 - [License](#license)
 
-## Overview
+## 🌟 Overview
 
 The Auth0 MCP Server allows Claude AI to interact with your Auth0 tenant through the Model Context Protocol. This enables Claude to help you manage applications, resource servers, actions, logs, forms, and more within your Auth0 environment.
 
-### Key Features
+### ✨ Key Features
 
-- **Secure Authentication**: Uses device authorization flow for enhanced security
-- **Protected Credentials**: Stores credentials in system keychain
-- **Comprehensive Tools**: Complete set of tools for Auth0 tenant management
-- **Seamless Integration**: Works directly with Claude Desktop
+- 🔒 **Secure Authentication**: Uses device authorization flow for enhanced security
+- 🔑 **Protected Credentials**: Stores credentials in system keychain
+- 🧰 **Comprehensive Tools**: Complete set of tools for Auth0 tenant management
+- 🤖 **Seamless Integration**: Works directly with Claude Desktop
 
 **_NOTE:_** This server requires Node.js v18 or higher and appropriate Auth0 permissions to function correctly.
 
-## Quick Start
+## 🚀 Quick Start
 
-### Prerequisites
+### 📋 Prerequisites
 
 - [Node.js v18 or higher](https://nodejs.org/en/download)
 - Claude Desktop application
 - Auth0 account with appropriate permissions
 
-### Installation
+### 💻 Installation
 
 Install and initialize the Auth0 MCP Server with a single command:
 
@@ -77,10 +77,10 @@ npx @auth0/auth0-mcp-server init --client cursor
 <br/>
 
 <div align="center">
-  <img src="assets/auth0-mcp-example-demo.gif" alt="Auth0 MCP Server Demo" width="600">
+  <img src="assets/auth0-mcp-example-demo.gif" alt="Auth0 MCP Server Demo" width="800">
 </div>
 
-This will:
+#### 📖 This will:
 
 1. Start the device authorization flow
 2. Open your browser to authenticate with Auth0
@@ -89,7 +89,7 @@ This will:
 
 **_NOTE:_** You'll need to restart Claude/Windsurf/Cursor Desktop after installation for the changes to take effect.
 
-### Connecting to Claude Desktop
+### 🔌 Connecting to Claude Desktop
 
 After installation:
 
@@ -101,7 +101,7 @@ After installation:
   <img src="assets/help-image-1.png" alt="Claude installed Help Image" width="400">
 </div>
 
-## Supported Tools
+## 🛠️ Supported Tools
 
 The Auth0 MCP Server provides the following tools for Claude to interact with your Auth0 tenant:
 
@@ -148,14 +148,14 @@ The Auth0 MCP Server provides the following tools for Claude to interact with yo
 
 ### Forms
 
-| Tool Name            | Description                             |
-| -------------------- | --------------------------------------- |
-| `auth0_list_forms`   | List all forms in the Auth0 tenant      |
-| `auth0_get_form`     | Get details about a specific Auth0 form |
-| `auth0_create_form`  | Create a new Auth0 form                 |
-| `auth0_update_form`  | Update an existing Auth0 form           |
+| Tool Name           | Description                             |
+| ------------------- | --------------------------------------- |
+| `auth0_list_forms`  | List all forms in the Auth0 tenant      |
+| `auth0_get_form`    | Get details about a specific Auth0 form |
+| `auth0_create_form` | Create a new Auth0 form                 |
+| `auth0_update_form` | Update an existing Auth0 form           |
 
-## Architecture
+## 🏛️ Architecture
 
 The Auth0 MCP Server implements the Model Context Protocol, allowing Claude to:
 
@@ -167,7 +167,7 @@ The server handles authentication, request validation, and secure communication 
 
 **_NOTE:_** The server operates as a local process that connects to Claude Desktop, enabling secure communication without exposing your Auth0 credentials.
 
-## Authentication
+## 🔐 Authentication
 
 The server uses OAuth 2.0 device authorization flow for secure authentication with Auth0. Your credentials are stored securely in your system's keychain and are never exposed in plain text.
 
@@ -188,9 +188,9 @@ sequenceDiagram
     Auth0MCP-->>User: Confirmation of successful setup
 ```
 
-## Advanced Usage
+## 🔧 Advanced Usage
 
-### Command Line Interface
+### 💻 Command Line Interface
 
 The server provides a CLI with the following commands:
 
@@ -205,16 +205,16 @@ npx @auth0/auth0-mcp-server init
 npx @auth0/auth0-mcp-server run
 ```
 
-### Operation Modes
+### 🚥 Operation Modes
 
-#### Debug Mode
+#### 🐞 Debug Mode
 
 - More detailed logging
 - Enable by setting environment variable: `export DEBUG=auth0-mcp`
 
 **_NOTE:_** Debug mode is particularly useful when troubleshooting connection or authentication issues.
 
-### Configuration
+### ⚙️ Configuration
 
 The server stores configuration securely in your system's keychain. No configuration files or environment variables are needed for normal operation.
 
@@ -236,7 +236,8 @@ Add this to your `claude_desktop_config.json`:
   }
 }
 ```
-**_NOTE:_** _Users would need to do this manually only when they run into unforseen errors._
+
+**_NOTE:_** _you can manually update if needed or if any unexpected errors occur during the npx init command._
 
 #### Windsurf Desktop Configuration
 
@@ -257,7 +258,8 @@ Add this to your `mcp_config.json`:
   }
 }
 ```
-**_NOTE:_** _Users would need to do this manually only when they run into unforseen errors._
+
+**_NOTE:_** _you can manually update if needed or if any unexpected errors occur during the npx init command._
 
 #### Cursor Configuration
 
@@ -278,11 +280,12 @@ Add this to your `mcp.json`:
   }
 }
 ```
-**_NOTE:_** _Users would need to do this manually only when they run into unforseen errors._
 
-## Troubleshooting
+**_NOTE:_** _you can manually update if needed or if any unexpected errors occur during the npx init command._
 
-### Common Issues
+## 🩺 Troubleshooting
+
+### 🚨 Common Issues
 
 1. **Authentication Failures**
 
@@ -300,7 +303,7 @@ Add this to your `mcp.json`:
 
 **_NOTE:_** Most connection issues can be resolved by restarting both the server and Claude Desktop.
 
-#### Debug logs
+#### 📋 Debug logs
 
 Get detailed MCP logs from Claude Desktop:
 
@@ -309,7 +312,7 @@ Get detailed MCP logs from Claude Desktop:
 tail -n 20 -F ~/Library/Logs/Claude/mcp*.log
 ```
 
-#### MCP Inspector
+#### 🔍 MCP Inspector
 
 For advanced troubleshooting, use the MCP Inspector:
 
@@ -317,7 +320,7 @@ For advanced troubleshooting, use the MCP Inspector:
 npx @modelcontextprotocol/inspector -e DEBUG='auth0-mcp' @auth0/auth0-mcp-server run
 ```
 
-### Logs
+### 📜 Logs
 
 For detailed logs, run the server in debug mode:
 
@@ -325,9 +328,9 @@ For detailed logs, run the server in debug mode:
 DEBUG=auth0-mcp npx @auth0/auth0-mcp-server run
 ```
 
-## Development
+## 👨‍💻 Development
 
-### Building from Source
+### 🏗️ Building from Source
 
 ```bash
 # Clone the repository
@@ -344,7 +347,7 @@ npm run build
 npm start
 ```
 
-### Configuration Utilities
+### 🛠️ Configuration Utilities
 
 The Auth0 MCP Server provides utilities to configure Claude Desktop for seamless integration:
 
@@ -362,7 +365,7 @@ The configuration utility:
 
 **_NOTE:_** After running the configuration tool, you'll need to restart Claude Desktop for changes to take effect.
 
-## Security
+## 🔒 Security
 
 The Auth0 MCP Server prioritizes security:
 
@@ -373,22 +376,22 @@ The Auth0 MCP Server prioritizes security:
 
 **_NOTE:_** Always review the permissions requested during the authentication process to ensure they align with your security requirements.
 
-## Feedback and Contributing
+## 💬 Feedback and Contributing
 
 We appreciate feedback and contributions to this project! Before you get started, please see:
 
 - [Auth0's general contribution guidelines](https://github.com/auth0/open-source-template/blob/master/GENERAL-CONTRIBUTING.md)
 - [Auth0's code of conduct guidelines](https://github.com/auth0/open-source-template/blob/master/CODE-OF-CONDUCT.md)
 
-### Reporting Issues
+### 🐛 Reporting Issues
 
-To provide feedback or report a bug, please [raise an issue on our issue tracker](https://github.com/auth0/node-auth0/issues).
+To provide feedback or report a bug, please [raise an issue on our issue tracker](/issues).
 
-### Vulnerability Reporting
+### 🔐 Vulnerability Reporting
 
 Please do not report security vulnerabilities on the public GitHub issue tracker. The [Responsible Disclosure Program](https://auth0.com/whitehat) details the procedure for disclosing security issues.
 
-## What is Auth0?
+## ❓ What is Auth0?
 
 <p align="center">
   <picture>
@@ -400,6 +403,6 @@ Please do not report security vulnerabilities on the public GitHub issue tracker
 
 Auth0 is an easy to implement, adaptable authentication and authorization platform. To learn more checkout [Why Auth0?](https://auth0.com/why-auth0)
 
-## License
+## 📄 License
 
-This project is licensed under the MIT license. See the [LICENSE](https://github.com/auth0/node-auth0/blob/master/LICENSE) file for more info.
+This project is licensed under the MIT license. See the [LICENSE](LICENSE) file for more info.

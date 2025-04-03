@@ -17,7 +17,7 @@ function getConfig() {
 
 async function requestAuthorization() {
   const config = getConfig();
-  let body: any = {
+  const body: any = {
     client_id: config.clientId,
   };
 

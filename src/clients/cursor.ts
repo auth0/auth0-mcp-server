@@ -30,13 +30,15 @@ export async function getCursorConfigPath(): Promise<string> {
     case 'darwin': // macOS
       configDir = path.join(os.homedir(), '.cursor');
       break;
-    case 'win32': // Windows
-      const appData = process.env.APPDATA;
-      if (!appData) {
+    case 'win32': {
+      // Windows
+      const APPDATA = process.env.APPDATA;
+      if (!APPDATA) {
         throw new Error('APPDATA environment variable not set');
       }
-      configDir = path.join(appData, '.cursor');
+      configDir = path.join(APPDATA, '.cursor');
       break;
+    }
     case 'linux': // Linux
       configDir = path.join(os.homedir(), '.cursor');
       break;

@@ -31,13 +31,15 @@ export async function getClaudeConfigPath(): Promise<string> {
     case 'darwin': // macOS
       configDir = path.join(os.homedir(), 'Library', 'Application Support', 'Claude');
       break;
-    case 'win32': // Windows
-      const appData = process.env.APPDATA;
-      if (!appData) {
+    case 'win32': {
+      // Windows
+      const APPDATA = process.env.APPDATA;
+      if (!APPDATA) {
         throw new Error('APPDATA environment variable not set');
       }
-      configDir = path.join(appData, 'Claude');
+      configDir = path.join(APPDATA, 'Claude');
       break;
+    }
     case 'linux': // Linux
       configDir = path.join(os.homedir(), '.config', 'Claude');
       break;

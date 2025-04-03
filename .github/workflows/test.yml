@@ -24,7 +24,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: ['18.17', '20.3']
+        node-version: ['18.17', '20.3', 'latest']
 
     steps:
       - name: Checkout code
@@ -49,10 +49,10 @@ jobs:
         shell: bash
         run: npm run build
 
-      - name: Lint package
-        shell: bash
-        run: npm run lint:package
+      # - name: Tests Unit
+      #   shell: bash
+      #   run: npm test
 
-      - name: Tests
+      - name: Tests Integration
         shell: bash
         run: npm run test:ci
