@@ -1,4 +1,3 @@
-import { exec, execSync } from 'child_process';
 import * as os from 'os';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
@@ -10,13 +9,6 @@ import {
   refreshAccessToken,
 } from '../auth/device-auth-flow.js';
 import { log } from './logger.js';
-
-// Promisify exec
-const execAsync = promisify(exec);
-
-// Handle ESM module __dirname equivalent
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 // Ensure HOME is set
 if (!process.env.HOME) {

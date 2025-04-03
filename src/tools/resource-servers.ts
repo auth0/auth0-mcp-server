@@ -215,7 +215,7 @@ export const RESOURCE_SERVER_HANDLERS: Record<
       }
 
       // Build query parameters
-      const options: Record<string, any> = {};
+      const options: Record<string, number | boolean> = {};
       if (request.parameters.page !== undefined) {
         options.page = request.parameters.page;
       }

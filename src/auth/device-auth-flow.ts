@@ -4,7 +4,37 @@ import open from 'open';
 import { startSpinner, stopSpinner, getTenantFromToken, cliOutput } from '../utils/cli-utility.js';
 import { log, logError } from '../utils/logger.js';
 
-const requiredScopes = `offline_access create:clients read:clients read:client_grants read:roles read:rules read:users read:branding read:email_templates read:email_provider read:flows read:forms read:flows_vault_connections read:connections read:client_keys read:logs read:tenant_settings read:custom_domains read:anomaly_blocks read:log_streams read:actions read:organizations read:organization_members read:organization_member_roles read:organization_connections read:prompts`;
+const AUTH0_SCOPES = [
+  'offline_access',
+  'create:clients',
+  'read:clients',
+  'read:client_grants',
+  'read:roles',
+  'read:rules',
+  'read:users',
+  'read:branding',
+  'read:email_templates',
+  'read:email_provider',
+  'read:forms',
+  'create:forms',
+  'update:forms',
+  'read:flows_vault_connections',
+  'read:connections',
+  'read:client_keys',
+  'read:logs',
+  'read:tenant_settings',
+  'read:custom_domains',
+  'read:anomaly_blocks',
+  'read:log_streams',
+  'read:actions',
+  'read:organizations',
+  'read:organization_members',
+  'read:organization_member_roles',
+  'read:organization_connections',
+  'read:prompts',
+];
+
+const requiredScopes = AUTH0_SCOPES.join(' ');
 
 function getConfig() {
   return {
@@ -63,6 +93,7 @@ function isValidUrl(url: string): boolean {
     // Check for safe protocols
     return ['http:', 'https:'].includes(parsedUrl.protocol);
   } catch (error) {
+    logError('Error', error);
     return false;
   }
 }
@@ -189,7 +220,6 @@ export async function refreshAccessToken(): Promise<string | null> {
       return null;
     }
 
-    const tenantName = getTenantFromToken(tokenSet.access_token);
     await storeInKeychain('auth0-mcp', 'AUTH0_TOKEN', tokenSet.access_token);
 
     if (tokenSet.refresh_token) {

@@ -3,10 +3,7 @@ import { log } from '../utils/logger.js';
 import { createErrorResponse, createSuccessResponse } from '../utils/http-utility.js';
 import type { Auth0Config } from '../utils/config.js';
 import { getManagementClient } from '../utils/management-client.js';
-import type {
-  GetForms200ResponseOneOfInner,
-  PostFormsRequest,
-} from 'auth0/dist/cjs/management/index.js';
+import type { PostFormsRequest } from 'auth0/dist/cjs/management/index.js';
 
 // Define all available form tools
 export const FORM_TOOLS: Tool[] = [
@@ -17,7 +14,7 @@ export const FORM_TOOLS: Tool[] = [
       type: 'object',
       properties: {
         page: { type: 'number', description: 'Page number (0-based)' },
-        per_page: { type: 'number', description: 'Number of forms per page' },
+        per_page: { type: 'number', description: 'Number of forms per page default:50' },
         include_totals: { type: 'boolean', description: 'Include total count' },
       },
     },
@@ -161,8 +158,8 @@ export const FORM_HANDLERS: Record<
       if (request.parameters.per_page !== undefined) {
         options.per_page = request.parameters.per_page;
       } else {
-        // Default to 10 forms per page
-        options.per_page = 10;
+        // Default to 50 forms per page
+        options.per_page = 50;
       }
 
       if (request.parameters.include_totals !== undefined) {
@@ -182,52 +179,22 @@ export const FORM_HANDLERS: Record<
         log(`Fetching forms with options: ${JSON.stringify(options)}`);
 
         // Use the Auth0 SDK to get all forms
-        const responseData = await managementClient.forms.getAll(options);
+        const { data: responseData } = await managementClient.forms.getAll(options);
+
+        log('Received response from Auth0 API:', JSON.stringify(responseData));
 
         // Handle different response formats
-        let forms: GetForms200ResponseOneOfInner[] = [];
-        let total = 0;
 
-        if (Array.isArray(responseData)) {
-          // Simple array response
-          forms = responseData as GetForms200ResponseOneOfInner[];
-          total = forms.length;
-        } else if (
-          typeof responseData === 'object' &&
-          responseData !== null &&
-          'forms' in responseData &&
-          Array.isArray(responseData.forms)
-        ) {
-          // Paginated response with totals
-          forms = responseData.forms;
-          total = (responseData as any).total || forms.length;
-        } else {
-          log('Invalid response format:', responseData);
-          return createErrorResponse('Error: Received invalid response format from Auth0 API.');
-        }
+        log(`Successfully retrieved forms`);
 
-        if (forms.length === 0) {
+        if (!responseData) {
           return createSuccessResponse({
             message: 'No forms found matching your criteria.',
             forms: [],
           });
         }
 
-        // Create a result object with all the necessary information
-        const result = {
-          forms: forms,
-          count: forms.length,
-          total: total,
-          pagination: {
-            current_page: request.parameters.page || 0,
-            per_page: request.parameters.per_page || 10,
-            total_pages: Math.ceil(total / (request.parameters.per_page || 10)),
-          },
-        };
-
-        log(`Successfully retrieved ${forms.length} forms`);
-
-        return createSuccessResponse(result);
+        return createSuccessResponse(responseData);
       } catch (sdkError: any) {
         // Handle SDK errors
         log('Auth0 SDK error:', sdkError);
@@ -286,7 +253,7 @@ export const FORM_HANDLERS: Record<
         log(`Fetching form with ID: ${id}`);
 
         // Use the Auth0 SDK to get a specific form
-        const form = await managementClient.forms.get({ id });
+        const { data: form } = await managementClient.forms.get({ id });
 
         log(`Successfully retrieved form: ${(form as any).name} (${(form as any).id})`);
 
@@ -444,13 +411,13 @@ export const FORM_HANDLERS: Record<
         log(`Updating form with ID: ${id}`);
 
         // Use the Auth0 SDK to update a form
-        const updatedForm = await managementClient.forms.update({ id }, updateData);
+        const { data: updatedForm } = await managementClient.forms.update({ id }, updateData);
 
         log(
-          `Successfully updated form: ${(updatedForm as any).name || 'Unknown'} (${(updatedForm as any).id || id})`
+          `Successfully updated form: ${updatedForm.name || 'Unknown'} (${updatedForm.id || id})`
         );
 
-        return createSuccessResponse(updatedForm as any);
+        return createSuccessResponse(updatedForm);
       } catch (sdkError: any) {
         // Handle SDK errors
         log('Auth0 SDK error:', sdkError);

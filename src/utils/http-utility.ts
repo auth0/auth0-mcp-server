@@ -29,18 +29,34 @@ export function formatDomain(domain: string): string {
 }
 
 // Helper function to create success response
-export function createSuccessResponse(result: object): HandlerResponse {
-  return {
-    toolResult: {
-      content: [
-        {
-          type: 'text',
-          text: JSON.stringify(result, null, 2),
-        },
-      ],
-      isError: false,
-    },
-  };
+export function createSuccessResponse(result: object | Array<any>): HandlerResponse {
+  // Check if result is an array and has more than one item
+  if (Array.isArray(result) && result.length > 1) {
+    const mutiContent = result.map((item) => {
+      return {
+        type: 'text',
+        text: JSON.stringify(item, null, 2),
+      };
+    });
+    return {
+      toolResult: {
+        content: mutiContent,
+        isError: false,
+      },
+    };
+  } else {
+    return {
+      toolResult: {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(result, null, 2),
+          },
+        ],
+        isError: false,
+      },
+    };
+  }
 }
 
 // Helper function to create error response

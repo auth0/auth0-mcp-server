@@ -1,4 +1,4 @@
-# 🔐 Auth0 MCP Server
+# Auth0 MCP Server
 
 A Model Context Protocol (MCP) server implementation that integrates Auth0 Management API with Claude Desktop, enabling AI-assisted management of your Auth0 tenant.
 
@@ -140,11 +140,10 @@ The Auth0 MCP Server provides the following tools for Claude to interact with yo
 
 ### Logs
 
-| Tool Name           | Description                        |
-| ------------------- | ---------------------------------- |
-| `auth0_list_logs`   | List logs from the Auth0 tenant    |
-| `auth0_get_log`     | Get a specific log entry by ID     |
-| `auth0_search_logs` | Search logs with specific criteria |
+| Tool Name         | Description                     |
+| ----------------- | ------------------------------- |
+| `auth0_list_logs` | List logs from the Auth0 tenant |
+| `auth0_get_log`   | Get a specific log entry by ID  |
 
 ### Forms
 

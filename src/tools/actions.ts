@@ -14,34 +14,22 @@ interface Auth0Action {
   runtime: string;
   status: string;
   secrets: Auth0ActionSecret[];
-  [key: string]: any;
 }
 
 interface Auth0ActionTrigger {
   id: string;
   version: string;
-  [key: string]: any;
 }
 
 interface Auth0ActionDependency {
   name: string;
   version: string;
-  [key: string]: any;
 }
 
 interface Auth0ActionSecret {
   name: string;
   value?: string;
   updated_at?: string;
-  [key: string]: any;
-}
-
-interface Auth0PaginatedActionsResponse {
-  actions: Auth0Action[];
-  total?: number;
-  page?: number;
-  per_page?: number;
-  [key: string]: any;
 }
 
 // Define all available action tools

@@ -3,7 +3,7 @@ import { log, logError } from './utils/logger.js';
 import * as os from 'os';
 
 // Main function to start server
-const run = async (args: string[]) => {
+const run = async () => {
   try {
     if (!process.env.HOME) {
       process.env.HOME = os.homedir();
