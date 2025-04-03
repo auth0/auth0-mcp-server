@@ -11,6 +11,7 @@
     "dist"
   ],
   "scripts": {
+    "prebuild": "npm run lint",
     "build": "rm -rf dist && tsc",
     "postbuild": "shx chmod +x dist/*.js",
     "start": "node dist/index.js run",
