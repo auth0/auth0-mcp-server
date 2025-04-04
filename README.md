@@ -12,7 +12,6 @@ The Auth0 MCP server integrates with LLMs and AI agents, allowing you to perform
 - `Create a new Auth0 app and get the domain and client ID`
 - `Create and deploy a new Auth0 action to generate a JWT token`
 - `Could you check Auth0 logs for logins from 192.108.92.3 IP address?`
-- ...
 
 <br/>
 
