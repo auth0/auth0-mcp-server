@@ -38,13 +38,13 @@ describe('Resource Servers Tool Handlers', () => {
 
       const response = await RESOURCE_SERVER_HANDLERS.auth0_list_resource_servers(request, config);
 
-      expect(response.toolResult).toBeDefined();
-      expect(response.toolResult.isError).toBe(false);
-      expect(response.toolResult.content).toBeDefined();
-      expect(response.toolResult.content[0].type).toBe('text');
+      expect(response).toBeDefined();
+      expect(response.isError).toBe(false);
+      expect(response.content).toBeDefined();
+      expect(response.content[0].type).toBe('text');
 
       // The response should be a JSON string that we can parse
-      const parsedContent = JSON.parse(response.toolResult.content[0].text);
+      const parsedContent = JSON.parse(response.content[0].text);
       expect(parsedContent.resource_servers).toBeDefined();
       expect(parsedContent.resource_servers.length).toBeGreaterThan(0);
     });
@@ -65,10 +65,10 @@ describe('Resource Servers Tool Handlers', () => {
 
       const response = await RESOURCE_SERVER_HANDLERS.auth0_list_resource_servers(request, config);
 
-      expect(response.toolResult.isError).toBe(false);
+      expect(response.isError).toBe(false);
 
       // The response should be a JSON string that we can parse
-      const parsedContent = JSON.parse(response.toolResult.content[0].text);
+      const parsedContent = JSON.parse(response.content[0].text);
       expect(parsedContent.resource_servers).toBeDefined();
     });
 
@@ -92,9 +92,9 @@ describe('Resource Servers Tool Handlers', () => {
 
       const response = await RESOURCE_SERVER_HANDLERS.auth0_list_resource_servers(request, config);
 
-      expect(response.toolResult.isError).toBe(true);
-      expect(response.toolResult.content[0].text).toContain('Failed to list resource servers');
-      expect(response.toolResult.content[0].text).toContain('Unauthorized');
+      expect(response.isError).toBe(true);
+      expect(response.content[0].text).toContain('Failed to list resource servers');
+      expect(response.content[0].text).toContain('Unauthorized');
     });
 
     it('should handle missing token', async () => {
@@ -107,8 +107,8 @@ describe('Resource Servers Tool Handlers', () => {
 
       const response = await RESOURCE_SERVER_HANDLERS.auth0_list_resource_servers(request, config);
 
-      expect(response.toolResult.isError).toBe(true);
-      expect(response.toolResult.content[0].text).toContain('Missing authentication token');
+      expect(response.isError).toBe(true);
+      expect(response.content[0].text).toContain('Missing authentication token');
     });
 
     it('should handle missing domain', async () => {
@@ -121,8 +121,8 @@ describe('Resource Servers Tool Handlers', () => {
 
       const response = await RESOURCE_SERVER_HANDLERS.auth0_list_resource_servers(request, config);
 
-      expect(response.toolResult.isError).toBe(true);
-      expect(response.toolResult.content[0].text).toContain('Auth0 domain is not configured');
+      expect(response.isError).toBe(true);
+      expect(response.content[0].text).toContain('Auth0 domain is not configured');
     });
   });
 
@@ -141,10 +141,10 @@ describe('Resource Servers Tool Handlers', () => {
 
       const response = await RESOURCE_SERVER_HANDLERS.auth0_get_resource_server(request, config);
 
-      expect(response.toolResult.isError).toBe(false);
+      expect(response.isError).toBe(false);
 
       // The response should be a JSON string that we can parse
-      const parsedContent = JSON.parse(response.toolResult.content[0].text);
+      const parsedContent = JSON.parse(response.content[0].text);
       // The response might be nested in a data property or directly in the response
       const resourceData = parsedContent.data || parsedContent;
       expect(resourceData.id).toBe(resourceServerId);
@@ -160,8 +160,8 @@ describe('Resource Servers Tool Handlers', () => {
 
       const response = await RESOURCE_SERVER_HANDLERS.auth0_get_resource_server(request, config);
 
-      expect(response.toolResult.isError).toBe(true);
-      expect(response.toolResult.content[0].text).toContain('id is required');
+      expect(response.isError).toBe(true);
+      expect(response.content[0].text).toContain('id is required');
     });
 
     it('should handle resource server not found', async () => {
@@ -183,8 +183,8 @@ describe('Resource Servers Tool Handlers', () => {
 
       const response = await RESOURCE_SERVER_HANDLERS.auth0_get_resource_server(request, config);
 
-      expect(response.toolResult.isError).toBe(true);
-      expect(response.toolResult.content[0].text).toContain('not found');
+      expect(response.isError).toBe(true);
+      expect(response.content[0].text).toContain('not found');
     });
   });
 
@@ -211,10 +211,10 @@ describe('Resource Servers Tool Handlers', () => {
 
       const response = await RESOURCE_SERVER_HANDLERS.auth0_create_resource_server(request, config);
 
-      expect(response.toolResult.isError).toBe(false);
+      expect(response.isError).toBe(false);
 
       // The response should be a JSON string that we can parse
-      const parsedContent = JSON.parse(response.toolResult.content[0].text);
+      const parsedContent = JSON.parse(response.content[0].text);
       // The response might be nested in a data property or directly in the response
       const resourceData = parsedContent.data || parsedContent;
       expect(resourceData.name).toBe('Test API');
@@ -235,8 +235,8 @@ describe('Resource Servers Tool Handlers', () => {
 
       const response = await RESOURCE_SERVER_HANDLERS.auth0_create_resource_server(request, config);
 
-      expect(response.toolResult.isError).toBe(true);
-      expect(response.toolResult.content[0].text).toContain('name is required');
+      expect(response.isError).toBe(true);
+      expect(response.content[0].text).toContain('name is required');
     });
 
     it('should handle missing identifier parameter', async () => {
@@ -252,8 +252,8 @@ describe('Resource Servers Tool Handlers', () => {
 
       const response = await RESOURCE_SERVER_HANDLERS.auth0_create_resource_server(request, config);
 
-      expect(response.toolResult.isError).toBe(true);
-      expect(response.toolResult.content[0].text).toContain('identifier is required');
+      expect(response.isError).toBe(true);
+      expect(response.content[0].text).toContain('identifier is required');
     });
 
     it('should handle API errors', async () => {
@@ -285,10 +285,10 @@ describe('Resource Servers Tool Handlers', () => {
 
       const response = await RESOURCE_SERVER_HANDLERS.auth0_create_resource_server(request, config);
 
-      expect(response.toolResult.isError).toBe(true);
-      expect(response.toolResult.isError).toBe(true);
+      expect(response.isError).toBe(true);
+      expect(response.isError).toBe(true);
       // The error message might be different, so we'll just check that it contains the identifier
-      expect(response.toolResult.content[0].text).toContain('https://api.example.com');
+      expect(response.content[0].text).toContain('https://api.example.com');
     });
   });
 
@@ -323,10 +323,10 @@ describe('Resource Servers Tool Handlers', () => {
 
       const response = await RESOURCE_SERVER_HANDLERS.auth0_update_resource_server(request, config);
 
-      expect(response.toolResult.isError).toBe(false);
+      expect(response.isError).toBe(false);
 
       // The response should be a JSON string that we can parse
-      const parsedContent = JSON.parse(response.toolResult.content[0].text);
+      const parsedContent = JSON.parse(response.content[0].text);
       // The response might be nested in a data property or directly in the response
       const resourceData = parsedContent.data || parsedContent;
       expect(resourceData.name).toBe('Updated API');
@@ -345,8 +345,8 @@ describe('Resource Servers Tool Handlers', () => {
 
       const response = await RESOURCE_SERVER_HANDLERS.auth0_update_resource_server(request, config);
 
-      expect(response.toolResult.isError).toBe(true);
-      expect(response.toolResult.content[0].text).toContain('id is required');
+      expect(response.isError).toBe(true);
+      expect(response.content[0].text).toContain('id is required');
     });
 
     it('should handle resource server not found', async () => {
@@ -369,8 +369,8 @@ describe('Resource Servers Tool Handlers', () => {
 
       const response = await RESOURCE_SERVER_HANDLERS.auth0_update_resource_server(request, config);
 
-      expect(response.toolResult.isError).toBe(true);
-      expect(response.toolResult.content[0].text).toContain('not found');
+      expect(response.isError).toBe(true);
+      expect(response.content[0].text).toContain('not found');
     });
   });
 });

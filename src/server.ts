@@ -79,20 +79,19 @@ export async function startServer() {
         log(`Handler execution completed for: ${toolName}`);
 
         return {
-          toolResult: result.toolResult,
+          content: result.content,
+          isError: result.isError || false,
         };
       } catch (error) {
         log(`Error handling tool call: ${error instanceof Error ? error.message : String(error)}`);
         return {
-          toolResult: {
-            content: [
-              {
-                type: 'text',
-                text: `Error: ${error instanceof Error ? error.message : String(error)}`,
-              },
-            ],
-            isError: true,
-          },
+          content: [
+            {
+              type: 'text',
+              text: `Error: ${error instanceof Error ? error.message : String(error)}`,
+            },
+          ],
+          isError: true,
         };
       }
     });

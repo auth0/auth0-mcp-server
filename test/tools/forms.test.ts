@@ -35,13 +35,13 @@ describe('Forms Tool Handlers', () => {
 
       const response = await FORM_HANDLERS.auth0_list_forms(request, config);
 
-      expect(response.toolResult).toBeDefined();
-      expect(response.toolResult.isError).toBe(false);
-      expect(response.toolResult.content).toBeDefined();
-      expect(response.toolResult.content[0].type).toBe('text');
+      expect(response).toBeDefined();
+      expect(response.isError).toBe(false);
+      expect(response.content).toBeDefined();
+      expect(response.content[0].type).toBe('text');
 
       // The response should be a JSON string that we can parse
-      const parsedContent = JSON.parse(response.toolResult.content[0].text);
+      const parsedContent = JSON.parse(response.content[0].text);
       expect(parsedContent.forms).toBeDefined();
       expect(parsedContent.forms.length).toBeGreaterThan(0);
     });
@@ -60,10 +60,10 @@ describe('Forms Tool Handlers', () => {
 
       const response = await FORM_HANDLERS.auth0_list_forms(request, config);
 
-      expect(response.toolResult.isError).toBe(false);
+      expect(response.isError).toBe(false);
 
       // The response should be a JSON string that we can parse
-      const parsedContent = JSON.parse(response.toolResult.content[0].text);
+      const parsedContent = JSON.parse(response.content[0].text);
       expect(parsedContent.forms).toBeDefined();
     });
 
@@ -87,9 +87,9 @@ describe('Forms Tool Handlers', () => {
 
       const response = await FORM_HANDLERS.auth0_list_forms(request, config);
 
-      expect(response.toolResult.isError).toBe(true);
-      expect(response.toolResult.content[0].text).toContain('Failed to list forms');
-      expect(response.toolResult.content[0].text).toContain('Unauthorized');
+      expect(response.isError).toBe(true);
+      expect(response.content[0].text).toContain('Failed to list forms');
+      expect(response.content[0].text).toContain('Unauthorized');
     });
 
     it('should handle missing token', async () => {
@@ -102,8 +102,8 @@ describe('Forms Tool Handlers', () => {
 
       const response = await FORM_HANDLERS.auth0_list_forms(request, config);
 
-      expect(response.toolResult.isError).toBe(true);
-      expect(response.toolResult.content[0].text).toContain('Missing authentication token');
+      expect(response.isError).toBe(true);
+      expect(response.content[0].text).toContain('Missing authentication token');
     });
 
     it('should handle missing domain', async () => {
@@ -116,8 +116,8 @@ describe('Forms Tool Handlers', () => {
 
       const response = await FORM_HANDLERS.auth0_list_forms(request, config);
 
-      expect(response.toolResult.isError).toBe(true);
-      expect(response.toolResult.content[0].text).toContain('Auth0 domain is not configured');
+      expect(response.isError).toBe(true);
+      expect(response.content[0].text).toContain('Auth0 domain is not configured');
     });
   });
 
@@ -136,10 +136,10 @@ describe('Forms Tool Handlers', () => {
 
       const response = await FORM_HANDLERS.auth0_get_form(request, config);
 
-      expect(response.toolResult.isError).toBe(false);
+      expect(response.isError).toBe(false);
 
       // The response should be a JSON string that we can parse
-      const parsedContent = JSON.parse(response.toolResult.content[0].text);
+      const parsedContent = JSON.parse(response.content[0].text);
       // The response might be nested in a data property or directly in the response
       const formData = parsedContent.data || parsedContent;
       expect(formData.id).toBe(formId);
@@ -155,8 +155,8 @@ describe('Forms Tool Handlers', () => {
 
       const response = await FORM_HANDLERS.auth0_get_form(request, config);
 
-      expect(response.toolResult.isError).toBe(true);
-      expect(response.toolResult.content[0].text).toContain('id is required');
+      expect(response.isError).toBe(true);
+      expect(response.content[0].text).toContain('id is required');
     });
 
     it('should handle form not found', async () => {
@@ -178,8 +178,8 @@ describe('Forms Tool Handlers', () => {
 
       const response = await FORM_HANDLERS.auth0_get_form(request, config);
 
-      expect(response.toolResult.isError).toBe(true);
-      expect(response.toolResult.content[0].text).toContain('not found');
+      expect(response.isError).toBe(true);
+      expect(response.content[0].text).toContain('not found');
     });
   });
 
@@ -226,10 +226,10 @@ describe('Forms Tool Handlers', () => {
 
       const response = await FORM_HANDLERS.auth0_create_form(request, config);
 
-      expect(response.toolResult.isError).toBe(false);
+      expect(response.isError).toBe(false);
 
       // The response should be a JSON string that we can parse
-      const parsedContent = JSON.parse(response.toolResult.content[0].text);
+      const parsedContent = JSON.parse(response.content[0].text);
       // The response might be nested in a data property or directly in the response
       const formData = parsedContent.data || parsedContent;
       expect(formData.name).toBe('Test Form');
@@ -251,8 +251,8 @@ describe('Forms Tool Handlers', () => {
 
       const response = await FORM_HANDLERS.auth0_create_form(request, config);
 
-      expect(response.toolResult.isError).toBe(true);
-      expect(response.toolResult.content[0].text).toContain('name is required');
+      expect(response.isError).toBe(true);
+      expect(response.content[0].text).toContain('name is required');
     });
 
     it('should handle API errors', async () => {
@@ -277,8 +277,8 @@ describe('Forms Tool Handlers', () => {
 
       const response = await FORM_HANDLERS.auth0_create_form(request, config);
 
-      expect(response.toolResult.isError).toBe(true);
-      expect(response.toolResult.content[0].text).toContain('Failed to create form');
+      expect(response.isError).toBe(true);
+      expect(response.content[0].text).toContain('Failed to create form');
     });
   });
 
@@ -301,10 +301,10 @@ describe('Forms Tool Handlers', () => {
 
       const response = await FORM_HANDLERS.auth0_update_form(request, config);
 
-      expect(response.toolResult.isError).toBe(false);
+      expect(response.isError).toBe(false);
 
       // The response should be a JSON string that we can parse
-      const parsedContent = JSON.parse(response.toolResult.content[0].text);
+      const parsedContent = JSON.parse(response.content[0].text);
       // The response might be nested in a data property or directly in the response
       const formData = parsedContent.data || parsedContent;
       expect(formData.name).toBe('Updated Form');
@@ -323,8 +323,8 @@ describe('Forms Tool Handlers', () => {
 
       const response = await FORM_HANDLERS.auth0_update_form(request, config);
 
-      expect(response.toolResult.isError).toBe(true);
-      expect(response.toolResult.content[0].text).toContain('id is required');
+      expect(response.isError).toBe(true);
+      expect(response.content[0].text).toContain('id is required');
     });
 
     it('should handle form not found', async () => {
@@ -347,8 +347,8 @@ describe('Forms Tool Handlers', () => {
 
       const response = await FORM_HANDLERS.auth0_update_form(request, config);
 
-      expect(response.toolResult.isError).toBe(true);
-      expect(response.toolResult.content[0].text).toContain('not found');
+      expect(response.isError).toBe(true);
+      expect(response.content[0].text).toContain('not found');
     });
   });
 });

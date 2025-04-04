@@ -39,22 +39,18 @@ export function createSuccessResponse(result: object | Array<any>): HandlerRespo
       };
     });
     return {
-      toolResult: {
-        content: mutiContent,
-        isError: false,
-      },
+      content: mutiContent,
+      isError: false,
     };
   } else {
     return {
-      toolResult: {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify(result, null, 2),
-          },
-        ],
-        isError: false,
-      },
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(result, null, 2),
+        },
+      ],
+      isError: false,
     };
   }
 }
@@ -62,14 +58,12 @@ export function createSuccessResponse(result: object | Array<any>): HandlerRespo
 // Helper function to create error response
 export function createErrorResponse(errorString: string): HandlerResponse {
   return {
-    toolResult: {
-      content: [
-        {
-          type: 'text',
-          text: errorString,
-        },
-      ],
-      isError: true,
-    },
+    content: [
+      {
+        type: 'text',
+        text: errorString,
+      },
+    ],
+    isError: true,
   };
 }

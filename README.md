@@ -1,14 +1,19 @@
-# Auth0 MCP Server
+![MCP server for Auth0](assets/mcp-banner-light.png)
+
+<div align="center">
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
 ![Downloads](https://img.shields.io/npm/dw/auth0-mcp-server)
 
- 📚 [Documentation](http://auth0.com/docs/getstarted/ai-tools/model-context-protocol-MCP) - 🚀 [Getting Started](#getting-started) - 💻 [Supported Tools](#supported-tools) - 💬 [Feedback](#feedback)
+</div>
 
-[MCP (Model Context Protocol)](https://modelcontextprotocol.io/introduction) is an open protocol introduced by Anthropic that standardizes how large language models communicate with external tools, resources or remote services. 
+📚 [Documentation](http://auth0.com/docs/getstarted/ai-tools/model-context-protocol-MCP) • 🚀 [Getting Started](#getting-started) • 💻 [Supported Tools](#supported-tools) • 💬 [Feedback](#feedback)
 
-The Auth0 MCP server integrates with LLMs and AI agents, allowing you to perform various Auth0 management operations using natural language. For instance, you could simply ask Claude to perform Auth0 management operations: 
+[MCP (Model Context Protocol)](https://modelcontextprotocol.io/introduction) is an open protocol introduced by Anthropic that standardizes how large language models communicate with external tools, resources or remote services.
+
+The Auth0 MCP server integrates with LLMs and AI agents, allowing you to perform various Auth0 management operations using natural language. For instance, you could simply ask Claude to perform Auth0 management operations:
+
 - `Create a new Auth0 app and get the domain and client ID`
 - `Create and deploy a new Auth0 action to generate a JWT token`
 - `Could you check Auth0 logs for logins from 192.108.92.3 IP address?`
@@ -19,34 +24,40 @@ The Auth0 MCP server integrates with LLMs and AI agents, allowing you to perform
   <img src="assets/auth0-mcp-example-demo.gif" alt="Auth0 MCP Server Demo" width="800">
 </div>
 
-
 ## Getting Started
+
 **Prerequisites:**
 
 - [Node.js v18 or higher](https://nodejs.org/en/download)
 - [Claude Desktop](https://claude.ai/download) or any other [MCP Client](https://modelcontextprotocol.io/clients)
 - [Auth0](https://auth0.com/) account with appropriate permissions
 
-
 </br>
 
 Install and initialize the Auth0 MCP Server
+
 ```bash
 npx @auth0/auth0-mcp-server init
 ```
+
 _*Note*: Default configutation is for **Claude Desktop**_
 
 Restart your Claude Desktop app and ask it to help you manage your Auth0 tenant
+
 <div align="left">
   <img src="assets/help-image-01.png" alt="Claude installed Help Image" width="300">
 </div>
 
 ### Setting up other MCP Clients
+
 Windsurf
+
 ```bash
 npx @auth0/auth0-mcp-server init --client windsurf
 ```
+
 Cursor
+
 ```bash
 npx @auth0/auth0-mcp-server init --client cursor
 ```
@@ -61,7 +72,6 @@ The Auth0 MCP Server provides the following tools for Claude to interact with yo
 </div>
 
 ### Applications
-
 
 | Tool Name                  | Description                                                 |
 | -------------------------- | ----------------------------------------------------------- |
@@ -106,8 +116,6 @@ The Auth0 MCP Server provides the following tools for Claude to interact with yo
 | `auth0_update_form`  | Update an existing Auth0 form           |
 | `auth0_publish_form` | Publish an Auth0 form                   |
 
-
-
 ### Key Features
 
 - **Secure Authentication**: Uses device authorization flow for enhanced security
@@ -116,7 +124,6 @@ The Auth0 MCP Server provides the following tools for Claude to interact with yo
 - **Seamless Integration**: Works directly with Claude Desktop
 
 **_NOTE:_** This server requires Node.js v18 or higher and appropriate Auth0 permissions to function correctly.
-
 
 ## 🕸️ Architecture
 
@@ -191,10 +198,9 @@ npx @auth0/auth0-mcp-server run
 
 ### ⚙️ Configuration
 
-
 #### Other MCP Clients:
 
-To use Auth0 MCP Server with any other MCP Client, you can add this configuration to the client and restart for changes to take effect: 
+To use Auth0 MCP Server with any other MCP Client, you can add this configuration to the client and restart for changes to take effect:
 
 ```json
 {
@@ -213,7 +219,6 @@ To use Auth0 MCP Server with any other MCP Client, you can add this configuratio
 
 > [!NOTE]  
 > _you can manually update if needed or if any unexpected errors occur during the npx init command._
-
 
 ## 🩺 Troubleshooting
 

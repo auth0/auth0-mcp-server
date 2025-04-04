@@ -17,16 +17,12 @@ export interface HandlerConfig {
   domain: string | undefined;
 }
 
-export interface ToolResult {
+export interface HandlerResponse {
   content: Array<{
     type: string;
     [key: string]: any;
   }>;
   isError: boolean;
-}
-
-export interface HandlerResponse {
-  toolResult: ToolResult;
 }
 
 // Auth0 response interfaces

@@ -35,13 +35,13 @@ describe('Logs Tool Handlers', () => {
 
       const response = await LOG_HANDLERS.auth0_list_logs(request, config);
 
-      expect(response.toolResult).toBeDefined();
-      expect(response.toolResult.isError).toBe(false);
-      expect(response.toolResult.content).toBeDefined();
-      expect(response.toolResult.content[0].type).toBe('text');
+      expect(response).toBeDefined();
+      expect(response.isError).toBe(false);
+      expect(response.content).toBeDefined();
+      expect(response.content[0].type).toBe('text');
 
       // The response should be a JSON string that we can parse
-      const parsedContent = JSON.parse(response.toolResult.content[0].text);
+      const parsedContent = JSON.parse(response.content[0].text);
       expect(parsedContent.logs).toBeDefined();
       expect(parsedContent.logs.length).toBeGreaterThan(0);
     });
@@ -94,9 +94,9 @@ describe('Logs Tool Handlers', () => {
 
       const response = await LOG_HANDLERS.auth0_list_logs(request, config);
 
-      expect(response.toolResult.isError).toBe(true);
-      expect(response.toolResult.content[0].text).toContain('Failed to list logs');
-      expect(response.toolResult.content[0].text).toContain('Unauthorized');
+      expect(response.isError).toBe(true);
+      expect(response.content[0].text).toContain('Failed to list logs');
+      expect(response.content[0].text).toContain('Unauthorized');
     });
   });
 
@@ -122,10 +122,10 @@ describe('Logs Tool Handlers', () => {
 
       const response = await LOG_HANDLERS.auth0_get_log(request, config);
 
-      expect(response.toolResult.isError).toBe(false);
+      expect(response.isError).toBe(false);
 
       // The response should be a JSON string that we can parse
-      const parsedContent = JSON.parse(response.toolResult.content[0].text);
+      const parsedContent = JSON.parse(response.content[0].text);
       expect(parsedContent.log_id).toBe(logId);
     });
 
@@ -139,8 +139,8 @@ describe('Logs Tool Handlers', () => {
 
       const response = await LOG_HANDLERS.auth0_get_log(request, config);
 
-      expect(response.toolResult.isError).toBe(true);
-      expect(response.toolResult.content[0].text).toContain('id is required');
+      expect(response.isError).toBe(true);
+      expect(response.content[0].text).toContain('id is required');
     });
 
     it('should handle log not found', async () => {
@@ -162,8 +162,8 @@ describe('Logs Tool Handlers', () => {
 
       const response = await LOG_HANDLERS.auth0_get_log(request, config);
 
-      expect(response.toolResult.isError).toBe(true);
-      expect(response.toolResult.content[0].text).toContain('not found');
+      expect(response.isError).toBe(true);
+      expect(response.content[0].text).toContain('not found');
     });
   });
 

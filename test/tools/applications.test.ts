@@ -35,15 +35,15 @@ describe('Applications Tool Handlers', () => {
 
       const response = await APPLICATION_HANDLERS.auth0_list_applications(request, config);
 
-      expect(response.toolResult).toBeDefined();
-      expect(response.toolResult.isError).toBe(false);
-      expect(response.toolResult.content).toBeDefined();
-      expect(response.toolResult.content[0].type).toBe('text');
+      expect(response).toBeDefined();
+      expect(response.isError).toBe(false);
+      expect(response.content).toBeDefined();
+      expect(response.content[0].type).toBe('text');
 
       // The response should be a JSON string that we can parse
-      const parsedContent = JSON.parse(response.toolResult.content[0].text);
+      const parsedContent = JSON.parse(response.content[0].text);
       // Instead of checking the length, just verify the response is valid
-      expect(response.toolResult.isError).toBe(false);
+      expect(response.isError).toBe(false);
     });
 
     it('should handle pagination parameters', async () => {
@@ -60,12 +60,12 @@ describe('Applications Tool Handlers', () => {
 
       const response = await APPLICATION_HANDLERS.auth0_list_applications(request, config);
 
-      expect(response.toolResult.isError).toBe(false);
+      expect(response.isError).toBe(false);
 
       // The response should be a JSON string that we can parse
-      const parsedContent = JSON.parse(response.toolResult.content[0].text);
+      const parsedContent = JSON.parse(response.content[0].text);
       // Instead of checking the length, just verify the response is valid
-      expect(response.toolResult.isError).toBe(false);
+      expect(response.isError).toBe(false);
     });
 
     it('should handle API errors', async () => {
@@ -88,9 +88,9 @@ describe('Applications Tool Handlers', () => {
 
       const response = await APPLICATION_HANDLERS.auth0_list_applications(request, config);
 
-      expect(response.toolResult.isError).toBe(true);
-      expect(response.toolResult.content[0].text).toContain('Failed to list applications');
-      expect(response.toolResult.content[0].text).toContain('Unauthorized');
+      expect(response.isError).toBe(true);
+      expect(response.content[0].text).toContain('Failed to list applications');
+      expect(response.content[0].text).toContain('Unauthorized');
     });
   });
 
@@ -116,10 +116,10 @@ describe('Applications Tool Handlers', () => {
 
       const response = await APPLICATION_HANDLERS.auth0_get_application(request, config);
 
-      expect(response.toolResult.isError).toBe(false);
+      expect(response.isError).toBe(false);
 
       // The response should be a JSON string that we can parse
-      const parsedContent = JSON.parse(response.toolResult.content[0].text);
+      const parsedContent = JSON.parse(response.content[0].text);
       // The client_id might be in the response directly or nested in a data property
       const appData = parsedContent.data || parsedContent;
       expect(appData.client_id).toBe(clientId);
@@ -135,8 +135,8 @@ describe('Applications Tool Handlers', () => {
 
       const response = await APPLICATION_HANDLERS.auth0_get_application(request, config);
 
-      expect(response.toolResult.isError).toBe(true);
-      expect(response.toolResult.content[0].text).toContain('client_id is required');
+      expect(response.isError).toBe(true);
+      expect(response.content[0].text).toContain('client_id is required');
     });
 
     it('should handle application not found', async () => {
@@ -158,8 +158,8 @@ describe('Applications Tool Handlers', () => {
 
       const response = await APPLICATION_HANDLERS.auth0_get_application(request, config);
 
-      expect(response.toolResult.isError).toBe(true);
-      expect(response.toolResult.content[0].text).toContain('not found');
+      expect(response.isError).toBe(true);
+      expect(response.content[0].text).toContain('not found');
     });
   });
 
@@ -189,10 +189,10 @@ describe('Applications Tool Handlers', () => {
 
       const response = await APPLICATION_HANDLERS.auth0_create_application(request, config);
 
-      expect(response.toolResult.isError).toBe(false);
+      expect(response.isError).toBe(false);
 
       // The response should be a JSON string that we can parse
-      const parsedContent = JSON.parse(response.toolResult.content[0].text);
+      const parsedContent = JSON.parse(response.content[0].text);
       expect(parsedContent.client_id).toBe('new-app-id');
       expect(parsedContent.name).toBe('Test App');
     });
@@ -209,8 +209,8 @@ describe('Applications Tool Handlers', () => {
 
       const response = await APPLICATION_HANDLERS.auth0_create_application(request, config);
 
-      expect(response.toolResult.isError).toBe(true);
-      expect(response.toolResult.content[0].text).toContain('name is required');
+      expect(response.isError).toBe(true);
+      expect(response.content[0].text).toContain('name is required');
     });
   });
 
@@ -241,10 +241,10 @@ describe('Applications Tool Handlers', () => {
 
       const response = await APPLICATION_HANDLERS.auth0_update_application(request, config);
 
-      expect(response.toolResult.isError).toBe(false);
+      expect(response.isError).toBe(false);
 
       // The response should be a JSON string that we can parse
-      const parsedContent = JSON.parse(response.toolResult.content[0].text);
+      const parsedContent = JSON.parse(response.content[0].text);
       // The name might be in the response directly or nested in a data property
       const appData = parsedContent.data || parsedContent;
       expect(appData.name).toBe('Updated App');

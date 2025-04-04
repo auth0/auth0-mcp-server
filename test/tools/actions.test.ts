@@ -35,13 +35,13 @@ describe('Actions Tool Handlers', () => {
 
       const response = await ACTION_HANDLERS.auth0_list_actions(request, config);
 
-      expect(response.toolResult).toBeDefined();
-      expect(response.toolResult.isError).toBe(false);
-      expect(response.toolResult.content).toBeDefined();
-      expect(response.toolResult.content[0].type).toBe('text');
+      expect(response).toBeDefined();
+      expect(response.isError).toBe(false);
+      expect(response.content).toBeDefined();
+      expect(response.content[0].type).toBe('text');
 
       // The response should be a JSON string that we can parse
-      const parsedContent = JSON.parse(response.toolResult.content[0].text);
+      const parsedContent = JSON.parse(response.content[0].text);
       expect(parsedContent.actions).toBeDefined();
       expect(parsedContent.actions.length).toBeGreaterThan(0);
     });
@@ -61,10 +61,10 @@ describe('Actions Tool Handlers', () => {
 
       const response = await ACTION_HANDLERS.auth0_list_actions(request, config);
 
-      expect(response.toolResult.isError).toBe(false);
+      expect(response.isError).toBe(false);
 
       // The response should be a JSON string that we can parse
-      const parsedContent = JSON.parse(response.toolResult.content[0].text);
+      const parsedContent = JSON.parse(response.content[0].text);
       expect(parsedContent.actions).toBeDefined();
     });
 
@@ -88,9 +88,9 @@ describe('Actions Tool Handlers', () => {
 
       const response = await ACTION_HANDLERS.auth0_list_actions(request, config);
 
-      expect(response.toolResult.isError).toBe(true);
-      expect(response.toolResult.content[0].text).toContain('Failed to list actions');
-      expect(response.toolResult.content[0].text).toContain('Unauthorized');
+      expect(response.isError).toBe(true);
+      expect(response.content[0].text).toContain('Failed to list actions');
+      expect(response.content[0].text).toContain('Unauthorized');
     });
 
     it('should handle missing token', async () => {
@@ -103,8 +103,8 @@ describe('Actions Tool Handlers', () => {
 
       const response = await ACTION_HANDLERS.auth0_list_actions(request, config);
 
-      expect(response.toolResult.isError).toBe(true);
-      expect(response.toolResult.content[0].text).toContain('Missing authentication token');
+      expect(response.isError).toBe(true);
+      expect(response.content[0].text).toContain('Missing authentication token');
     });
 
     it('should handle missing domain', async () => {
@@ -117,8 +117,8 @@ describe('Actions Tool Handlers', () => {
 
       const response = await ACTION_HANDLERS.auth0_list_actions(request, config);
 
-      expect(response.toolResult.isError).toBe(true);
-      expect(response.toolResult.content[0].text).toContain('Auth0 domain is not configured');
+      expect(response.isError).toBe(true);
+      expect(response.content[0].text).toContain('Auth0 domain is not configured');
     });
   });
 
@@ -137,10 +137,10 @@ describe('Actions Tool Handlers', () => {
 
       const response = await ACTION_HANDLERS.auth0_get_action(request, config);
 
-      expect(response.toolResult.isError).toBe(false);
+      expect(response.isError).toBe(false);
 
       // The response should be a JSON string that we can parse
-      const parsedContent = JSON.parse(response.toolResult.content[0].text);
+      const parsedContent = JSON.parse(response.content[0].text);
       // The response might be nested in a data property or directly in the response
       const actionData = parsedContent.data || parsedContent;
       expect(actionData.id).toBe(actionId);
@@ -156,8 +156,8 @@ describe('Actions Tool Handlers', () => {
 
       const response = await ACTION_HANDLERS.auth0_get_action(request, config);
 
-      expect(response.toolResult.isError).toBe(true);
-      expect(response.toolResult.content[0].text).toContain('id is required');
+      expect(response.isError).toBe(true);
+      expect(response.content[0].text).toContain('id is required');
     });
 
     it('should handle action not found', async () => {
@@ -179,8 +179,8 @@ describe('Actions Tool Handlers', () => {
 
       const response = await ACTION_HANDLERS.auth0_get_action(request, config);
 
-      expect(response.toolResult.isError).toBe(true);
-      expect(response.toolResult.content[0].text).toContain('not found');
+      expect(response.isError).toBe(true);
+      expect(response.content[0].text).toContain('not found');
     });
   });
 
@@ -217,10 +217,10 @@ describe('Actions Tool Handlers', () => {
 
       const response = await ACTION_HANDLERS.auth0_create_action(request, config);
 
-      expect(response.toolResult.isError).toBe(false);
+      expect(response.isError).toBe(false);
 
       // The response should be a JSON string that we can parse
-      const parsedContent = JSON.parse(response.toolResult.content[0].text);
+      const parsedContent = JSON.parse(response.content[0].text);
       // The response might be nested in a data property or directly in the response
       const actionData = parsedContent.data || parsedContent;
       expect(actionData.name).toBe('Test Action');
@@ -240,8 +240,8 @@ describe('Actions Tool Handlers', () => {
 
       const response = await ACTION_HANDLERS.auth0_create_action(request, config);
 
-      expect(response.toolResult.isError).toBe(true);
-      expect(response.toolResult.content[0].text).toContain('name is required');
+      expect(response.isError).toBe(true);
+      expect(response.content[0].text).toContain('name is required');
     });
 
     it('should handle missing code parameter', async () => {
@@ -263,8 +263,8 @@ describe('Actions Tool Handlers', () => {
 
       const response = await ACTION_HANDLERS.auth0_create_action(request, config);
 
-      expect(response.toolResult.isError).toBe(true);
-      expect(response.toolResult.content[0].text).toContain('code is required');
+      expect(response.isError).toBe(true);
+      expect(response.content[0].text).toContain('code is required');
     });
 
     it('should handle API errors', async () => {
@@ -296,8 +296,8 @@ describe('Actions Tool Handlers', () => {
 
       const response = await ACTION_HANDLERS.auth0_create_action(request, config);
 
-      expect(response.toolResult.isError).toBe(true);
-      expect(response.toolResult.content[0].text).toContain('Failed to create action');
+      expect(response.isError).toBe(true);
+      expect(response.content[0].text).toContain('Failed to create action');
     });
   });
 
@@ -318,10 +318,10 @@ describe('Actions Tool Handlers', () => {
 
       const response = await ACTION_HANDLERS.auth0_update_action(request, config);
 
-      expect(response.toolResult.isError).toBe(false);
+      expect(response.isError).toBe(false);
 
       // The response should be a JSON string that we can parse
-      const parsedContent = JSON.parse(response.toolResult.content[0].text);
+      const parsedContent = JSON.parse(response.content[0].text);
       // The response might be nested in a data property or directly in the response
       const actionData = parsedContent.data || parsedContent;
       expect(actionData.name).toBe('Updated Action');
@@ -340,8 +340,8 @@ describe('Actions Tool Handlers', () => {
 
       const response = await ACTION_HANDLERS.auth0_update_action(request, config);
 
-      expect(response.toolResult.isError).toBe(true);
-      expect(response.toolResult.content[0].text).toContain('id is required');
+      expect(response.isError).toBe(true);
+      expect(response.content[0].text).toContain('id is required');
     });
 
     it('should handle action not found', async () => {
@@ -364,8 +364,8 @@ describe('Actions Tool Handlers', () => {
 
       const response = await ACTION_HANDLERS.auth0_update_action(request, config);
 
-      expect(response.toolResult.isError).toBe(true);
-      expect(response.toolResult.content[0].text).toContain('not found');
+      expect(response.isError).toBe(true);
+      expect(response.content[0].text).toContain('not found');
     });
   });
 
@@ -384,10 +384,10 @@ describe('Actions Tool Handlers', () => {
 
       const response = await ACTION_HANDLERS.auth0_deploy_action(request, config);
 
-      expect(response.toolResult.isError).toBe(false);
+      expect(response.isError).toBe(false);
 
       // The response should be a JSON string that we can parse
-      const parsedContent = JSON.parse(response.toolResult.content[0].text);
+      const parsedContent = JSON.parse(response.content[0].text);
       // The response might be nested in a data property or directly in the response
       const actionData = parsedContent.data || parsedContent;
       expect(actionData.id).toBe(actionId);
@@ -404,8 +404,8 @@ describe('Actions Tool Handlers', () => {
 
       const response = await ACTION_HANDLERS.auth0_deploy_action(request, config);
 
-      expect(response.toolResult.isError).toBe(true);
-      expect(response.toolResult.content[0].text).toContain('id is required');
+      expect(response.isError).toBe(true);
+      expect(response.content[0].text).toContain('id is required');
     });
 
     it('should handle action not found', async () => {
@@ -427,8 +427,8 @@ describe('Actions Tool Handlers', () => {
 
       const response = await ACTION_HANDLERS.auth0_deploy_action(request, config);
 
-      expect(response.toolResult.isError).toBe(true);
-      expect(response.toolResult.content[0].text).toContain('Failed to deploy action');
+      expect(response.isError).toBe(true);
+      expect(response.content[0].text).toContain('Failed to deploy action');
     });
   });
 });
