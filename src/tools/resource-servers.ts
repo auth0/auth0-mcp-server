@@ -22,6 +22,16 @@ export const RESOURCE_SERVER_TOOLS: Tool[] = [
         page: { type: 'number', description: 'Page number (0-based)' },
         per_page: { type: 'number', description: 'Number of resource servers per page' },
         include_totals: { type: 'boolean', description: 'Include total count' },
+        identifiers: {
+          type: 'array',
+          items: { type: 'string' },
+          description:
+            'A list of URI encoded identifiers to filter the results by. Consider URL limits when using this parameter.',
+        },
+        include_fields: {
+          type: 'boolean',
+          description: 'Whether specified fields are to be included (true) or excluded (false)',
+        },
       },
     },
   },
@@ -215,21 +225,26 @@ export const RESOURCE_SERVER_HANDLERS: Record<
       }
 
       // Build query parameters
-      const options: Record<string, number | boolean> = {};
+      const options: Record<string, any> = {};
       if (request.parameters.page !== undefined) {
         options.page = request.parameters.page;
       }
       if (request.parameters.per_page !== undefined) {
         options.per_page = request.parameters.per_page;
       } else {
-        // Default to 5 items per page if not specified
         options.per_page = 5;
       }
       if (request.parameters.include_totals !== undefined) {
         options.include_totals = request.parameters.include_totals;
       } else {
-        // Default to include totals
         options.include_totals = true;
+      }
+      // Add new parameters
+      if (request.parameters.identifiers !== undefined) {
+        options.identifiers = request.parameters.identifiers;
+      }
+      if (request.parameters.include_fields !== undefined) {
+        options.include_fields = request.parameters.include_fields;
       }
 
       try {
@@ -242,7 +257,7 @@ export const RESOURCE_SERVER_HANDLERS: Record<
         log(`Fetching resource servers with options: ${JSON.stringify(options)}`);
 
         // Use the Auth0 SDK to get all resource servers
-        const responseData = await managementClient.resourceServers.getAll(options);
+        const { data: responseData } = await managementClient.resourceServers.getAll(options);
 
         if (
           !responseData ||

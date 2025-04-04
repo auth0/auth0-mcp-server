@@ -17,7 +17,7 @@ import type {
 export const APPLICATION_TOOLS: Tool[] = [
   {
     name: 'auth0_list_applications',
-    description: 'List all applications in the Auth0 tenant',
+    description: 'List all applications in the Auth0 tenant or search by name',
     inputSchema: {
       type: 'object',
       properties: {
@@ -46,7 +46,68 @@ export const APPLICATION_TOOLS: Tool[] = [
       properties: {
         name: {
           type: 'string',
-          description: 'Name of the application. Required.',
+          description:
+            'Name of the application (min length: 1 character, does not allow < or >). Required.',
+        },
+        app_type: {
+          type: 'string',
+          enum: ['spa', 'native', 'non_interactive', 'regular_web'],
+          description: 'Type of client used to determine which settings are applicable.',
+        },
+        description: {
+          type: 'string',
+          description: 'Free text description of this client (max length: 140 characters).',
+        },
+        callbacks: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'URLs whitelisted for Auth0 to use as callback after authentication.',
+        },
+        allowed_origins: {
+          type: 'array',
+          items: { type: 'string' },
+          description:
+            'URLs allowed to make requests from JavaScript to Auth0 API (typically used with CORS).',
+        },
+        allowed_clients: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'List of allowed clients and API ids for delegation requests.',
+        },
+        allowed_logout_urls: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'URLs valid to redirect to after logout from Auth0.',
+        },
+        is_first_party: {
+          type: 'boolean',
+          description: 'Whether this client is a first party client.',
+        },
+        oidc_conformant: {
+          type: 'boolean',
+          description: 'Whether this client conforms to strict OIDC specifications.',
+        },
+        sso_disabled: {
+          type: 'boolean',
+          description: 'Disable Single Sign On.',
+        },
+        cross_origin_authentication: {
+          type: 'boolean',
+          description: 'Whether this client can make cross-origin authentication requests.',
+        },
+        logo_uri: {
+          type: 'string',
+          description: 'URL of the logo to display (recommended size: 150x150 pixels).',
+        },
+        organization_usage: {
+          type: 'string',
+          enum: ['deny', 'allow', 'require'],
+          description: 'How to proceed during authentication with regards to organization.',
+        },
+        organization_require_behavior: {
+          type: 'string',
+          enum: ['no_prompt', 'pre_login_prompt', 'post_login_prompt'],
+          description: 'How to proceed during authentication when organization_usage is require.',
         },
       },
       required: ['name'],
@@ -58,33 +119,114 @@ export const APPLICATION_TOOLS: Tool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        id: {
+        client_id: {
           type: 'string',
           description: 'Client ID of the application to update. Required.',
         },
         name: {
           type: 'string',
-          description: 'New name of the application. Optional.',
+          description: 'Name of the application (min length: 1 character, does not allow < or >)',
+        },
+        app_type: {
+          type: 'string',
+          enum: ['spa', 'native', 'non_interactive', 'regular_web'],
+          description: 'Type of client used to determine which settings are applicable',
+        },
+        description: {
+          type: 'string',
+          description: 'Free text description of this client (max length: 140 characters)',
+        },
+        callbacks: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'URLs whitelisted for Auth0 to use as callback after authentication',
+        },
+        allowed_origins: {
+          type: 'array',
+          items: { type: 'string' },
+          description:
+            'URLs allowed to make requests from JavaScript to Auth0 API (typically used with CORS)',
+        },
+        allowed_clients: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'List of allowed clients and API ids for delegation requests',
+        },
+        allowed_logout_urls: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'URLs valid to redirect to after logout from Auth0',
+        },
+        grant_types: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'List of grant types for this client',
+        },
+        token_endpoint_auth_method: {
+          type: 'string',
+          enum: ['none', 'client_secret_post', 'client_secret_basic'],
+          description: 'Client authentication method for the token endpoint',
+        },
+        is_first_party: {
+          type: 'boolean',
+          description: 'Whether this client is a first party client',
+        },
+        oidc_conformant: {
+          type: 'boolean',
+          description: 'Whether this client conforms to strict OIDC specifications',
+        },
+        sso_disabled: {
+          type: 'boolean',
+          description: 'Disable Single Sign On',
+        },
+        cross_origin_authentication: {
+          type: 'boolean',
+          description: 'Whether this client can make cross-origin authentication requests',
+        },
+        logo_uri: {
+          type: 'string',
+          description: 'URL of the logo to display (recommended size: 150x150 pixels)',
+        },
+        organization_usage: {
+          type: 'string',
+          enum: ['deny', 'allow', 'require'],
+          description: 'How to proceed during authentication with regards to organization',
+        },
+        organization_require_behavior: {
+          type: 'string',
+          enum: ['no_prompt', 'pre_login_prompt', 'post_login_prompt'],
+          description: 'How to proceed during authentication when organization_usage is require',
+        },
+        jwt_configuration: {
+          type: 'object',
+          description: 'JWT configuration settings',
+        },
+        refresh_token: {
+          type: 'object',
+          description: 'Refresh token configuration',
+        },
+        mobile: {
+          type: 'object',
+          description: 'Mobile app configuration settings',
         },
       },
-      required: ['id'],
-    },
-  },
-  {
-    name: 'auth0_search_applications',
-    description: 'Search for Auth0 applications by name',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        name: { type: 'string', description: 'Name or partial name to search for' },
-        page: { type: 'number', description: 'Page number (0-based)' },
-        per_page: { type: 'number', description: 'Number of applications per page' },
-        include_totals: { type: 'boolean', description: 'Include total count' },
-      },
-      required: ['name'],
+      required: ['client_id'],
     },
   },
 ];
+
+interface Auth0Response {
+  clients?: {
+    client_id: string;
+    name: string;
+    app_type?: string;
+    description?: string;
+    callbacks?: string[];
+  }[];
+  total?: number;
+  limit?: number;
+  start?: number;
+}
 
 // Define handlers for each application tool
 export const APPLICATION_HANDLERS: Record<
@@ -141,7 +283,7 @@ export const APPLICATION_HANDLERS: Record<
         };
         const managementClient = await getManagementClient(managementClientConfig);
         // Use the Auth0 SDK to get all clients
-        const responseData = await managementClient.clients.getAll(options);
+        const { data: responseData } = await managementClient.clients.getAll(options);
 
         let applications = [];
         let total = 0;
@@ -154,27 +296,15 @@ export const APPLICATION_HANDLERS: Record<
           // When include_totals is false, response is an array of clients
           applications = responseData;
           total = applications.length;
-        } else if (
-          responseData &&
-          typeof responseData === 'object' &&
-          'clients' in responseData &&
-          Array.isArray(responseData.clients)
-        ) {
+        } else if (responseData && typeof responseData === 'object' && 'clients' in responseData) {
           // When include_totals is true, response has pagination info
-          applications = responseData.clients;
+          const typedResponse = responseData as Auth0Response;
+          applications = typedResponse.clients || [];
 
           // Access pagination metadata if available
-          if ('total' in responseData) {
-            total = (responseData as any).total || applications.length;
-          }
-
-          if ('start' in responseData) {
-            page = (responseData as any).start || 0;
-          }
-
-          if ('limit' in responseData) {
-            perPage = (responseData as any).limit || applications.length;
-          }
+          total = typedResponse.total || applications.length;
+          page = typedResponse.start || 0;
+          perPage = typedResponse.limit || applications.length;
 
           totalPages = Math.ceil(total / perPage);
         } else {
@@ -350,10 +480,6 @@ export const APPLICATION_HANDLERS: Record<
         return createErrorResponse('Error: name is required');
       }
 
-      if (!app_type) {
-        return createErrorResponse('Error: app_type is required');
-      }
-
       // Check for token
       if (!request.token) {
         log('Warning: Token is empty or undefined');
@@ -369,10 +495,10 @@ export const APPLICATION_HANDLERS: Record<
       // Prepare request body with all available parameters
       const clientData: ClientCreate = {
         name,
-        app_type: app_type as ClientCreateAppTypeEnum,
       };
 
       // Add all optional parameters if they exist
+      if (app_type !== undefined) clientData.app_type = app_type as ClientCreateAppTypeEnum;
       if (description !== undefined) clientData.description = description;
       if (logo_uri !== undefined) clientData.logo_uri = logo_uri;
       if (callbacks !== undefined) clientData.callbacks = callbacks;
@@ -433,7 +559,7 @@ export const APPLICATION_HANDLERS: Record<
         log(`Creating new application with name: ${name}, type: ${app_type}`);
 
         // Use the Auth0 SDK to create a client
-        const newApplication = await managementClient.clients.create(clientData);
+        const { data: newApplication } = await managementClient.clients.create(clientData);
 
         // Use type assertion to access properties
         const appData = newApplication as any;
@@ -620,147 +746,6 @@ export const APPLICATION_HANDLERS: Record<
         } else if (sdkError.statusCode === 401) {
           errorMessage +=
             '\nError: Unauthorized. Your token might be expired or invalid or missing update:clients scope.';
-        }
-
-        return createErrorResponse(errorMessage);
-      }
-    } catch (error: any) {
-      // Handle any other errors
-      log('Error processing request:', error);
-
-      return createErrorResponse(
-        `Error: ${error instanceof Error ? error.message : String(error)}`
-      );
-    }
-  },
-  auth0_search_applications: async (
-    request: HandlerRequest,
-    config: HandlerConfig
-  ): Promise<HandlerResponse> => {
-    try {
-      const searchName = request.parameters.name;
-      if (!searchName) {
-        return createErrorResponse('Error: name parameter is required');
-      }
-
-      // Check for token
-      if (!request.token) {
-        log('Warning: Token is empty or undefined');
-        return createErrorResponse('Error: Missing authentication token');
-      }
-
-      // Check if domain is configured
-      if (!config.domain) {
-        log('Error: Auth0 domain is not configured');
-        return createErrorResponse('Error: Auth0 domain is not configured');
-      }
-
-      // Build query parameters
-      const options: Record<string, any> = {};
-
-      // Add search query
-      if (searchName.includes(' ') || /[^a-zA-Z0-9]/.test(searchName)) {
-        // If the search name contains spaces or special characters, use exact match
-        options.q = `name:"${searchName.replace(/"/g, '\\"')}"`;
-      } else {
-        // For simple terms, use a prefix search
-        options.q = `name:${searchName}*`;
-      }
-
-      // Make sure we're using the right search engine
-      options.search_engine = 'v3';
-
-      if (request.parameters.page !== undefined) {
-        options.page = request.parameters.page;
-      }
-
-      if (request.parameters.per_page !== undefined) {
-        options.per_page = request.parameters.per_page;
-      } else {
-        // Default to 10 applications per page
-        options.per_page = 10;
-      }
-
-      if (request.parameters.include_totals !== undefined) {
-        options.include_totals = request.parameters.include_totals;
-      } else {
-        // Default to include totals
-        options.include_totals = true;
-      }
-
-      try {
-        const managementClientConfig: Auth0Config = {
-          domain: config.domain,
-          token: request.token,
-        };
-        const managementClient = await getManagementClient(managementClientConfig);
-
-        log(`Searching for applications with query: ${options.q}`);
-
-        // Use the Auth0 SDK to search for clients
-        const responseData = await managementClient.clients.getAll(options);
-
-        // Handle different response formats
-        let applications: any[] = [];
-        let total = 0;
-        let page = 0;
-        let perPage = options.per_page || 10;
-
-        if (Array.isArray(responseData)) {
-          // Simple array response
-          applications = responseData;
-          total = applications.length;
-        } else if (
-          typeof responseData === 'object' &&
-          responseData !== null &&
-          'clients' in responseData &&
-          Array.isArray((responseData as any).clients)
-        ) {
-          // Paginated response with totals
-          applications = (responseData as any).clients;
-          total = (responseData as any).total || applications.length;
-          page = (responseData as any).start || 0;
-          perPage = (responseData as any).limit || applications.length;
-        } else {
-          log('Invalid response format:', responseData);
-          return createErrorResponse('Error: Received invalid response format from Auth0 API.');
-        }
-
-        if (applications.length === 0) {
-          return createSuccessResponse({
-            message: `No applications found matching the name "${searchName}".`,
-            applications: [],
-          });
-        }
-
-        // Create a result object with all the necessary information
-        const result = {
-          applications: applications,
-          query: searchName,
-          count: applications.length,
-          total: total,
-          page: page,
-          per_page: perPage,
-          pagination: {
-            total_pages: Math.ceil(total / perPage),
-            current_page: page + 1,
-            has_next: page + 1 < Math.ceil(total / perPage),
-          },
-        };
-
-        log(`Successfully found ${applications.length} applications matching "${searchName}"`);
-
-        return createSuccessResponse(result);
-      } catch (sdkError: any) {
-        // Handle SDK errors
-        log('Auth0 SDK error:', sdkError);
-
-        let errorMessage = `Failed to search applications: ${sdkError.message || 'Unknown error'}`;
-
-        // Add context based on common error codes
-        if (sdkError.statusCode === 401) {
-          errorMessage +=
-            '\nError: Unauthorized. Your token might be expired or invalid or missing read:clients scope.';
         }
 
         return createErrorResponse(errorMessage);

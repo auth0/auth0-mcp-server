@@ -113,9 +113,8 @@ The Auth0 MCP Server provides the following tools for Claude to interact with yo
 
 | Tool Name                   | Description                                    |
 | --------------------------- | ---------------------------------------------- |
-| `auth0_list_applications`   | List all applications in the Auth0 tenant      |
+| `auth0_list_applications`   | List all applications in the Auth0 tenant or search by name      |
 | `auth0_get_application`     | Get details about a specific Auth0 application |
-| `auth0_search_applications` | Search for applications by name                |
 | `auth0_create_application`  | Create a new Auth0 application                 |
 | `auth0_update_application`  | Update an existing Auth0 application           |
 

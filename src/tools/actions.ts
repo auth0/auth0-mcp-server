@@ -258,7 +258,7 @@ export const ACTION_HANDLERS: Record<
         const managementClient = await getManagementClient(managementClientConfig);
 
         // Use the Auth0 SDK to get all actions
-        const responseData = await managementClient.actions.getAll(options);
+        const { data: responseData } = await managementClient.actions.getAll(options);
 
         // Handle different response formats
         let actions: Auth0Action[] = [];
