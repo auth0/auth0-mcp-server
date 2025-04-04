@@ -1,78 +1,18 @@
 # Auth0 MCP Server
 
-A Model Context Protocol (MCP) server implementation that integrates Auth0 Management API with Claude Desktop, enabling AI-assisted management of your Auth0 tenant.
-
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
+![Downloads](https://img.shields.io/npm/dw/auth0-mcp-server)
 
-## 📑 Table of Contents
+ 📚 [Documentation](http://auth0.com/docs/getstarted/ai-tools/model-context-protocol-MCP) - 🚀 [Getting Started](#getting-started) - 💻 [Supported Tools](#supported-tools) - 💬 [Feedback](#feedback)
 
-- [Overview](#overview)
-- [Quick Start](#quick-start)
-  - [Prerequisites](#prerequisites)
-  - [Installation](#installation)
-  - [Connecting to Claude Desktop](#connecting-to-claude-desktop)
-- [Supported Tools](#supported-tools)
-  - [Applications](#applications)
-  - [Resource Servers](#resource-servers)
-  - [Actions](#actions)
-  - [Logs](#logs)
-  - [Forms](#forms)
-- [Architecture](#architecture)
-- [Authentication](#authentication)
-- [Advanced Usage](#advanced-usage)
-  - [Command Line Interface](#command-line-interface)
-  - [Operation Modes](#operation-modes)
-  - [Configuration](#configuration)
-- [Troubleshooting](#troubleshooting)
-- [Development](#development)
-- [Security](#security)
-- [Feedback and Contributing](#feedback-and-contributing)
-- [What is Auth0?](#what-is-auth0)
-- [License](#license)
+[MCP (Model Context Protocol)](https://modelcontextprotocol.io/introduction) is an open protocol introduced by Anthropic that standardizes how large language models communicate with external tools, resources or remote services. 
 
-## 🌟 Overview
-
-The Auth0 MCP Server allows AI-powered editors like Cursor or Windsurf, or general purpose tools like Claude Desktop to interact with your Auth0 tenant through the Model Context Protocol. This enables Claude to help you manage applications, resource servers, actions, logs, forms, and more within your Auth0 environment.
-
-### ✨ Key Features
-
-- 🔒 **Secure Authentication**: Uses device authorization flow for enhanced security
-- 🔑 **Protected Credentials**: Stores credentials in system keychain
-- 🧰 **Comprehensive Tools**: Complete set of tools for Auth0 tenant management
-- 🤖 **Seamless Integration**: Works directly with Claude Desktop
-
-**_NOTE:_** This server requires Node.js v18 or higher and appropriate Auth0 permissions to function correctly.
-
-## 🚀 Quick Start
-
-### 📋 Prerequisites
-
-- [Node.js v18 or higher](https://nodejs.org/en/download)
-- Claude Desktop application
-- Auth0 account with appropriate permissions
-
-### 💻 Installation
-
-Install and initialize the Auth0 MCP Server with a single command:
-
-```bash
-npx @auth0/auth0-mcp-server init
-```
-
-_*Note*: Default configutation is for **Claude Desktop**_
-
-##### For Windsurf
-
-```bash
-npx @auth0/auth0-mcp-server init --client windsurf
-```
-
-##### For Cursor
-
-```bash
-npx @auth0/auth0-mcp-server init --client cursor
-```
+The Auth0 MCP server integrates with LLMs and AI agents, allowing you to perform various Auth0 management operations using natural language. For instance, you could simply ask Claude to perform Auth0 management operations: 
+- `Create a new Auth0 app and get the domain and client ID`
+- `Create and deploy a new Auth0 action to generate a JWT token`
+- `Could you check Auth0 logs for logins from 192.108.92.3 IP address?`
+- ...
 
 <br/>
 
@@ -80,27 +20,37 @@ npx @auth0/auth0-mcp-server init --client cursor
   <img src="assets/auth0-mcp-example-demo.gif" alt="Auth0 MCP Server Demo" width="800">
 </div>
 
-#### 📖 This will:
 
-1. Start the device authorization flow
-2. Open your browser to authenticate with Auth0
-3. Store your credentials securely in your system's keychain
-4. Configure Claude/Windsurf/Cursor Desktop to use the Auth0 MCP Server
+## Getting Started
+**Prerequisites:**
 
-> [!IMPORTANT]
-> You'll need to restart Claude/Windsurf/Cursor Desktop after installation for the changes to take effect.
+- [Node.js v18 or higher](https://nodejs.org/en/download)
+- [Claude Desktop](https://claude.ai/download) or any other [MCP Client](https://modelcontextprotocol.io/clients)
+- [Auth0](https://auth0.com/) account with appropriate permissions
 
-### 🔌 Connecting to Claude Desktop
 
-After installation:
+</br>
 
-1. Restart Claude Desktop
-2. In a conversation with Claude, ask it to help you manage your Auth0 tenant
-3. Claude will now have access to your Auth0 environment through the MCP server
+Install and initialize the Auth0 MCP Server
+```bash
+npx @auth0/auth0-mcp-server init
+```
+_*Note*: Default configutation is for **Claude Desktop**_
 
-<div align="center">
-  <img src="assets/help-image-01.png" alt="Claude installed Help Image" width="400">
+Restart your Claude Desktop app and ask it to help you manage your Auth0 tenant
+<div align="left">
+  <img src="assets/help-image-01.png" alt="Claude installed Help Image" width="300">
 </div>
+
+### Setting up other MCP Clients
+Windsurf
+```bash
+npx @auth0/auth0-mcp-server init --client windsurf
+```
+Cursor
+```bash
+npx @auth0/auth0-mcp-server init --client cursor
+```
 
 ## 🛠️ Supported Tools
 
@@ -112,6 +62,7 @@ The Auth0 MCP Server provides the following tools for Claude to interact with yo
 </div>
 
 ### Applications
+
 
 | Tool Name                  | Description                                                 |
 | -------------------------- | ----------------------------------------------------------- |
@@ -148,14 +99,27 @@ The Auth0 MCP Server provides the following tools for Claude to interact with yo
 
 ### Forms
 
-| Tool Name           | Description                             |
-| ------------------- | --------------------------------------- |
-| `auth0_list_forms`  | List all forms in the Auth0 tenant      |
-| `auth0_get_form`    | Get details about a specific Auth0 form |
-| `auth0_create_form` | Create a new Auth0 form                 |
-| `auth0_update_form` | Update an existing Auth0 form           |
+| Tool Name            | Description                             |
+| -------------------- | --------------------------------------- |
+| `auth0_list_forms`   | List all forms in the Auth0 tenant      |
+| `auth0_get_form`     | Get details about a specific Auth0 form |
+| `auth0_create_form`  | Create a new Auth0 form                 |
+| `auth0_update_form`  | Update an existing Auth0 form           |
+| `auth0_publish_form` | Publish an Auth0 form                   |
 
-## 🏛️ Architecture
+
+
+### Key Features
+
+- **Secure Authentication**: Uses device authorization flow for enhanced security
+- **Protected Credentials**: Stores credentials in system keychain
+- **Comprehensive Tools**: Complete set of tools for Auth0 tenant management
+- **Seamless Integration**: Works directly with Claude Desktop
+
+**_NOTE:_** This server requires Node.js v18 or higher and appropriate Auth0 permissions to function correctly.
+
+
+## 🕸️ Architecture
 
 The Auth0 MCP Server implements the Model Context Protocol, allowing Claude to:
 
@@ -228,11 +192,10 @@ npx @auth0/auth0-mcp-server run
 
 ### ⚙️ Configuration
 
-The server stores configuration securely in your system's keychain. No configuration files or environment variables are needed for normal operation.
 
-#### Claude Desktop Configuration
+#### Other MCP Clients:
 
-Add this to your `claude_desktop_config.json`:
+To use Auth0 MCP Server with any other MCP Client, you can add this configuration to the client and restart for changes to take effect: 
 
 ```json
 {
@@ -252,51 +215,6 @@ Add this to your `claude_desktop_config.json`:
 > [!NOTE]  
 > _you can manually update if needed or if any unexpected errors occur during the npx init command._
 
-#### Windsurf Desktop Configuration
-
-The `~/.codeium/windsurf/mcp_config.json` file is a JSON file that contains a list of servers that Cascade can connect to.
-
-Add this to your `mcp_config.json`:
-
-```json
-{
-  "mcpServers": {
-    "auth0": {
-      "command": "npx",
-      "args": ["-y", "@auth0/auth0-mcp-server", "run"],
-      "env": {
-        "DEBUG": "auth0-mcp"
-      }
-    }
-  }
-}
-```
-
-> [!NOTE]  
-> _you can manually update if needed or if any unexpected errors occur during the npx init command._
-
-#### Cursor Configuration
-
-The `~/.cursor/mcp.json` file is a JSON file that contains a list of MCP servers.
-
-Add this to your `mcp.json`:
-
-```json
-{
-  "mcpServers": {
-    "auth0": {
-      "command": "npx",
-      "args": ["-y", "@auth0/auth0-mcp-server", "run"],
-      "env": {
-        "DEBUG": "auth0-mcp"
-      }
-    }
-  }
-}
-```
-
-> [!NOTE]  
-> _you can manually update if needed or if any unexpected errors occur during the npx init command._
 
 ## 🩺 Troubleshooting
 
@@ -359,8 +277,13 @@ npm install
 # Build the project
 npm run build
 
-# Run the server
-npm start
+# Initiate device auth flow
+npx . init
+
+# Configure your MCP client(Claude Desktop) with MCP server path
+npm run local-setup
+
+# Restart MCP client, in this case claude desktop app
 ```
 
 > [!NOTE]
@@ -410,7 +333,11 @@ To provide feedback or report a bug, please [raise an issue on our issue tracker
 
 Please do not report security vulnerabilities on the public GitHub issue tracker. The [Responsible Disclosure Program](https://auth0.com/whitehat) details the procedure for disclosing security issues.
 
-## ❓ What is Auth0?
+## 📄 License
+
+This project is licensed under the MIT license. See the [LICENSE](LICENSE) file for more info.
+
+## What is Auth0?
 
 <p align="center">
   <picture>
@@ -419,9 +346,6 @@ Please do not report security vulnerabilities on the public GitHub issue tracker
     <img alt="Auth0 Logo" src="https://cdn.auth0.com/website/sdks/logos/auth0_light_mode.png" width="150">
   </picture>
 </p>
-
-Auth0 is an easy to implement, adaptable authentication and authorization platform. To learn more checkout [Why Auth0?](https://auth0.com/why-auth0)
-
-## 📄 License
-
-This project is licensed under the MIT license. See the [LICENSE](LICENSE) file for more info.
+<p align="center">
+  Auth0 is an easy to implement, adaptable authentication and authorization platform. To learn more checkout <a href="https://auth0.com/why-auth0">Why Auth0?</a>
+</p>
