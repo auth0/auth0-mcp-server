@@ -1,4 +1,4 @@
-// Mock Auth0 resource server data for testing
+// Mock Auth0 resource servers data for testing
 export const mockResourceServers = [
   {
     id: 'rs1',
@@ -6,16 +6,18 @@ export const mockResourceServers = [
     identifier: 'https://api.example.com',
     scopes: [
       {
-        value: 'read:data',
-        description: 'Read data',
+        value: 'read:users',
+        description: 'Read user information',
       },
       {
-        value: 'write:data',
-        description: 'Write data',
+        value: 'write:users',
+        description: 'Modify user information',
       },
     ],
-    token_lifetime: 86400,
     signing_alg: 'RS256',
+    token_lifetime: 86400,
+    allow_offline_access: true,
+    skip_consent_for_verifiable_first_party_clients: true,
   },
   {
     id: 'rs2',
@@ -23,18 +25,24 @@ export const mockResourceServers = [
     identifier: 'https://api2.example.com',
     scopes: [
       {
-        value: 'read:users',
-        description: 'Read users',
-      },
-      {
-        value: 'write:users',
-        description: 'Write users',
+        value: 'read:data',
+        description: 'Read data',
       },
     ],
-    token_lifetime: 3600,
     signing_alg: 'RS256',
+    token_lifetime: 3600,
+    allow_offline_access: false,
+    skip_consent_for_verifiable_first_party_clients: false,
   },
 ];
+
+// Mock resource server list response
+export const mockResourceServerListResponse = {
+  resource_servers: mockResourceServers,
+  total: mockResourceServers.length,
+  page: 0,
+  per_page: 10,
+};
 
 // Mock single resource server response
 export const mockSingleResourceServer = mockResourceServers[0];
@@ -43,19 +51,17 @@ export const mockSingleResourceServer = mockResourceServers[0];
 export const mockCreateResourceServerResponse = {
   id: 'new-rs-id',
   name: 'New Test API',
-  identifier: 'https://newapi.example.com',
+  identifier: 'https://new-api.example.com',
   scopes: [
     {
       value: 'read:items',
       description: 'Read items',
     },
-    {
-      value: 'write:items',
-      description: 'Write items',
-    },
   ],
-  token_lifetime: 86400,
   signing_alg: 'RS256',
+  token_lifetime: 7200,
+  allow_offline_access: true,
+  skip_consent_for_verifiable_first_party_clients: true,
 };
 
 // Mock update resource server response
@@ -63,10 +69,18 @@ export const mockUpdateResourceServerResponse = {
   ...mockResourceServers[0],
   name: 'Updated Test API',
   scopes: [
-    ...mockResourceServers[0].scopes,
     {
-      value: 'delete:data',
-      description: 'Delete data',
+      value: 'read:users',
+      description: 'Read user information',
+    },
+    {
+      value: 'write:users',
+      description: 'Modify user information',
+    },
+    {
+      value: 'delete:users',
+      description: 'Delete users',
     },
   ],
+  token_lifetime: 43200,
 };

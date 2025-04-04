@@ -1,86 +1,137 @@
 // Mock Auth0 forms data for testing
 export const mockForms = [
   {
-    id: 'form_1',
-    name: 'login',
-    prompt: 'login',
-    status: 'enabled',
-    is_active: true,
-    layout: {
-      form_elements: [
-        {
-          label: 'Email',
-          type: 'text',
-          name: 'email',
-          placeholder: 'Enter your email',
-          required: true,
-        },
-        {
-          label: 'Password',
-          type: 'password',
-          name: 'password',
-          placeholder: 'Enter your password',
-          required: true,
-        },
-      ],
-      submit_button: {
-        text: 'Log In',
+    id: 'form1',
+    name: 'Test Form 1',
+    messages: {
+      success: 'Form submitted successfully',
+    },
+    languages: {
+      default: 'en',
+      supported: ['en', 'es'],
+    },
+    translations: {
+      en: {
+        title: 'Test Form',
+        submit: 'Submit',
       },
+      es: {
+        title: 'Formulario de Prueba',
+        submit: 'Enviar',
+      },
+    },
+    nodes: [
+      {
+        id: 'node1',
+        type: 'text',
+        label: 'Name',
+        required: true,
+      },
+      {
+        id: 'node2',
+        type: 'email',
+        label: 'Email',
+        required: true,
+      },
+    ],
+    start: {
+      node: 'node1',
+    },
+    ending: {
+      redirect: 'https://example.com/thank-you',
+    },
+    style: {
+      theme: 'light',
     },
   },
   {
-    id: 'form_2',
-    name: 'signup',
-    prompt: 'signup',
-    status: 'enabled',
-    is_active: true,
-    layout: {
-      form_elements: [
-        {
-          label: 'Email',
-          type: 'text',
-          name: 'email',
-          placeholder: 'Enter your email',
-          required: true,
-        },
-        {
-          label: 'Password',
-          type: 'password',
-          name: 'password',
-          placeholder: 'Create a password',
-          required: true,
-        },
-        {
-          label: 'Confirm Password',
-          type: 'password',
-          name: 'confirm_password',
-          placeholder: 'Confirm your password',
-          required: true,
-        },
-      ],
-      submit_button: {
-        text: 'Sign Up',
+    id: 'form2',
+    name: 'Test Form 2',
+    messages: {
+      success: 'Thank you for your submission',
+    },
+    languages: {
+      default: 'en',
+      supported: ['en'],
+    },
+    translations: {
+      en: {
+        title: 'Another Test Form',
+        submit: 'Submit',
       },
+    },
+    nodes: [
+      {
+        id: 'node1',
+        type: 'text',
+        label: 'Full Name',
+        required: true,
+      },
+    ],
+    start: {
+      node: 'node1',
+    },
+    ending: {
+      message: 'Thank you for your submission',
+    },
+    style: {
+      theme: 'dark',
     },
   },
 ];
 
+// Mock form list response
+export const mockFormListResponse = {
+  forms: mockForms,
+  total: mockForms.length,
+  page: 0,
+  per_page: 50,
+};
+
 // Mock single form response
 export const mockSingleForm = mockForms[0];
+
+// Mock create form response
+export const mockCreateFormResponse = {
+  id: 'new-form-id',
+  name: 'New Test Form',
+  messages: {
+    success: 'Form created successfully',
+  },
+  languages: {
+    default: 'en',
+    supported: ['en'],
+  },
+  translations: {
+    en: {
+      title: 'New Form',
+      submit: 'Submit',
+    },
+  },
+  nodes: [
+    {
+      id: 'node1',
+      type: 'text',
+      label: 'Name',
+      required: true,
+    },
+  ],
+  start: {
+    node: 'node1',
+  },
+  ending: {
+    message: 'Thank you',
+  },
+  style: {
+    theme: 'light',
+  },
+};
 
 // Mock update form response
 export const mockUpdateFormResponse = {
   ...mockForms[0],
-  layout: {
-    ...mockForms[0].layout,
-    form_elements: [
-      ...mockForms[0].layout.form_elements,
-      {
-        label: 'Remember Me',
-        type: 'checkbox',
-        name: 'remember_me',
-        required: false,
-      },
-    ],
+  name: 'Updated Test Form',
+  messages: {
+    success: 'Form updated successfully',
   },
 };

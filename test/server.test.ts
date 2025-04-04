@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mockLoadConfig, mockValidateConfig, mockConfig } from './mocks/config';
+import { startServer } from '../src/server';
 
 // Mock modules before importing the module that uses them
 vi.mock('../src/utils/config.js', () => ({
@@ -10,10 +11,8 @@ vi.mock('../src/utils/config.js', () => ({
 vi.mock('../src/utils/logger.js', () => ({
   log: vi.fn(),
   logInfo: vi.fn(),
+  logError: vi.fn(),
 }));
-
-// Import the module that uses the mocked dependencies
-import { startServer } from '../src/server';
 
 describe('Server', () => {
   beforeEach(() => {

@@ -1,7 +1,7 @@
 // Mock Auth0 actions data for testing
 export const mockActions = [
   {
-    id: 'act_1',
+    id: 'action1',
     name: 'Test Action 1',
     supported_triggers: [
       {
@@ -9,25 +9,24 @@ export const mockActions = [
         version: 'v2',
       },
     ],
-    code: `
-      /**
-       * Handler that will be called during the execution of a PostLogin flow.
-       *
-       * @param {Event} event - Details about the user and the context in which they are logging in.
-       * @param {PostLoginAPI} api - Interface whose methods can be used to change the behavior of the login.
-       */
-      exports.onExecutePostLogin = async (event, api) => {
-        console.log('Test Action 1 executed');
-      };
-    `,
+    code: 'exports.onExecutePostLogin = async (event, api) => { console.log("Hello from action 1"); };',
+    runtime: 'node18',
     status: 'built',
-    deployed: true,
-    runtime: 'node16',
-    created_at: '2023-01-01T00:00:00.000Z',
-    updated_at: '2023-01-01T00:00:00.000Z',
+    dependencies: [
+      {
+        name: 'lodash',
+        version: '4.17.21',
+      },
+    ],
+    secrets: [
+      {
+        name: 'API_KEY',
+        updated_at: '2023-01-01T00:00:00.000Z',
+      },
+    ],
   },
   {
-    id: 'act_2',
+    id: 'action2',
     name: 'Test Action 2',
     supported_triggers: [
       {
@@ -35,31 +34,28 @@ export const mockActions = [
         version: 'v2',
       },
     ],
-    code: `
-      /**
-       * Handler that will be called during the execution of a Client Credentials exchange.
-       *
-       * @param {Event} event - Details about the token request.
-       * @param {CredentialsExchangeAPI} api - Interface whose methods can be used to change the behavior of the client credentials exchange.
-       */
-      exports.onExecuteCredentialsExchange = async (event, api) => {
-        console.log('Test Action 2 executed');
-      };
-    `,
+    code: 'exports.onExecuteCredentialsExchange = async (event, api) => { console.log("Hello from action 2"); };',
+    runtime: 'node18',
     status: 'built',
-    deployed: true,
-    runtime: 'node16',
-    created_at: '2023-02-01T00:00:00.000Z',
-    updated_at: '2023-02-01T00:00:00.000Z',
+    dependencies: [],
+    secrets: [],
   },
 ];
+
+// Mock action list response
+export const mockActionListResponse = {
+  actions: mockActions,
+  total: mockActions.length,
+  page: 0,
+  per_page: 10,
+};
 
 // Mock single action response
 export const mockSingleAction = mockActions[0];
 
 // Mock create action response
 export const mockCreateActionResponse = {
-  id: 'new-act-id',
+  id: 'new-action-id',
   name: 'New Test Action',
   supported_triggers: [
     {
@@ -67,38 +63,22 @@ export const mockCreateActionResponse = {
       version: 'v2',
     },
   ],
-  code: `
-    /**
-     * Handler that will be called during the execution of a PostLogin flow.
-     *
-     * @param {Event} event - Details about the user and the context in which they are logging in.
-     * @param {PostLoginAPI} api - Interface whose methods can be used to change the behavior of the login.
-     */
-    exports.onExecutePostLogin = async (event, api) => {
-      console.log('New Test Action executed');
-    };
-  `,
-  status: 'built',
-  deployed: false,
-  runtime: 'node16',
-  created_at: '2023-03-01T00:00:00.000Z',
-  updated_at: '2023-03-01T00:00:00.000Z',
+  code: 'exports.onExecutePostLogin = async (event, api) => { console.log("Hello from new action"); };',
+  runtime: 'node18',
+  status: 'pending',
+  dependencies: [],
+  secrets: [],
 };
 
 // Mock update action response
 export const mockUpdateActionResponse = {
   ...mockActions[0],
   name: 'Updated Test Action',
-  code: `
-    /**
-     * Handler that will be called during the execution of a PostLogin flow.
-     *
-     * @param {Event} event - Details about the user and the context in which they are logging in.
-     * @param {PostLoginAPI} api - Interface whose methods can be used to change the behavior of the login.
-     */
-    exports.onExecutePostLogin = async (event, api) => {
-      console.log('Updated Test Action executed');
-    };
-  `,
-  updated_at: '2023-03-15T00:00:00.000Z',
+  code: 'exports.onExecutePostLogin = async (event, api) => { console.log("Updated action"); };',
+};
+
+// Mock deploy action response
+export const mockDeployActionResponse = {
+  ...mockActions[0],
+  status: 'built',
 };

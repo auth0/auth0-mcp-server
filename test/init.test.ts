@@ -1,8 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import init from '../src/init';
+import { requestAuthorization } from '../src/auth/device-auth-flow';
+import { findAndUpdatedClaudeConfig } from '../src/clients/claude';
+import { log } from '../src/utils/logger';
 
 // Mock dependencies
-vi.mock('../src/utils/auth/device-auth-flow', () => ({
+vi.mock('../src/auth/device-auth-flow', () => ({
   requestAuthorization: vi.fn().mockResolvedValue(undefined),
 }));
 
@@ -12,12 +15,9 @@ vi.mock('../src/clients/claude', () => ({
 
 vi.mock('../src/utils/logger', () => ({
   log: vi.fn(),
+  logInfo: vi.fn(),
+  logError: vi.fn(),
 }));
-
-// Import mocked modules
-import { requestAuthorization } from '../src/utils/auth/device-auth-flow';
-import { findAndUpdatedClaudeConfig } from '../src/clients/claude';
-import { log } from '../src/utils/logger';
 
 describe('Init Module', () => {
   beforeEach(() => {
