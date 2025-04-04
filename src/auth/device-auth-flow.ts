@@ -64,7 +64,7 @@ async function requestAuthorization() {
 
     const jsonRes = await response.json();
     if (!jsonRes.error) {
-      cliOutput(`Verify this code on screen ${chalk.bold.green(jsonRes.user_code)}`);
+      cliOutput(`\nVerify this code on screen: ${chalk.bold.green(jsonRes.user_code)}\n`);
       // Wait for user to press Enter to open browser
       await promptForBrowserPermission();
       openBrowser(jsonRes.verification_uri_complete);
