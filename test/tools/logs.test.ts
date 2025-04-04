@@ -44,8 +44,6 @@ describe('Logs Tool Handlers', () => {
       const parsedContent = JSON.parse(response.toolResult.content[0].text);
       expect(parsedContent.logs).toBeDefined();
       expect(parsedContent.logs.length).toBeGreaterThan(0);
-
-      // No need to check fetch call with MSW
     });
 
     it('should handle pagination parameters', async () => {
@@ -61,8 +59,6 @@ describe('Logs Tool Handlers', () => {
       const config = { domain };
 
       await LOG_HANDLERS.auth0_list_logs(request, config);
-
-      // No need to check fetch call with MSW
     });
 
     it('should handle query parameter', async () => {
@@ -76,8 +72,6 @@ describe('Logs Tool Handlers', () => {
       const config = { domain };
 
       await LOG_HANDLERS.auth0_list_logs(request, config);
-
-      // No need to check fetch call with MSW
     });
 
     it('should handle API errors', async () => {
