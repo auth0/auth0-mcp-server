@@ -20,7 +20,7 @@ export const findAndUpdateWindsurfConfig = async () => {
   const resolvedConfigPath = await getWindsurfConfigPath();
   await updateWindsurfConfig(resolvedConfigPath);
   cliOutput(
-    `${chalk.green('✓')} Auth0 MCP server configured. ${chalk.yellow('Restart Windsurf')} to apply changes.`
+    `\n${chalk.green('✓')} Auth0 MCP server configured. ${chalk.yellow('Restart Windsurf')} to apply changes.\n`
   );
 };
 

@@ -1,5 +1,6 @@
 import chalk from 'chalk';
 import { jwtDecode } from 'jwt-decode';
+import readline from 'readline';
 
 const spinnerFrames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
 let spinnerInterval: NodeJS.Timeout;
@@ -55,4 +56,21 @@ export function getTenantFromToken(accessToken: string): string {
   } catch (error) {
     throw new Error(`Failed to extract tenant: ${error}`);
   }
+}
+
+export async function promptForBrowserPermission(): Promise<boolean> {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+
+  return new Promise<boolean>((resolve) => {
+    rl.question(
+      chalk.yellow(`Press Enter to open the browser to log in or ${chalk.cyan('^C')} to quit.\n`),
+      () => {
+        rl.close();
+        resolve(true); // Always return true when Enter is pressed
+      }
+    );
+  });
 }

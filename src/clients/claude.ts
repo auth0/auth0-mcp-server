@@ -20,7 +20,7 @@ export const findAndUpdatedClaudeConfig = async () => {
   const resolvedConfigPath = await getClaudeConfigPath();
   await updateClaudeConfig(resolvedConfigPath);
   cliOutput(
-    `${chalk.green('✓')} Auth0 MCP server configured. ${chalk.yellow('Restart Claude Desktop')} to apply changes.`
+    `\n${chalk.green('✓')} Auth0 MCP server configured. ${chalk.yellow('Restart Claude Desktop')} to apply changes.\n`
   );
 };
 

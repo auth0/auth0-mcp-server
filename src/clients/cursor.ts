@@ -19,7 +19,7 @@ export const findAndUpdateCursorConfig = async () => {
   const resolvedConfigPath = await getCursorConfigPath();
   await updateCursorConfig(resolvedConfigPath);
   cliOutput(
-    `${chalk.green('✓')} Auth0 MCP server configured. ${chalk.yellow('Restart Cursor')} to apply changes.`
+    `\n${chalk.green('✓')} Auth0 MCP server configured. ${chalk.yellow('Restart Cursor')} to apply changes.\n`
   );
 };
 

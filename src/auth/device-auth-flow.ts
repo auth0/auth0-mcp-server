@@ -1,7 +1,13 @@
 import keytar from 'keytar';
 import chalk from 'chalk';
 import open from 'open';
-import { startSpinner, stopSpinner, getTenantFromToken, cliOutput } from '../utils/cli-utility.js';
+import {
+  startSpinner,
+  stopSpinner,
+  getTenantFromToken,
+  cliOutput,
+  promptForBrowserPermission,
+} from '../utils/cli-utility.js';
 import { log, logError } from '../utils/logger.js';
 
 const AUTH0_SCOPES = [
@@ -59,6 +65,8 @@ async function requestAuthorization() {
     const jsonRes = await response.json();
     if (!jsonRes.error) {
       cliOutput(`Verify this code on screen ${chalk.bold.green(jsonRes.user_code)}`);
+      // Wait for user to press Enter to open browser
+      await promptForBrowserPermission();
       openBrowser(jsonRes.verification_uri_complete);
       await exchangeDeviceCodeForToken(jsonRes);
     } else {
