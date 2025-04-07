@@ -12,11 +12,11 @@
 
 [MCP (Model Context Protocol)](https://modelcontextprotocol.io/introduction) is an open protocol introduced by Anthropic that standardizes how large language models communicate with external tools, resources or remote services.
 
-The Auth0 MCP server integrates with LLMs and AI agents, allowing you to perform various Auth0 management operations using natural language. For instance, you could simply ask Claude to perform Auth0 management operations:
+The Auth0 MCP Server integrates with LLMs and AI agents, allowing you to perform various Auth0 management operations using natural language. For instance, you could simply ask Claude to perform Auth0 management operations:
 
-- `Create a new Auth0 app and get the domain and client ID`
-- `Create and deploy a new Auth0 action to generate a JWT token`
-- `Could you check Auth0 logs for logins from 192.108.92.3 IP address?`
+- > Create a new Auth0 app and get the domain and client ID
+- > Create and deploy a new Auth0 action to generate a JWT token
+- > Could you check Auth0 logs for logins from 192.108.92.3 IP address?
 
 <br/>
 
@@ -32,7 +32,7 @@ The Auth0 MCP server integrates with LLMs and AI agents, allowing you to perform
 - [Claude Desktop](https://claude.ai/download) or any other [MCP Client](https://modelcontextprotocol.io/clients)
 - [Auth0](https://auth0.com/) account with appropriate permissions
 
-</br>
+<br/>
 
 Install and initialize the Auth0 MCP Server
 
@@ -40,7 +40,8 @@ Install and initialize the Auth0 MCP Server
 npx @auth0/auth0-mcp-server init
 ```
 
-_*Note*: Default configutation is for **Claude Desktop**_
+> [!NOTE]
+>  Default configuration is for Claude Desktop
 
 Restart your Claude Desktop app and ask it to help you manage your Auth0 tenant
 
@@ -143,6 +144,7 @@ The server handles authentication, request validation, and secure communication 
 The server uses OAuth 2.0 device authorization flow for secure authentication with Auth0. Your credentials are stored securely in your system's keychain and are never exposed in plain text.
 
 ```mermaid
+%%{init: { 'mirrorActors': false}}%%
 sequenceDiagram
     actor User
     box rgb(252, 252, 252) Local Environment
@@ -194,7 +196,8 @@ npx @auth0/auth0-mcp-server run
 - More detailed logging
 - Enable by setting environment variable: `export DEBUG=auth0-mcp`
 
-**_NOTE:_** Debug mode is particularly useful when troubleshooting connection or authentication issues.
+> [!TIP]
+> Debug mode is particularly useful when troubleshooting connection or authentication issues.
 
 ### ⚙️ Configuration
 
@@ -218,7 +221,7 @@ To use Auth0 MCP Server with any other MCP Client, you can add this configuratio
 ```
 
 > [!NOTE]  
-> _you can manually update if needed or if any unexpected errors occur during the npx init command._
+> you can manually update if needed or if any unexpected errors occur during the npx init command.
 
 ## 🩺 Troubleshooting
 
@@ -309,7 +312,8 @@ The configuration utility:
 - Sets up debug environment variables for better troubleshooting
 - Automatically backs up your existing configuration
 
-**_NOTE:_** After running the configuration tool, you'll need to restart Claude Desktop for changes to take effect.
+> [!NOTE]
+> After running the configuration tool, you'll need to restart Claude Desktop for changes to take effect.
 
 ## 🔒 Security
 
@@ -320,7 +324,8 @@ The Auth0 MCP Server prioritizes security:
 - Authentication uses OAuth 2.0 device authorization flow
 - Minimal permissions are requested for API access
 
-**_NOTE:_** Always review the permissions requested during the authentication process to ensure they align with your security requirements.
+> [!CAUTION]
+> Always review the permissions requested during the authentication process to ensure they align with your security requirements.
 
 ## 💬 Feedback and Contributing
 

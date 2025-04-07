@@ -11,3 +11,4 @@ dist/
 .npmrc
 coverage/
 .vscode/
+.idea/
