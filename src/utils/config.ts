@@ -13,7 +13,7 @@ import { log } from './logger.js';
 // Ensure HOME is set
 if (!process.env.HOME) {
   process.env.HOME = os.homedir();
-  log(`HOME environment variable was not set, setting to: ${process.env.HOME}`);
+  log(`HOME environment variable was not set, updating Home directory`);
 }
 
 // Determine if we're in debug mode

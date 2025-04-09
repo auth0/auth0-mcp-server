@@ -6,6 +6,7 @@ import { loadConfig, validateConfig } from './utils/config.js';
 import { HANDLERS, TOOLS } from './tools/index.js';
 import { log, logInfo } from './utils/logger.js';
 import { formatDomain } from './utils/http-utility.js';
+import { maskTenantName } from './utils/cli-utility.js';
 
 // Server implementation
 export async function startServer() {
@@ -25,8 +26,7 @@ export async function startServer() {
       throw new Error('Invalid Auth0 configuration');
     }
 
-    log(`Successfully loaded configuration for tenant: ${config.tenantName}`);
-    log(`Using domain: ${config.domain}`);
+    log(`Successfully loaded configuration for tenant: ${maskTenantName(config.tenantName)}`);
 
     // Create server instance
     const server = new Server({ name: 'auth0', version: '1.0.0' }, { capabilities: { tools: {} } });
