@@ -1,4 +1,4 @@
-import { findAndUpdatedClaudeConfig } from './clients/claude.js';
+import { findAndUpdateClaudeConfig } from './clients/claude.js';
 import { findAndUpdateWindsurfConfig } from './clients/windsurf.js';
 import { findAndUpdateCursorConfig } from './clients/cursor.js';
 import { log } from './utils/logger.js';
@@ -23,10 +23,13 @@ const init = async (args: string[]) => {
     } else if (clientValue === 'cursor') {
       log('Configuring Cursor as client...');
       await findAndUpdateCursorConfig();
+    } else if (clientValue === 'claude') {
+      log('Configuring Claude as client...');
+      await findAndUpdateClaudeConfig();
     } else {
       // Default to Claude for any other value or if no client specified
       log('Configuring Claude as client default...');
-      await findAndUpdatedClaudeConfig();
+      await findAndUpdateClaudeConfig();
     }
   } catch (error) {
     log('Error initializing server:', error);

@@ -5827,7 +5827,7 @@ THE SOFTWARE.
 
 
 ------------------------------------------------------------------------------
-Package: pkce-challenge@4.1.0
+Package: pkce-challenge@5.0.0
 License: MIT
 Author: crouchcd
 
@@ -6402,7 +6402,7 @@ SOFTWARE.
 
 
 ------------------------------------------------------------------------------
-Package: rollup@4.38.0
+Package: rollup@4.39.0
 License: MIT
 Author: Rich Harris
 
@@ -7728,7 +7728,7 @@ THE SOFTWARE.
 
 
 ------------------------------------------------------------------------------
-Package: std-env@3.8.1
+Package: std-env@3.9.0
 License: MIT
 
 No license text found. Please refer to std-env documentation.
@@ -8392,7 +8392,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 ------------------------------------------------------------------------------
-Package: typescript@5.8.2
+Package: typescript@5.8.3
 License: Apache-2.0
 Author: Microsoft Corp.
 
@@ -8454,7 +8454,7 @@ END OF TERMS AND CONDITIONS
 
 
 ------------------------------------------------------------------------------
-Package: typescript-eslint@8.29.0
+Package: typescript-eslint@8.29.1
 License: MIT
 
 MIT License
@@ -8481,7 +8481,7 @@ SOFTWARE.
 
 
 ------------------------------------------------------------------------------
-Package: undici-types@6.20.0
+Package: undici-types@6.21.0
 License: MIT
 
 MIT License
@@ -8686,7 +8686,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 ------------------------------------------------------------------------------
-Package: vite@6.2.4
+Package: vite@6.2.5
 License: MIT
 Author: Evan You
 

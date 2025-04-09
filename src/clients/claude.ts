@@ -16,7 +16,7 @@ interface ClaudeDesktopConfig {
   mcpServers: Record<string, ClaudeMCPServer>;
 }
 
-export const findAndUpdatedClaudeConfig = async () => {
+export const findAndUpdateClaudeConfig = async () => {
   const resolvedConfigPath = await getClaudeConfigPath();
   await updateClaudeConfig(resolvedConfigPath);
   cliOutput(

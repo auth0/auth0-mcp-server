@@ -39,9 +39,8 @@ vi.mock('@modelcontextprotocol/sdk/server/index.js', () => ({
 // Mock the handlers
 vi.mock('../src/tools/index.js', () => {
   const mockHandler = vi.fn().mockResolvedValue({
-    toolResult: {
-      content: [{ type: 'text', text: 'Success' }],
-    },
+    content: [{ type: 'text', text: 'Success' }],
+    isError: false,
   });
 
   return {
@@ -151,7 +150,8 @@ describe('Server', () => {
       );
 
       // Verify the result is passed through correctly
-      expect(result).toHaveProperty('toolResult');
+      expect(result).toHaveProperty('content');
+      expect(result).toHaveProperty('isError');
     });
 
     it('should handle unknown tool errors', async () => {
@@ -175,9 +175,9 @@ describe('Server', () => {
       const result = await handlerFn(request);
 
       // Verify the error response
-      expect(result).toHaveProperty('toolResult');
-      expect(result.toolResult).toHaveProperty('isError', true);
-      expect(result.toolResult.content[0].text).toContain('Error: Unknown tool');
+      expect(result).toHaveProperty('content');
+      expect(result).toHaveProperty('isError', true);
+      expect(result.content[0].text).toContain('Error: Unknown tool');
     });
 
     it('should reload config if it becomes invalid during a tool call', async () => {
@@ -237,8 +237,8 @@ describe('Server', () => {
       const result = await handlerFn(request);
 
       // Verify the error response
-      expect(result.toolResult).toHaveProperty('isError', true);
-      expect(result.toolResult.content[0].text).toContain('Auth0 configuration is invalid');
+      expect(result).toHaveProperty('isError', true);
+      expect(result.content[0].text).toContain('Auth0 configuration is invalid');
     });
 
     it('should handle missing domain error', async () => {
@@ -265,10 +265,8 @@ describe('Server', () => {
       const result = await handlerFn(request);
 
       // Verify the error response
-      expect(result.toolResult).toHaveProperty('isError', true);
-      expect(result.toolResult.content[0].text).toContain(
-        'AUTH0_DOMAIN environment variable is not set'
-      );
+      expect(result).toHaveProperty('isError', true);
+      expect(result.content[0].text).toContain('AUTH0_DOMAIN environment variable is not set');
     });
 
     it('should handle tool execution errors', async () => {
@@ -296,8 +294,8 @@ describe('Server', () => {
       const result = await handlerFn(request);
 
       // Verify the error response
-      expect(result.toolResult).toHaveProperty('isError', true);
-      expect(result.toolResult.content[0].text).toContain('Error: Tool execution failed');
+      expect(result).toHaveProperty('isError', true);
+      expect(result.content[0].text).toContain('Error: Tool execution failed');
     });
   });
 });

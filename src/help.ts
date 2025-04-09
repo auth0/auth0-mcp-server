@@ -25,6 +25,7 @@ ${chalk.bold('COMMANDS:')}
 
 ${chalk.bold('EXAMPLES:')}
   npx @auth0/auth0-mcp-server init
+  npx @auth0/auth0-mcp-server init --client claude
   npx @auth0/auth0-mcp-server init --client windsurf
   npx @auth0/auth0-mcp-server init --client cursor
   npx @auth0/auth0-mcp-server run
