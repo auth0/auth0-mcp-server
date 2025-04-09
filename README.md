@@ -225,8 +225,76 @@ Get command line help: View a list of supported commands and usage examples
 ```bash
 # Command help
 npx @auth0/auth0-mcp-server help
+
+# Initialize the server (authenticate and configure)
+npx @auth0/auth0-mcp-server init
+
+# Initialize with specific scopes (supports glob patterns)
+npx @auth0/auth0-mcp-server init --scopes 'read:*,create:clients'
+
+# Run the server
+npx @auth0/auth0-mcp-server run
+
+# Display current session information
+npx @auth0/auth0-mcp-server session
+
+# Remove Auth0 tokens from keychain
+npx @auth0/auth0-mcp-server logout
 ```
 
+### 🚥 Operation Modes
+
+#### 🐞 Debug Mode
+
+- More detailed logging
+- Enable by setting environment variable: `export DEBUG=auth0-mcp`
+
+> [!TIP]
+> Debug mode is particularly useful when troubleshooting connection or authentication issues.
+
+#### 🔑 Scope Selection
+
+The server provides an interactive scope selection interface during initialization:
+
+- **Interactive Selection**: Navigate with arrow keys and toggle selections with spacebar
+- **No Default Scopes**: By default, no scopes are selected for maximum security
+- **Glob Pattern Support**: Quickly select multiple related scopes with patterns:
+  ```bash
+  # Select all read scopes
+  npx @auth0/auth0-mcp-server init --scopes 'read:*'
+  
+  # Select multiple scope patterns (comma-separated)
+  npx @auth0/auth0-mcp-server init --scopes 'read:*,create:clients,update:actions'
+  ```
+
+> [!NOTE]
+> Selected scopes determine what operations the MCP server can perform on your Auth0 tenant.
+
+### ⚙️ Configuration
+
+#### Other MCP Clients:
+
+To use Auth0 MCP Server with any other MCP Client, you can add this configuration to the client and restart for changes to take effect:
+
+```json
+{
+  "mcpServers": {
+    "auth0": {
+      "command": "npx",
+      "args": ["-y", "@auth0/auth0-mcp-server", "run"],
+      "capabilities": ["tools"],
+      "env": {
+        "DEBUG": "auth0-mcp"
+      }
+    }
+  }
+}
+```
+
+> [!NOTE]  
+> you can manually update if needed or if any unexpected errors occur during the npx init command.
+
+### 🚨 Common Issues
 1. **Authentication Failures**
 
    - Ensure you have the correct permissions in your Auth0 tenant
@@ -237,9 +305,12 @@ npx @auth0/auth0-mcp-server help
    - Restart Claude Desktop after installation
    - Check that the server is running with `ps aux | grep auth0-mcp`
 
-3. **API Errors**
+3. **API Errors or Permission Issues**
+ 
    - Enable debug mode with `export DEBUG=auth0-mcp`
    - Check your Auth0 token permissions and expiration
+   - Reinitialize with specific scopes: `npx @auth0/auth0-mcp-server init --scopes 'read:*,update:*,create:*'`
+   - If a specific operation fails, you may be missing the required scope
 
 > [!TIP]
 > Most connection issues can be resolved by restarting both the server and Claude Desktop.
@@ -308,7 +379,9 @@ The Auth0 MCP Server prioritizes security:
 - Credentials are stored in the system's secure keychain
 - No sensitive information is stored in plain text
 - Authentication uses OAuth 2.0 device authorization flow
-- Minimal permissions are requested for API access
+- No permissions (scopes) are requested by default
+- Interactive scope selection allows you to choose exactly which permissions to grant
+- Support for glob patterns to quickly select related scopes (e.g., `read:*`)
 - Easy token removal via `logout` command when no longer needed
 
 > [!IMPORTANT]

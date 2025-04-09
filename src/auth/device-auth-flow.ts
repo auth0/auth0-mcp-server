@@ -9,38 +9,26 @@ import {
 } from '../utils/cli-utility.js';
 import { log, logError } from '../utils/logger.js';
 import { keychain } from '../utils/keychain.js';
+import { DEFAULT_SCOPES } from '../utils/scopes.js';
 
-const AUTH0_SCOPES = [
-  'offline_access',
-  'create:clients',
-  'update:clients',
-  'read:clients',
-  'read:resource_servers',
-  'create:resource_servers',
-  'update:resource_servers',
-  'read:actions',
-  'create:actions',
-  'update:actions',
-  'read:logs',
-  'read:log_streams',
-  'read:forms',
-  'create:forms',
-  'update:forms',
-];
+function getConfig(selectedScopes?: string[]) {
+  // If selectedScopes is provided, use those scopes
+  // If not provided or empty, use DEFAULT_SCOPES (which is now empty by default)
+  const scopes =
+    selectedScopes && selectedScopes.length > 0
+      ? selectedScopes.join(' ')
+      : DEFAULT_SCOPES.join(' ');
 
-const requiredScopes = AUTH0_SCOPES.join(' ');
-
-function getConfig() {
   return {
     tenant: 'auth0-tus1.tus.auth0.com',
     clientId: 'iB6OlqHQDHN1dbwapBZ0cWPIErUfLxQT',
     audience: `https://*.tus.auth0.com/api/v2/`,
-    scopes: requiredScopes,
+    scopes,
   };
 }
 
-async function requestAuthorization() {
-  const config = getConfig();
+async function requestAuthorization(selectedScopes?: string[]) {
+  const config = getConfig(selectedScopes);
   const body: any = {
     client_id: config.clientId,
   };
@@ -68,7 +56,7 @@ async function requestAuthorization() {
       // Wait for user to press Enter to open browser
       await promptForBrowserPermission();
       openBrowser(jsonRes.verification_uri_complete);
-      await exchangeDeviceCodeForToken(jsonRes);
+      await exchangeDeviceCodeForToken(jsonRes, selectedScopes);
     } else {
       logError('Error', jsonRes);
       process.exit(1);
@@ -109,8 +97,8 @@ function openBrowser(url: string) {
     });
 }
 
-async function exchangeDeviceCodeForToken(deviceCode: any) {
-  const config = getConfig();
+async function exchangeDeviceCodeForToken(deviceCode: any, selectedScopes?: string[]) {
+  const config = getConfig(selectedScopes);
   startSpinner('Waiting for authorization...');
   while (true) {
     try {
@@ -130,7 +118,7 @@ async function exchangeDeviceCodeForToken(deviceCode: any) {
       const jsonRes = await response.json();
 
       if (!jsonRes.error) {
-        fetchUserInfo(jsonRes); // Success case
+        fetchUserInfo(jsonRes, selectedScopes); // Success case
         break; // Exit loop once successful
       } else if (['authorization_pending', 'slow_down'].includes(jsonRes.error)) {
         await wait(5000); // Wait before polling again
@@ -148,13 +136,13 @@ async function exchangeDeviceCodeForToken(deviceCode: any) {
   stopSpinner();
 }
 
-async function fetchUserInfo(tokenSet: any) {
+async function fetchUserInfo(tokenSet: any, selectedScopes?: string[]) {
   const tenantName = getTenantFromToken(tokenSet.access_token);
   const envValues = {
     AUTH0_TOKEN: tokenSet.access_token,
     AUTH0_DOMAIN: tenantName,
     AUTH0_TENANT_NAME: tenantName,
-    AUTH0_CLIENT_ID: getConfig().clientId,
+    AUTH0_CLIENT_ID: getConfig(selectedScopes).clientId,
   };
 
   // Store tokens in keychain
@@ -176,7 +164,7 @@ async function fetchUserInfo(tokenSet: any) {
   log('Updated environment variables');
 }
 
-export async function refreshAccessToken(): Promise<string | null> {
+export async function refreshAccessToken(selectedScopes?: string[]): Promise<string | null> {
   try {
     log('Attempting to refresh access token');
 
@@ -186,7 +174,7 @@ export async function refreshAccessToken(): Promise<string | null> {
       return null;
     }
 
-    const config = getConfig();
+    const config = getConfig(selectedScopes);
     const response = await fetch(`https://${config.tenant}/oauth/token`, {
       method: 'POST',
       body: new URLSearchParams({
@@ -252,12 +240,12 @@ export async function isTokenExpired(bufferSeconds = 300): Promise<boolean> {
   }
 }
 
-export async function getValidAccessToken(): Promise<string | null> {
+export async function getValidAccessToken(selectedScopes?: string[]): Promise<string | null> {
   try {
     const expired = await isTokenExpired();
 
     if (expired) {
-      const newToken = await refreshAccessToken();
+      const newToken = await refreshAccessToken(selectedScopes);
       if (newToken) {
         return newToken;
       }
