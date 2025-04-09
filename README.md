@@ -141,6 +141,45 @@ The server handles authentication, request validation, and secure communication 
 
 ## 🔐 Authentication
 
+The Auth0 MCP Server uses the Auth0 Management API and requires authentication to access your Auth0 tenant.
+
+### Initial Setup
+
+To authenticate the MCP Server:
+
+```bash
+npx @auth0/auth0-mcp-server init
+```
+
+This will start the device authorization flow, allowing you to log in to your Auth0 account and select the tenant you want to use.
+
+> [!IMPORTANT]
+> The `init` command needs to be run whenever:
+> - You're setting up the MCP Server for the first time
+> - You've logged out from a previous session
+> - You want to switch to a different tenant
+> - Your token has expired
+
+### Session Management
+
+To see information about your current authentication session:
+
+```bash
+npx @auth0/auth0-mcp-server session
+```
+
+### Logging Out
+
+For security best practices, always use the logout command when you're done with a session:
+
+```bash
+npx @auth0/auth0-mcp-server logout
+```
+
+This ensures your authentication tokens are properly removed from the system keychain.
+
+### Authentication Flow
+
 The server uses OAuth 2.0 device authorization flow for secure authentication with Auth0. Your credentials are stored securely in your system's keychain and are never exposed in plain text.
 
 ```mermaid
@@ -187,6 +226,12 @@ npx @auth0/auth0-mcp-server init
 
 # Run the server
 npx @auth0/auth0-mcp-server run
+
+# Display current session information
+npx @auth0/auth0-mcp-server session
+
+# Remove Auth0 tokens from keychain
+npx @auth0/auth0-mcp-server logout
 ```
 
 ### 🚥 Operation Modes
@@ -323,6 +368,10 @@ The Auth0 MCP Server prioritizes security:
 - No sensitive information is stored in plain text
 - Authentication uses OAuth 2.0 device authorization flow
 - Minimal permissions are requested for API access
+- Easy token removal via `logout` command when no longer needed
+
+> [!IMPORTANT]
+> For security best practices, always use `npx @auth0/auth0-mcp-server logout` when you're done with a session or switching between tenants. This ensures your authentication tokens are properly removed from the system keychain.
 
 > [!CAUTION]
 > Always review the permissions requested during the authentication process to ensure they align with your security requirements.

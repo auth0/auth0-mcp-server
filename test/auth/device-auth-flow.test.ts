@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import keytar from 'keytar';
 import * as deviceAuthFlow from '../../src/auth/device-auth-flow';
+import { KEYCHAIN_SERVICE_NAME, KeychainItem } from '../../src/utils/constants';
 
 // Mock dependencies
 vi.mock('keytar');
@@ -51,7 +52,10 @@ describe('Device Auth Flow', () => {
       const result = await deviceAuthFlow.isTokenExpired();
 
       expect(result).toBe(true);
-      expect(keytar.getPassword).toHaveBeenCalledWith('auth0-mcp', 'AUTH0_TOKEN_EXPIRES_AT');
+      expect(keytar.getPassword).toHaveBeenCalledWith(
+        KEYCHAIN_SERVICE_NAME,
+        KeychainItem.TOKEN_EXPIRES_AT
+      );
     });
 
     it('should return true if token is expired', async () => {
@@ -111,7 +115,10 @@ describe('Device Auth Flow', () => {
       const result = await deviceAuthFlow.refreshAccessToken();
 
       expect(result).toBeNull();
-      expect(keytar.getPassword).toHaveBeenCalledWith('auth0-mcp', 'AUTH0_REFRESH_TOKEN');
+      expect(keytar.getPassword).toHaveBeenCalledWith(
+        KEYCHAIN_SERVICE_NAME,
+        KeychainItem.REFRESH_TOKEN
+      );
     });
 
     it('should refresh token successfully', async () => {
@@ -131,16 +138,16 @@ describe('Device Auth Flow', () => {
 
       expect(result).toBe('new-access-token');
       expect(keytar.setPassword).toHaveBeenCalledWith(
-        'auth0-mcp',
-        'AUTH0_TOKEN',
+        KEYCHAIN_SERVICE_NAME,
+        KeychainItem.TOKEN,
         'new-access-token'
       );
       expect(keytar.setPassword).toHaveBeenCalledWith(
-        'auth0-mcp',
-        'AUTH0_REFRESH_TOKEN',
+        KEYCHAIN_SERVICE_NAME,
+        KeychainItem.REFRESH_TOKEN,
         'new-refresh-token'
       );
-      expect(keytar.setPassword).toHaveBeenCalledTimes(3); // Token, refresh token, and expires_at
+      expect(keytar.setPassword).toHaveBeenCalledTimes(4); // Token, domain, refresh token, and expires_at
       expect(process.env.AUTH0_TOKEN).toBe('new-access-token');
     });
 

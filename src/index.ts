@@ -2,6 +2,8 @@
 import init from './init.js';
 import run from './run.js';
 import help from './help.js';
+import logout from './logout.js';
+import session from './session.js';
 import { logError } from './utils/logger.js';
 
 // Enable all debug logs for this package by default
@@ -35,8 +37,14 @@ async function main() {
       await init(args);
     } else if (command === 'help') {
       await help();
+    } else if (command === 'logout') {
+      await logout();
+    } else if (command === 'session') {
+      await session();
     } else {
-      logError(`Usage: auth0-mcp <command>\nValid commands: 'init', 'run', or 'help'`);
+      logError(
+        `Usage: auth0-mcp <command>\nValid commands: 'init', 'run', 'logout', 'session', or 'help'`
+      );
       logError(`Run 'auth0-mcp help' for more information.`);
       process.exit(1);
     }

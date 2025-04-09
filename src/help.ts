@@ -21,6 +21,10 @@ ${chalk.bold('COMMANDS:')}
                            
   ${chalk.cyan('run')}     Start the MCP server
   
+  ${chalk.cyan('logout')}  Remove all stored Auth0 tokens from the system keychain
+  
+  ${chalk.cyan('session')} Display current authentication session information
+  
   ${chalk.cyan('help')}    Display this help information
 
 ${chalk.bold('EXAMPLES:')}
@@ -29,6 +33,8 @@ ${chalk.bold('EXAMPLES:')}
   npx @auth0/auth0-mcp-server init --client windsurf
   npx @auth0/auth0-mcp-server init --client cursor
   npx @auth0/auth0-mcp-server run
+  npx @auth0/auth0-mcp-server session
+  npx @auth0/auth0-mcp-server logout
   
 For more information, visit: https://github.com/auth0/auth0-mcp-server
 `);

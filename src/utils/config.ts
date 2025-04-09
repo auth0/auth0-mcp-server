@@ -1,12 +1,9 @@
 import * as os from 'os';
-import * as path from 'path';
-import { fileURLToPath } from 'url';
-import { promisify } from 'util';
-import keytar from 'keytar';
+import { keychain } from './keychain.js';
 import {
-  getValidAccessToken,
   isTokenExpired,
   refreshAccessToken,
+  getValidAccessToken,
 } from '../auth/device-auth-flow.js';
 import { log } from './logger.js';
 
@@ -42,7 +39,7 @@ export async function loadConfig(): Promise<Auth0Config | null> {
 
   // Get the valid token (either refreshed or existing)
   const token = await getValidAccessToken();
-  const domain = await keytar.getPassword('auth0-mcp', 'AUTH0_DOMAIN');
+  const domain = await keychain.getDomain();
 
   return {
     token: token || '',

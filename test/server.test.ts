@@ -151,7 +151,7 @@ describe('Server', () => {
 
       // Verify the result is passed through correctly
       expect(result).toHaveProperty('content');
-      expect(result).toHaveProperty('isError');
+      expect(result).toHaveProperty('isError', false);
     });
 
     it('should handle unknown tool errors', async () => {

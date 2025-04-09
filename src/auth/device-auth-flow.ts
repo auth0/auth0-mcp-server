@@ -1,4 +1,3 @@
-import keytar from 'keytar';
 import chalk from 'chalk';
 import open from 'open';
 import {
@@ -9,6 +8,7 @@ import {
   promptForBrowserPermission,
 } from '../utils/cli-utility.js';
 import { log, logError } from '../utils/logger.js';
+import { keychain } from '../utils/keychain.js';
 
 const AUTH0_SCOPES = [
   'offline_access',
@@ -157,17 +157,18 @@ async function fetchUserInfo(tokenSet: any) {
     AUTH0_CLIENT_ID: getConfig().clientId,
   };
 
-  await storeInKeychain('auth0-mcp', 'AUTH0_TOKEN', tokenSet.access_token);
-  await storeInKeychain('auth0-mcp', 'AUTH0_DOMAIN', tenantName);
+  // Store tokens in keychain
+  await keychain.setToken(tokenSet.access_token);
+  await keychain.setDomain(tenantName);
 
   if (tokenSet.refresh_token) {
-    await storeInKeychain('auth0-mcp', 'AUTH0_REFRESH_TOKEN', tokenSet.refresh_token);
+    await keychain.setRefreshToken(tokenSet.refresh_token);
     log('Refresh token stored in keychain');
   }
 
   if (tokenSet.expires_in) {
     const expiresAt = Date.now() + tokenSet.expires_in * 1000;
-    await storeInKeychain('auth0-mcp', 'AUTH0_TOKEN_EXPIRES_AT', expiresAt.toString());
+    await keychain.setTokenExpiresAt(expiresAt);
     log(`Token expires at: ${new Date(expiresAt).toISOString()}`);
   }
 
@@ -175,22 +176,11 @@ async function fetchUserInfo(tokenSet: any) {
   log('Updated environment variables');
 }
 
-async function storeInKeychain(app: string, key: string, value: string): Promise<boolean> {
-  try {
-    await keytar.setPassword(app, key, value);
-    log(`Successfully stored ${key} in keychain`);
-    return true;
-  } catch (error) {
-    log(`Error storing ${key} in keychain:`, error);
-    return false;
-  }
-}
-
 export async function refreshAccessToken(): Promise<string | null> {
   try {
     log('Attempting to refresh access token');
 
-    const refreshToken = await keytar.getPassword('auth0-mcp', 'AUTH0_REFRESH_TOKEN');
+    const refreshToken = await keychain.getRefreshToken();
     if (!refreshToken) {
       log('No refresh token found in keychain');
       return null;
@@ -216,15 +206,18 @@ export async function refreshAccessToken(): Promise<string | null> {
       return null;
     }
 
-    await storeInKeychain('auth0-mcp', 'AUTH0_TOKEN', tokenSet.access_token);
+    // Store new tokens
+    const tenantName = getTenantFromToken(tokenSet.access_token);
+    await keychain.setToken(tokenSet.access_token);
+    await keychain.setDomain(tenantName);
 
     if (tokenSet.refresh_token) {
-      await storeInKeychain('auth0-mcp', 'AUTH0_REFRESH_TOKEN', tokenSet.refresh_token);
+      await keychain.setRefreshToken(tokenSet.refresh_token);
     }
 
     if (tokenSet.expires_in) {
       const expiresAt = Date.now() + tokenSet.expires_in * 1000;
-      await storeInKeychain('auth0-mcp', 'AUTH0_TOKEN_EXPIRES_AT', expiresAt.toString());
+      await keychain.setTokenExpiresAt(expiresAt);
     }
 
     process.env.AUTH0_TOKEN = tokenSet.access_token;
@@ -239,13 +232,12 @@ export async function refreshAccessToken(): Promise<string | null> {
 
 export async function isTokenExpired(bufferSeconds = 300): Promise<boolean> {
   try {
-    const expiresAtStr = await keytar.getPassword('auth0-mcp', 'AUTH0_TOKEN_EXPIRES_AT');
-    if (!expiresAtStr) {
+    const expiresAt = await keychain.getTokenExpiresAt();
+    if (!expiresAt) {
       log('No token expiration time found');
       return true;
     }
 
-    const expiresAt = parseInt(expiresAtStr, 10);
     const now = Date.now();
     const isExpired = now + bufferSeconds * 1000 >= expiresAt;
 
@@ -273,8 +265,7 @@ export async function getValidAccessToken(): Promise<string | null> {
       log('Token refresh failed, trying to use existing token');
     }
 
-    const token = await keytar.getPassword('auth0-mcp', 'AUTH0_TOKEN');
-    return token;
+    return await keychain.getToken();
   } catch (error) {
     log('Error getting valid access token:', error);
     return null;
