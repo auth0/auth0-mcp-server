@@ -240,17 +240,14 @@ export async function isTokenExpired(bufferSeconds = 300): Promise<boolean> {
   }
 }
 
-export async function getValidAccessToken(selectedScopes?: string[]): Promise<string | null> {
+export async function getValidAccessToken(): Promise<string | null> {
   try {
     const expired = await isTokenExpired();
 
     if (expired) {
-      const newToken = await refreshAccessToken(selectedScopes);
-      if (newToken) {
-        return newToken;
-      }
-
-      log('Token refresh failed, trying to use existing token');
+      //[TODO] Implement refresh token flow
+      log('Refresh token flow is not implemented yet, please try npx @auth0/auth0-mcp-server init');
+      return null;
     }
 
     return await keychain.getToken();

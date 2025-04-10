@@ -1,5 +1,4 @@
 export const AUTH0_SCOPES = [
-  'offline_access',
   'create:clients',
   'update:clients',
   'read:clients',
