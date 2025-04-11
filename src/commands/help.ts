@@ -2,9 +2,17 @@ import chalk from 'chalk';
 import { cliOutput } from '../utils/cli-utility.js';
 
 /**
- * Display help information for the Auth0 MCP Server CLI
+ * Command options for the help command
  */
-const help = async (): Promise<void> => {
+export type HelpOptions = Record<string, never>;
+
+/**
+ * Display help information for the Auth0 MCP Server CLI
+ *
+ * @param {HelpOptions} _options - Command options from commander (unused)
+ * @returns {Promise<void>}
+ */
+const help = async (_options?: HelpOptions): Promise<void> => {
   cliOutput(`
 ${chalk.bold('Auth0 MCP Server')}
 

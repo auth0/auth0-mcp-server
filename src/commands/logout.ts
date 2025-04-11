@@ -68,10 +68,17 @@ const categorizeResults = (
 };
 
 /**
+ * Command options for the logout command
+ */
+export type LogoutOptions = Record<string, never>;
+
+/**
  * Removes all Auth0 MCP related tokens from the system keychain
+ *
+ * @param {LogoutOptions} _options - Command options from commander (unused)
  * @returns A promise that resolves when logout is complete
  */
-async function logout(): Promise<void> {
+async function logout(_options?: LogoutOptions): Promise<void> {
   try {
     log('Removing Auth0 tokens from keychain');
     cliOutput(`\n${chalk.blue('i')} Clearing authentication data...\n`);

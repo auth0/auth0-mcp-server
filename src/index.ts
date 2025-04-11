@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { Command } from 'commander';
 import init from './commands/init.js';
 import run from './commands/run.js';
 import help from './commands/help.js';
@@ -6,59 +7,56 @@ import logout from './commands/logout.js';
 import session from './commands/session.js';
 import { logError } from './utils/logger.js';
 
-// Enable all debug logs for this package by default
-//process.env.DEBUG = (process.env.DEBUG || '') + ',auth0-mcp:*';
-
 // Set process title
 process.title = 'auth0-mcp-server';
 
-// Handle process events
-process.on('uncaughtException', (error) => {
-  logError('Uncaught exception:', error);
-  process.exit(1);
-});
-
-process.on('unhandledRejection', (error) => {
-  logError('Unhandled rejection:', error);
-  process.exit(1);
-});
-
-// Parse command line arguments
-const command = process.argv[2];
-
-// Wrap the main execution in an async function to handle top-level await properly
-async function main() {
-  try {
-    if (command === 'run') {
-      // Main function to start server
-      await run();
-    } else if (command === 'init') {
-      const args = process.argv.slice(3);
-      await init(args);
-    } else if (command === 'help') {
-      await help();
-    } else if (command === 'logout') {
-      await logout();
-    } else if (command === 'session') {
-      await session();
-    } else {
-      logError(
-        `Usage: auth0-mcp <command>\nValid commands: 'init', 'run', 'logout', 'session', or 'help'`
-      );
-      logError(`Run 'auth0-mcp help' for more information.`);
-      process.exit(1);
-    }
-  } catch (error) {
-    logError('Error executing command:', error);
+// Global error handlers
+['uncaughtException', 'unhandledRejection'].forEach((event) => {
+  process.on(event, (error) => {
+    logError(`${event}:`, error);
     process.exit(1);
-  }
-}
-
-// Execute the main function
-main().catch((error) => {
-  logError('Unhandled error in main execution:', error);
-  process.exit(1);
+  });
 });
 
-// Export for use in bin script
-export { run };
+// Top-level CLI
+const program = new Command()
+  .name('auth0-mcp')
+  .description('Auth0 MCP Server - Model Context Protocol server for Auth0 Management API')
+  .version('0.1.0-beta.1');
+
+// Init command
+program
+  .command('init')
+  .description('Initialize the server (authenticate and configure)')
+  .option('--client <client>', 'Configure specific client (claude, windsurf, or cursor)', 'claude')
+  .option('--scopes <scopes>', 'Comma-separated list of Auth0 API scopes', (text) =>
+    text
+      .split(',')
+      .map((scope) => scope.trim())
+      .filter(Boolean)
+  )
+  .action(init);
+
+// Run command
+program.command('run').description('Start the MCP server').action(run);
+
+// Help command
+program.command('help').description('Display help information').action(help);
+
+// Logout command
+program
+  .command('logout')
+  .description('Remove all stored Auth0 tokens from the system keychain')
+  .action(logout);
+
+// Session command
+program
+  .command('session')
+  .description('Display current authentication session information')
+  .action(session);
+
+// Parse arguments and handle potential errors
+program.parseAsync().catch((error) => {
+  logError('Command execution error:', error);
+  process.exit(1);
+});

@@ -5,35 +5,30 @@ import { log, logError } from '../utils/logger.js';
 import { requestAuthorization } from '../auth/device-auth-flow.js';
 import { promptForScopeSelection } from '../utils/cli-utility.js';
 import { getAllScopes } from '../utils/scopes.js';
-import { Glob } from '../utils/glob.js'; // Import the Glob class
+import { Glob } from '../utils/glob.js';
 import chalk from 'chalk';
 
 /**
- * Resolves scopes based on command line arguments
+ * Client configuration options supported by the application
+ */
+export type ClientName = 'claude' | 'windsurf' | 'cursor';
+
+/**
+ * Command options for the init command
+ */
+export interface InitOptions {
+  client: ClientName;
+  scopes?: string[];
+}
+
+/**
+ * Resolves scopes based on command options
  *
- * @param {string[]} args - Command line arguments
+ * @param {string[] | undefined} scopesOption - Scopes option from commander
  * @returns {Promise<string[]>} - The selected scopes
  */
-async function resolveScopes(args: string[]): Promise<string[]> {
-  const scopesFlagIndex = args.findIndex((arg) => arg === '--scopes');
-
-  // If no --scopes flag or no value provided, prompt for selection
-  if (
-    scopesFlagIndex === -1 ||
-    scopesFlagIndex + 1 >= args.length ||
-    args[scopesFlagIndex + 1].startsWith('--')
-  ) {
-    return promptForScopeSelection();
-  }
-
-  // Parse scope patterns
-  const scopesArg = args[scopesFlagIndex + 1];
-  const scopePatterns = scopesArg
-    .split(',')
-    .map((pattern) => pattern.trim())
-    .filter(Boolean);
-
-  if (scopePatterns.length === 0) {
+async function resolveScopes(scopesOption?: string[]): Promise<string[]> {
+  if (!scopesOption || scopesOption.length === 0) {
     return promptForScopeSelection();
   }
 
@@ -42,7 +37,7 @@ async function resolveScopes(args: string[]): Promise<string[]> {
   const matchedScopes = new Set<string>();
   const invalidScopes = new Set<string>();
 
-  for (const pattern of scopePatterns) {
+  for (const pattern of scopesOption) {
     let foundMatch = false;
     const glob = new Glob(pattern);
 
@@ -75,31 +70,6 @@ async function resolveScopes(args: string[]): Promise<string[]> {
   }
 
   return promptForScopeSelection(matchedScopesArray);
-}
-
-/**
- * Client configuration options supported by the application
- */
-type ClientName = 'claude' | 'windsurf' | 'cursor';
-
-/**
- * Resolves the client to use based on command line arguments
- *
- * @param {string[]} args - Command line arguments
- * @returns {ClientName} - The selected client name
- */
-function resolveClient(args: string[]): ClientName {
-  const clientFlagIndex = args.findIndex((arg) => arg === '--client');
-
-  if (clientFlagIndex !== -1 && clientFlagIndex < args.length - 1) {
-    const clientValue = args[clientFlagIndex + 1].toLowerCase();
-
-    if (clientValue === 'windsurf' || clientValue === 'cursor' || clientValue === 'claude') {
-      return clientValue;
-    }
-  }
-
-  return 'claude'; // Default client
 }
 
 /**
@@ -141,22 +111,21 @@ async function configureClient(clientName: ClientName): Promise<void> {
  * Initializes the Auth0 MCP server by handling scope selection, authorization,
  * and client configuration.
  *
- * @param {string[]} args - Command line arguments passed to the application
+ * @param {InitOptions} options - Command options from commander
  * @returns {Promise<void>}
  */
-const init = async (args: string[]): Promise<void> => {
+const init = async (options: InitOptions): Promise<void> => {
   try {
     log('Initializing Auth0 MCP server...');
 
     // Handle scope resolution
-    const selectedScopes = await resolveScopes(args);
+    const selectedScopes = await resolveScopes(options.scopes);
     await requestAuthorization(selectedScopes);
 
     // Handle client configuration
-    const clientName = resolveClient(args);
-    await configureClient(clientName);
+    await configureClient(options.client);
   } catch (error) {
-    log('Error initializing server:', error);
+    logError('Error initializing server:', error);
   }
 };
 
