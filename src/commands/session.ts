@@ -1,7 +1,7 @@
 import chalk from 'chalk';
-import { keychain } from './utils/keychain.js';
-import { cliOutput } from './utils/cli-utility.js';
-import { log } from './utils/logger.js';
+import { keychain } from '../utils/keychain.js';
+import { cliOutput } from '../utils/cli-utility.js';
+import { log } from '../utils/logger.js';
 
 /**
  * Formats a date for display in user-friendly format

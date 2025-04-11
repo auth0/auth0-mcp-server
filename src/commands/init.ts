@@ -1,10 +1,11 @@
-import { findAndUpdateClaudeConfig } from './clients/claude.js';
-import { findAndUpdateWindsurfConfig } from './clients/windsurf.js';
-import { findAndUpdateCursorConfig } from './clients/cursor.js';
-import { log, logError } from './utils/logger.js';
-import { requestAuthorization } from './auth/device-auth-flow.js';
-import { promptForScopeSelection } from './utils/cli-utility.js';
-import { getAllScopes } from './utils/scopes.js';
+import { findAndUpdateClaudeConfig } from '../clients/claude.js';
+import { findAndUpdateWindsurfConfig } from '../clients/windsurf.js';
+import { findAndUpdateCursorConfig } from '../clients/cursor.js';
+import { log, logError } from '../utils/logger.js';
+import { requestAuthorization } from '../auth/device-auth-flow.js';
+import { promptForScopeSelection } from '../utils/cli-utility.js';
+import { getAllScopes } from '../utils/scopes.js';
+import { Glob } from '../utils/glob.js'; // Import the Glob class
 import chalk from 'chalk';
 
 /**
@@ -43,17 +44,17 @@ async function resolveScopes(args: string[]): Promise<string[]> {
 
   for (const pattern of scopePatterns) {
     let foundMatch = false;
-    const regexPattern = new RegExp(`^${pattern.replace(/\*/g, '.*')}$`);
+    const glob = new Glob(pattern);
 
     for (const scope of allAvailableScopes) {
-      if (regexPattern.test(scope)) {
+      if (glob.matches(scope)) {
         matchedScopes.add(scope);
         foundMatch = true;
       }
     }
 
     // Track invalid scopes (non-wildcard patterns with no matches)
-    if (!pattern.includes('*') && !foundMatch) {
+    if (!glob.hasWildcards() && !foundMatch) {
       invalidScopes.add(pattern);
     }
   }

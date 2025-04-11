@@ -1,9 +1,9 @@
 #!/usr/bin/env node
-import init from './init.js';
-import run from './run.js';
-import help from './help.js';
-import logout from './logout.js';
-import session from './session.js';
+import init from './commands/init.js';
+import run from './commands/run.js';
+import help from './commands/help.js';
+import logout from './commands/logout.js';
+import session from './commands/session.js';
 import { logError } from './utils/logger.js';
 
 // Enable all debug logs for this package by default

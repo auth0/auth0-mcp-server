@@ -1,7 +1,7 @@
 import chalk from 'chalk';
-import { log, logError } from './utils/logger.js';
-import { cliOutput } from './utils/cli-utility.js';
-import { keychain, KeychainItem, type KeychainOperationResult } from './utils/keychain.js';
+import { log, logError } from '../utils/logger.js';
+import { cliOutput } from '../utils/cli-utility.js';
+import { keychain, KeychainItem, type KeychainOperationResult } from '../utils/keychain.js';
 
 /**
  * Maps technical keychain item names to user-friendly descriptions

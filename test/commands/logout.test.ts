@@ -6,7 +6,7 @@ import {
   KEYCHAIN_SERVICE_NAME,
   KeychainItem,
   KeychainOperationResult,
-} from '../src/utils/keychain';
+} from '../../src/utils/keychain';
 
 // Mock dependencies
 vi.mock('keytar', () => ({

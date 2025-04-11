@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
-import help from '../src/help';
-import * as cliUtility from '../src/utils/cli-utility';
+import help from '../../src/commands/help.js';
+import * as cliUtility from '../../src/utils/cli-utility';
 
 // Mock the cliOutput function
-vi.mock('../src/utils/cli-utility.js', () => ({
+vi.mock('../../src/utils/cli-utility.js', () => ({
   cliOutput: vi.fn().mockReturnValue(true),
 }));
 

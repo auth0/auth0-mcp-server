@@ -1,5 +1,5 @@
 import chalk from 'chalk';
-import { cliOutput } from './utils/cli-utility.js';
+import { cliOutput } from '../utils/cli-utility.js';
 
 /**
  * Display help information for the Auth0 MCP Server CLI

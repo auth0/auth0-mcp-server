@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import session from '../src/session.js';
-import { keychain } from '../src/utils/keychain.js';
-import { cliOutput } from '../src/utils/cli-utility.js';
-import { log } from '../src/utils/logger.js';
+import session from '../../src/commands/session.js';
+import { keychain } from '../../src/utils/keychain.js';
+import { cliOutput } from '../../src/utils/cli-utility.js';
+import { log } from '../../src/utils/logger.js';
 
 // Mock dependencies
-vi.mock('../src/utils/keychain.js', () => ({
+vi.mock('../../src/utils/keychain.js', () => ({
   keychain: {
     getToken: vi.fn(),
     getDomain: vi.fn(),
@@ -13,11 +13,11 @@ vi.mock('../src/utils/keychain.js', () => ({
   },
 }));
 
-vi.mock('../src/utils/cli-utility.js', () => ({
+vi.mock('../../src/utils/cli-utility.js', () => ({
   cliOutput: vi.fn(),
 }));
 
-vi.mock('../src/utils/logger.js', () => ({
+vi.mock('../../src/utils/logger.js', () => ({
   log: vi.fn(),
 }));
 

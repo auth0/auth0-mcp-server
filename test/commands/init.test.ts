@@ -1,31 +1,31 @@
 import { describe, it, expect, vi, beforeEach, afterAll } from 'vitest';
-import init from '../src/init';
-import { requestAuthorization } from '../src/auth/device-auth-flow';
-import { findAndUpdateClaudeConfig } from '../src/clients/claude';
-import { log } from '../src/utils/logger';
-import { promptForScopeSelection } from '../src/utils/cli-utility';
+import init from '../../src/commands/init.js';
+import { requestAuthorization } from '../../src/auth/device-auth-flow';
+import { findAndUpdateClaudeConfig } from '../../src/clients/claude';
+import { log } from '../../src/utils/logger';
+import { promptForScopeSelection } from '../../src/utils/cli-utility';
 
 // Mock dependencies
-vi.mock('../src/auth/device-auth-flow', () => ({
+vi.mock('../../src/auth/device-auth-flow', () => ({
   requestAuthorization: vi.fn().mockResolvedValue(undefined),
 }));
 
-vi.mock('../src/clients/claude', () => ({
+vi.mock('../../src/clients/claude', () => ({
   findAndUpdateClaudeConfig: vi.fn().mockResolvedValue(undefined),
 }));
 
-vi.mock('../src/utils/logger', () => ({
+vi.mock('../../src/utils/logger', () => ({
   log: vi.fn(),
   logInfo: vi.fn(),
   logError: vi.fn(),
 }));
 
-vi.mock('../src/utils/cli-utility', () => ({
+vi.mock('../../src/utils/cli-utility', () => ({
   promptForScopeSelection: vi.fn().mockResolvedValue([]),
 }));
 
 // Mock the scope utilities
-vi.mock('../src/utils/scopes', () => ({
+vi.mock('../../src/utils/scopes', () => ({
   getAllScopes: () => [
     'read:clients',
     'update:clients',
@@ -135,7 +135,7 @@ describe('Init Module', () => {
       await init(['--scopes', 'invalid:scope']);
 
       // Check for error messages - these should be called before process.exit
-      const { logError } = await import('../src/utils/logger');
+      const { logError } = await import('../../src/utils/logger');
       expect(logError).toHaveBeenCalledWith(
         expect.stringContaining('Error: The following scopes are not valid: invalid:scope')
       );

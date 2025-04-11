@@ -1,19 +1,19 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import run from '../src/run';
-import { startServer } from '../src/server';
-import { log, logError } from '../src/utils/logger';
+import run from '../../src/commands/run.js';
+import { startServer } from '../../src/server';
+import { log, logError } from '../../src/utils/logger';
 import * as os from 'os';
 
 // Mock dependencies first, before any imports
-vi.mock('../src/utils/logger', () => ({
+vi.mock('../../src/utils/logger', () => ({
   log: vi.fn(),
   logInfo: vi.fn(),
   logError: vi.fn(),
 }));
 
-vi.mock('../src/server', () => ({
+vi.mock('../../src/server', () => ({
   startServer: vi.fn().mockImplementation(() => {
-    const { log } = vi.mocked(require('../src/utils/logger'));
+    const { log } = vi.mocked(require('../../src/utils/logger'));
     log('Server started and running successfully');
     return Promise.resolve({ mockServer: true });
   }),

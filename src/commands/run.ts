@@ -1,5 +1,5 @@
-import { startServer } from './server.js';
-import { log, logError } from './utils/logger.js';
+import { startServer } from '../server.js';
+import { log, logError } from '../utils/logger.js';
 import * as os from 'os';
 
 // Main function to start server
