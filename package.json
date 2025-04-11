@@ -25,7 +25,6 @@
     "format": "prettier --write \"**/*.{js,ts,json}\"",
     "format:check": "prettier --check \"**/*.{js,ts,json}\"",
     "generate-notice": "node utils/generate-notice.js",
-    "claude:restart": "killall \"Claude\" && open -a \"Claude\""
   },
   "keywords": [
     "auth0",
