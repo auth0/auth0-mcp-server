@@ -70,7 +70,6 @@ async function updateCursorConfig(configPath: string) {
     args: ['-y', '@auth0/auth0-mcp-server', 'run'],
     env: {
       DEBUG: 'auth0-mcp',
-      PATH: process.env.PATH || '',
     },
   };
 

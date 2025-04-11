@@ -72,7 +72,6 @@ async function updateClaudeConfig(configPath: string) {
     capabilities: ['tools'],
     env: {
       DEBUG: 'auth0-mcp',
-      PATH: process.env.PATH || '',
     },
   };
 
