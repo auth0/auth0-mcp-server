@@ -34,7 +34,12 @@ export async function startServer() {
     // Handle list tools request
     server.setRequestHandler(ListToolsRequestSchema, async () => {
       log('Received list tools request');
-      return { tools: TOOLS };
+
+      // Sanitize tools by removing _meta fields
+      // See: https://github.com/modelcontextprotocol/modelcontextprotocol/issues/264
+      const filteredTools = TOOLS.map(({ _meta, ...rest }) => rest);
+
+      return { tools: filteredTools };
     });
 
     // Handle tool calls

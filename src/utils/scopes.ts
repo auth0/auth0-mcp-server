@@ -1,22 +1,21 @@
-export const AUTH0_SCOPES = [
-  'create:clients',
-  'update:clients',
-  'read:clients',
-  'read:resource_servers',
-  'create:resource_servers',
-  'update:resource_servers',
-  'read:actions',
-  'create:actions',
-  'update:actions',
-  'read:logs',
-  'read:log_streams',
-  'read:forms',
-  'create:forms',
-  'update:forms',
-];
+import { TOOLS } from '../tools/index.js';
 
+/**
+ * Default scopes to be used when no specific scopes are provided.
+ * This is an empty array, meaning no scopes are required by default to
+ * promote security by default.
+ */
 export const DEFAULT_SCOPES: string[] = [];
 
+/**
+ * Returns a unique list of all required scopes across all tools.
+ *
+ * @returns {string[]} - An array of unique scopes required by all tools.
+ */
 export function getAllScopes(): string[] {
-  return AUTH0_SCOPES;
+  // Use flatMap to extract and flatten all scopes, with empty fallback
+  const allScopes = TOOLS.flatMap((tool) => tool._meta?.requiredScopes ?? []);
+
+  // Create unique set from collected scopes
+  return [...new Set(allScopes)];
 }

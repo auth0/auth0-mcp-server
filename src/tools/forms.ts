@@ -18,6 +18,9 @@ export const FORM_TOOLS: Tool[] = [
         include_totals: { type: 'boolean', description: 'Include total count' },
       },
     },
+    _meta: {
+      requiredScopes: ['read:forms'],
+    },
   },
   {
     name: 'auth0_get_form',
@@ -28,6 +31,9 @@ export const FORM_TOOLS: Tool[] = [
         id: { type: 'string', description: 'ID of the form to retrieve' },
       },
       required: ['id'],
+    },
+    _meta: {
+      requiredScopes: ['read:forms'],
     },
   },
   {
@@ -73,6 +79,9 @@ export const FORM_TOOLS: Tool[] = [
         },
       },
       required: ['name'],
+    },
+    _meta: {
+      requiredScopes: ['create:forms'],
     },
   },
   {
@@ -122,6 +131,9 @@ export const FORM_TOOLS: Tool[] = [
         },
       },
       required: ['id'],
+    },
+    _meta: {
+      requiredScopes: ['update:forms'],
     },
   },
 ];

@@ -39,6 +39,9 @@ export const LOG_TOOLS: Tool[] = [
         },
       },
     },
+    _meta: {
+      requiredScopes: ['read:logs'],
+    },
   },
   {
     name: 'auth0_get_log',
@@ -52,6 +55,9 @@ export const LOG_TOOLS: Tool[] = [
         },
       },
       required: ['id'],
+    },
+    _meta: {
+      requiredScopes: ['read:logs'],
     },
   },
 ];

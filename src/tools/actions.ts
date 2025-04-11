@@ -46,6 +46,9 @@ export const ACTION_TOOLS: Tool[] = [
         trigger_id: { type: 'string', description: 'Filter by trigger ID' },
       },
     },
+    _meta: {
+      requiredScopes: ['read:actions'],
+    },
   },
   {
     name: 'auth0_get_action',
@@ -56,6 +59,9 @@ export const ACTION_TOOLS: Tool[] = [
         id: { type: 'string', description: 'ID of the action to retrieve' },
       },
       required: ['id'],
+    },
+    _meta: {
+      requiredScopes: ['read:actions'],
     },
   },
   {
@@ -114,6 +120,9 @@ export const ACTION_TOOLS: Tool[] = [
         },
       },
       required: ['name', 'supported_triggers'],
+    },
+    _meta: {
+      requiredScopes: ['create:actions'],
     },
   },
   {
@@ -189,6 +198,9 @@ export const ACTION_TOOLS: Tool[] = [
       },
       required: ['id'],
     },
+    _meta: {
+      requiredScopes: ['update:actions'],
+    },
   },
   {
     name: 'auth0_deploy_action',
@@ -199,6 +211,9 @@ export const ACTION_TOOLS: Tool[] = [
         id: { type: 'string', description: 'ID of the action to deploy' },
       },
       required: ['id'],
+    },
+    _meta: {
+      requiredScopes: ['update:actions'],
     },
   },
 ];

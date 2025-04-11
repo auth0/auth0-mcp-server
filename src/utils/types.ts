@@ -5,6 +5,9 @@ export interface Tool {
   name: string;
   description: string;
   inputSchema?: Record<string, any>;
+  _meta?: {
+    requiredScopes: string[];
+  };
 }
 
 // Define Handler interface

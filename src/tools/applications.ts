@@ -26,6 +26,9 @@ export const APPLICATION_TOOLS: Tool[] = [
         include_totals: { type: 'boolean', description: 'Include total count' },
       },
     },
+    _meta: {
+      requiredScopes: ['read:clients'],
+    },
   },
   {
     name: 'auth0_get_application',
@@ -36,6 +39,9 @@ export const APPLICATION_TOOLS: Tool[] = [
         client_id: { type: 'string', description: 'Client ID of the application to retrieve' },
       },
       required: ['client_id'],
+    },
+    _meta: {
+      requiredScopes: ['read:clients'],
     },
   },
   {
@@ -111,6 +117,9 @@ export const APPLICATION_TOOLS: Tool[] = [
         },
       },
       required: ['name'],
+    },
+    _meta: {
+      requiredScopes: ['create:clients'],
     },
   },
   {
@@ -211,6 +220,9 @@ export const APPLICATION_TOOLS: Tool[] = [
         },
       },
       required: ['client_id'],
+    },
+    _meta: {
+      requiredScopes: ['update:clients'],
     },
   },
 ];

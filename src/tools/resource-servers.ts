@@ -34,6 +34,9 @@ export const RESOURCE_SERVER_TOOLS: Tool[] = [
         },
       },
     },
+    _meta: {
+      requiredScopes: ['read:resource_servers'],
+    },
   },
   {
     name: 'auth0_get_resource_server',
@@ -44,6 +47,9 @@ export const RESOURCE_SERVER_TOOLS: Tool[] = [
         id: { type: 'string', description: 'ID of the resource server to retrieve' },
       },
       required: ['id'],
+    },
+    _meta: {
+      requiredScopes: ['read:resource_servers'],
     },
   },
   {
@@ -119,6 +125,9 @@ export const RESOURCE_SERVER_TOOLS: Tool[] = [
       },
       required: ['name', 'identifier'],
     },
+    _meta: {
+      requiredScopes: ['create:resource_servers'],
+    },
   },
   {
     name: 'auth0_update_resource_server',
@@ -192,6 +201,9 @@ export const RESOURCE_SERVER_TOOLS: Tool[] = [
         },
       },
       required: ['id'],
+    },
+    _meta: {
+      requiredScopes: ['update:resource_servers'],
     },
   },
 ];
