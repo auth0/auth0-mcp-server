@@ -1,0 +1,26 @@
+# Build output
+dist/
+build/
+node_modules/
+coverage/
+
+# Dependencies
+node_modules/
+
+# Logs
+logs/
+*.log
+
+# Environment files
+.env
+.env.*
+
+# Cache directories
+.cache/
+
+# Package files
+package-lock.json
+yarn.lock
+
+# Coverage directory
+coverage/
