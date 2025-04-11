@@ -218,15 +218,8 @@ export const RESOURCE_SERVER_HANDLERS: Record<
     config: HandlerConfig
   ): Promise<HandlerResponse> => {
     try {
-      // Log token info without exposing the full token
-      const tokenLength = request.token ? request.token.length : 0;
-      log(`Token information - Length: ${tokenLength}`);
-      if (tokenLength > 0) {
-        log(
-          `Token preview: ${request.token.substring(0, 5)}...${request.token.substring(tokenLength - 5)}`
-        );
-      } else {
-        log('Warning: Token is empty or undefined');
+      if (!request.token) {
+        log('Warning: Token is missing');
         return createErrorResponse('Error: Missing authentication token');
       }
 
@@ -266,7 +259,7 @@ export const RESOURCE_SERVER_HANDLERS: Record<
         };
         const managementClient = await getManagementClient(managementClientConfig);
 
-        log(`Fetching resource servers with options: ${JSON.stringify(options)}`);
+        log(`Fetching resource servers with supplied options`);
 
         // Use the Auth0 SDK to get all resource servers
         const { data: responseData } = await managementClient.resourceServers.getAll(options);
@@ -278,7 +271,6 @@ export const RESOURCE_SERVER_HANDLERS: Record<
             !Array.isArray(responseData))
         ) {
           log('Invalid response format - missing resource_servers array');
-          log('Response data:', responseData);
 
           return createErrorResponse(
             'Error: Received invalid response format from Auth0 API. The "resource_servers" array is missing or invalid.'
@@ -329,7 +321,7 @@ export const RESOURCE_SERVER_HANDLERS: Record<
         return createSuccessResponse(result);
       } catch (sdkError: any) {
         // Handle SDK errors
-        log('Auth0 SDK error:', sdkError);
+        log('Auth0 SDK error');
 
         let errorMessage = `Failed to list resource servers: ${sdkError.message || 'Unknown error'}`;
 
@@ -352,7 +344,7 @@ export const RESOURCE_SERVER_HANDLERS: Record<
       }
     } catch (error: any) {
       // Handle any other errors
-      log('Error processing request:', error);
+      log('Error processing request');
 
       return createErrorResponse(
         `Error: ${error instanceof Error ? error.message : String(error)}`
@@ -400,7 +392,7 @@ export const RESOURCE_SERVER_HANDLERS: Record<
         return createSuccessResponse(resourceServer);
       } catch (sdkError: any) {
         // Handle SDK errors
-        log('Auth0 SDK error:', sdkError);
+        log('Auth0 SDK error');
 
         let errorMessage = `Failed to get resource server: ${sdkError.message || 'Unknown error'}`;
 
@@ -416,7 +408,7 @@ export const RESOURCE_SERVER_HANDLERS: Record<
       }
     } catch (error: any) {
       // Handle any other errors
-      log('Error processing request:', error);
+      log('Error processing request');
 
       return createErrorResponse(
         `Error: ${error instanceof Error ? error.message : String(error)}`
@@ -513,7 +505,7 @@ export const RESOURCE_SERVER_HANDLERS: Record<
         return createSuccessResponse(resourceServer);
       } catch (sdkError: any) {
         // Handle SDK errors
-        log('Auth0 SDK error:', sdkError);
+        log('Auth0 SDK error');
 
         let errorMessage = `Failed to create resource server: ${sdkError.message || 'Unknown error'}`;
 
@@ -534,7 +526,7 @@ export const RESOURCE_SERVER_HANDLERS: Record<
       }
     } catch (error: any) {
       // Handle any other errors
-      log('Error processing request:', error);
+      log('Error processing request');
 
       return createErrorResponse(
         `Error: ${error instanceof Error ? error.message : String(error)}`
@@ -621,7 +613,7 @@ export const RESOURCE_SERVER_HANDLERS: Record<
         return createSuccessResponse(resourceServer);
       } catch (sdkError: any) {
         // Handle SDK errors
-        log('Auth0 SDK error:', sdkError);
+        log('Auth0 SDK error');
 
         let errorMessage = `Failed to update resource server: ${sdkError.message || 'Unknown error'}`;
 
@@ -640,7 +632,7 @@ export const RESOURCE_SERVER_HANDLERS: Record<
       }
     } catch (error: any) {
       // Handle any other errors
-      log('Error processing request:', error);
+      log('Error processing request')
 
       return createErrorResponse(
         `Error: ${error instanceof Error ? error.message : String(error)}`

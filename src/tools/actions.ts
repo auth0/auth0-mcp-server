@@ -297,7 +297,7 @@ export const ACTION_HANDLERS: Record<
           page = (responseData as any).page || 0;
           perPage = (responseData as any).per_page || actions.length;
         } else {
-          log('Invalid response format:', responseData);
+          log('Invalid response format');
           return createErrorResponse('Error: Received invalid response format from Auth0 API.');
         }
 
@@ -321,12 +321,12 @@ export const ACTION_HANDLERS: Record<
           },
         };
 
-        log(`Successfully retrieved ${actions.length} actions`);
+        log(`Successfully retrieved actions`);
 
         return createSuccessResponse(result);
       } catch (sdkError: any) {
         // Handle SDK errors
-        log('Auth0 SDK error:', sdkError);
+        log('Auth0 SDK error');
 
         let errorMessage = `Failed to list actions: ${sdkError.message || 'Unknown error'}`;
 
@@ -349,7 +349,7 @@ export const ACTION_HANDLERS: Record<
       }
     } catch (error: any) {
       // Handle any other errors
-      log('Error processing request:', error);
+      log('Error processing request');
 
       return createErrorResponse(
         `Error: ${error instanceof Error ? error.message : String(error)}`
@@ -397,7 +397,7 @@ export const ACTION_HANDLERS: Record<
         return createSuccessResponse(action);
       } catch (sdkError: any) {
         // Handle SDK errors
-        log('Auth0 SDK error:', sdkError);
+        log('Auth0 SDK error');
 
         let errorMessage = `Failed to get action: ${sdkError.message || 'Unknown error'}`;
 
@@ -413,7 +413,7 @@ export const ACTION_HANDLERS: Record<
       }
     } catch (error: any) {
       // Handle any other errors
-      log('Error processing request:', error);
+      log('Error processing request');
 
       return createErrorResponse(
         `Error: ${error instanceof Error ? error.message : String(error)}`
@@ -493,7 +493,7 @@ export const ACTION_HANDLERS: Record<
         return createSuccessResponse(newAction);
       } catch (sdkError: any) {
         // Handle SDK errors
-        log('Auth0 SDK error:', sdkError);
+        log('Auth0 SDK error');
 
         let errorMessage = `Failed to create action: ${sdkError.message || 'Unknown error'}`;
 
@@ -510,7 +510,7 @@ export const ACTION_HANDLERS: Record<
       }
     } catch (error: any) {
       // Handle any other errors
-      log('Error processing request:', error);
+      log('Error processing request');
 
       return createErrorResponse(
         `Error: ${error instanceof Error ? error.message : String(error)}`
@@ -575,7 +575,7 @@ export const ACTION_HANDLERS: Record<
         return createSuccessResponse(result);
       } catch (sdkError: any) {
         // Handle SDK errors
-        log('Auth0 SDK error:', sdkError);
+        log('Auth0 SDK error');
 
         let errorMessage = `Failed to update action: ${sdkError.message || 'Unknown error'}`;
 
@@ -594,7 +594,7 @@ export const ACTION_HANDLERS: Record<
       }
     } catch (error: any) {
       // Handle any other errors
-      log('Error processing request:', error);
+      log('Error processing request');
 
       return createErrorResponse(
         `Error: ${error instanceof Error ? error.message : String(error)}`
@@ -650,7 +650,7 @@ export const ACTION_HANDLERS: Record<
       }
     } catch (error: any) {
       // Handle any other errors
-      log('Error processing request:', error);
+      log('Error processing request');
 
       return createErrorResponse(
         `Error: ${error instanceof Error ? error.message : String(error)}`

@@ -128,7 +128,7 @@ export const LOG_HANDLERS: Record<
         };
         const managementClient = await getManagementClient(managementClientConfig);
 
-        log(`Fetching logs with options: ${JSON.stringify(options)}`);
+        log(`Fetching logs with supplied options`);
 
         // Use the Auth0 SDK to get logs
         const { data: responseData } = await managementClient.logs.getAll(options);
@@ -147,7 +147,7 @@ export const LOG_HANDLERS: Record<
         return createSuccessResponse(responseData);
       } catch (sdkError: any) {
         // Handle SDK errors
-        log('Auth0 SDK error:', sdkError);
+        log('Auth0 SDK error');
 
         let errorMessage = `Failed to list logs: ${sdkError.message || 'Unknown error'}`;
 
@@ -164,7 +164,7 @@ export const LOG_HANDLERS: Record<
       }
     } catch (error: any) {
       // Handle any other errors
-      log('Error processing request:', error);
+      log('Error processing request');
 
       return createErrorResponse(
         `Error: ${error instanceof Error ? error.message : String(error)}`
@@ -210,7 +210,7 @@ export const LOG_HANDLERS: Record<
         return createSuccessResponse(responseData);
       } catch (sdkError: any) {
         // Handle SDK errors
-        log('Auth0 SDK error:', sdkError);
+        log('Auth0 SDK error');
 
         let errorMessage = `Failed to get log: ${sdkError.message || 'Unknown error'}`;
 
@@ -226,7 +226,7 @@ export const LOG_HANDLERS: Record<
       }
     } catch (error: any) {
       // Handle any other errors
-      log('Error processing request:', error);
+      log('Error processing request');
 
       return createErrorResponse(
         `Error: ${error instanceof Error ? error.message : String(error)}`

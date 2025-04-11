@@ -188,12 +188,10 @@ export const FORM_HANDLERS: Record<
         };
         const managementClient = await getManagementClient(managementClientConfig);
 
-        log(`Fetching forms with options: ${JSON.stringify(options)}`);
+        log(`Fetching forms with supplied options`);
 
         // Use the Auth0 SDK to get all forms
         const { data: responseData } = await managementClient.forms.getAll(options);
-
-        log('Received response from Auth0 API:', JSON.stringify(responseData));
 
         // Handle different response formats
 
@@ -209,7 +207,7 @@ export const FORM_HANDLERS: Record<
         return createSuccessResponse(responseData);
       } catch (sdkError: any) {
         // Handle SDK errors
-        log('Auth0 SDK error:', sdkError);
+        log('Auth0 SDK error');
 
         let errorMessage = `Failed to list forms: ${sdkError.message || 'Unknown error'}`;
 
@@ -226,7 +224,7 @@ export const FORM_HANDLERS: Record<
       }
     } catch (error: any) {
       // Handle any other errors
-      log('Error processing request:', error);
+      log('Error processing request');
 
       return createErrorResponse(
         `Error: ${error instanceof Error ? error.message : String(error)}`
@@ -272,7 +270,7 @@ export const FORM_HANDLERS: Record<
         return createSuccessResponse(form as any);
       } catch (sdkError: any) {
         // Handle SDK errors
-        log('Auth0 SDK error:', sdkError);
+        log('Auth0 SDK error');
 
         let errorMessage = `Failed to get form: ${sdkError.message || 'Unknown error'}`;
 
@@ -288,7 +286,7 @@ export const FORM_HANDLERS: Record<
       }
     } catch (error: any) {
       // Handle any other errors
-      log('Error processing request:', error);
+      log('Error processing request');
 
       return createErrorResponse(
         `Error: ${error instanceof Error ? error.message : String(error)}`
@@ -352,7 +350,7 @@ export const FORM_HANDLERS: Record<
         return createSuccessResponse(newForm as any);
       } catch (sdkError: any) {
         // Handle SDK errors
-        log('Auth0 SDK error:', sdkError);
+        log('Auth0 SDK error');
 
         let errorMessage = `Failed to create form: ${sdkError.message || 'Unknown error'}`;
 
@@ -369,7 +367,7 @@ export const FORM_HANDLERS: Record<
       }
     } catch (error: any) {
       // Handle any other errors
-      log('Error processing request:', error);
+      log('Error processing request');
 
       return createErrorResponse(
         `Error: ${error instanceof Error ? error.message : String(error)}`
@@ -432,7 +430,7 @@ export const FORM_HANDLERS: Record<
         return createSuccessResponse(updatedForm);
       } catch (sdkError: any) {
         // Handle SDK errors
-        log('Auth0 SDK error:', sdkError);
+        log('Auth0 SDK error');
 
         let errorMessage = `Failed to update form: ${sdkError.message || 'Unknown error'}`;
 
@@ -451,7 +449,7 @@ export const FORM_HANDLERS: Record<
       }
     } catch (error: any) {
       // Handle any other errors
-      log('Error processing request:', error);
+      log('Error processing request');
 
       return createErrorResponse(
         `Error: ${error instanceof Error ? error.message : String(error)}`

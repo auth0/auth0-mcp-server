@@ -250,15 +250,8 @@ export const APPLICATION_HANDLERS: Record<
     config: HandlerConfig
   ): Promise<HandlerResponse> => {
     try {
-      // Log token info without exposing the full token
-      const tokenLength = request.token ? request.token.length : 0;
-      log(`Token information - Length: ${tokenLength}`);
-      if (tokenLength > 0) {
-        log(
-          `Token preview: ${request.token.substring(0, 5)}...${request.token.substring(tokenLength - 5)}`
-        );
-      } else {
-        log('Warning: Token is empty or undefined');
+      if (!request.token) {
+        log('Warning: Token is missing');
         return createErrorResponse('Error: Missing authentication token');
       }
 
@@ -340,7 +333,7 @@ export const APPLICATION_HANDLERS: Record<
         return createSuccessResponse(formattedApplications);
       } catch (sdkError: any) {
         // Handle SDK errors
-        log('Auth0 SDK error:', sdkError);
+        log('Auth0 SDK error');
 
         let errorMessage = `Failed to list applications: ${sdkError.message || 'Unknown error'}`;
 
@@ -363,7 +356,7 @@ export const APPLICATION_HANDLERS: Record<
       }
     } catch (error: any) {
       // Handle any other errors
-      log('Error processing request:', error);
+      log('Error processing request')
 
       return createErrorResponse(
         `Error: ${error instanceof Error ? error.message : String(error)}`
@@ -419,7 +412,7 @@ export const APPLICATION_HANDLERS: Record<
         return createSuccessResponse(application);
       } catch (sdkError: any) {
         // Handle SDK errors
-        log('Auth0 SDK error:', sdkError);
+        log('Auth0 SDK error');
 
         let errorMessage = `Failed to get application: ${sdkError.message || 'Unknown error'}`;
 
@@ -435,7 +428,7 @@ export const APPLICATION_HANDLERS: Record<
       }
     } catch (error: any) {
       // Handle any other errors
-      log('Error processing request:', error);
+      log('Error processing request')
 
       return createErrorResponse(
         `Error: ${error instanceof Error ? error.message : String(error)}`
@@ -582,7 +575,7 @@ export const APPLICATION_HANDLERS: Record<
         return createSuccessResponse(newApplication);
       } catch (sdkError: any) {
         // Handle SDK errors
-        log('Auth0 SDK error:', sdkError);
+        log('Auth0 SDK error');
 
         let errorMessage = `Failed to create application: ${sdkError.message || 'Unknown error'}`;
 
@@ -599,7 +592,7 @@ export const APPLICATION_HANDLERS: Record<
       }
     } catch (error: any) {
       // Handle any other errors
-      log('Error processing request:', error);
+      log('Error processing request')
 
       return createErrorResponse(
         `Error: ${error instanceof Error ? error.message : String(error)}`
@@ -748,7 +741,7 @@ export const APPLICATION_HANDLERS: Record<
         return createSuccessResponse(updatedApplication);
       } catch (sdkError: any) {
         // Handle SDK errors
-        log('Auth0 SDK error:', sdkError);
+        log('Auth0 SDK error');
 
         let errorMessage = `Failed to update application: ${sdkError.message || 'Unknown error'}`;
 
@@ -764,7 +757,7 @@ export const APPLICATION_HANDLERS: Record<
       }
     } catch (error: any) {
       // Handle any other errors
-      log('Error processing request:', error);
+      log('Error processing request')
 
       return createErrorResponse(
         `Error: ${error instanceof Error ? error.message : String(error)}`
