@@ -25,19 +25,6 @@ export interface Auth0Config {
 }
 
 export async function loadConfig(): Promise<Auth0Config | null> {
-  // Check if token is expired and refresh if needed
-  const isExpired = await isTokenExpired();
-  if (isExpired) {
-    log('Access token is expired or will expire soon, attempting to refresh');
-    const newToken = await refreshAccessToken();
-    if (newToken) {
-      log('Successfully refreshed access token');
-    } else {
-      log('Failed to refresh access token, will use existing token if available');
-    }
-  }
-
-  // Get the valid token (either refreshed or existing)
   const token = await getValidAccessToken();
   const domain = await keychain.getDomain();
 

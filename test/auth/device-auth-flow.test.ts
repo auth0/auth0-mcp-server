@@ -148,7 +148,6 @@ describe('Device Auth Flow', () => {
         'new-refresh-token'
       );
       expect(keytar.setPassword).toHaveBeenCalledTimes(4); // Token, domain, refresh token, and expires_at
-      expect(process.env.AUTH0_TOKEN).toBe('new-access-token');
     });
 
     it('should handle error response from token endpoint', async () => {
@@ -194,6 +193,41 @@ describe('Device Auth Flow', () => {
       // We've already tested isTokenExpired and refreshAccessToken separately
       // So we know they work as expected
       expect(true).toBe(true);
+    });
+  });
+
+  // Simple test to verify no Auth0 values are set to environment variables
+  describe('Environment Variables', () => {
+    it('should not set any Auth0 values in environment variables', async () => {
+      // Save original environment
+      const originalEnv = { ...process.env };
+      
+      // Clear all Auth0 environment variables
+      delete process.env.AUTH0_TOKEN;
+      delete process.env.AUTH0_DOMAIN;
+      delete process.env.AUTH0_TENANT_NAME;
+      delete process.env.AUTH0_CLIENT_ID;
+      
+      // Mock successful token response
+      mockFetch.mockResolvedValue(
+        mockFetchResponse(200, {
+          access_token: 'new-access-token',
+          refresh_token: 'new-refresh-token',
+          expires_in: 86400,
+        })
+      );
+      
+      // Call the token function
+      await deviceAuthFlow.refreshAccessToken();
+      
+      // Simply verify no Auth0 values are in the environment
+      expect(process.env.AUTH0_TOKEN).toBeUndefined();
+      expect(process.env.AUTH0_DOMAIN).toBeUndefined();
+      expect(process.env.AUTH0_TENANT_NAME).toBeUndefined();
+      expect(process.env.AUTH0_CLIENT_ID).toBeUndefined();
+      
+      // Restore original environment
+      process.env = originalEnv;
     });
   });
 });

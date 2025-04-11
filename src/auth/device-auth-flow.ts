@@ -118,7 +118,7 @@ async function exchangeDeviceCodeForToken(deviceCode: any, selectedScopes?: stri
       const jsonRes = await response.json();
 
       if (!jsonRes.error) {
-        fetchUserInfo(jsonRes, selectedScopes); // Success case
+        fetchUserInfo(jsonRes); // Success case
         break; // Exit loop once successful
       } else if (['authorization_pending', 'slow_down'].includes(jsonRes.error)) {
         await wait(5000); // Wait before polling again
@@ -136,14 +136,8 @@ async function exchangeDeviceCodeForToken(deviceCode: any, selectedScopes?: stri
   stopSpinner();
 }
 
-async function fetchUserInfo(tokenSet: any, selectedScopes?: string[]) {
+async function fetchUserInfo(tokenSet: any) {
   const tenantName = getTenantFromToken(tokenSet.access_token);
-  const envValues = {
-    AUTH0_TOKEN: tokenSet.access_token,
-    AUTH0_DOMAIN: tenantName,
-    AUTH0_TENANT_NAME: tenantName,
-    AUTH0_CLIENT_ID: getConfig(selectedScopes).clientId,
-  };
 
   // Store tokens in keychain
   await keychain.setToken(tokenSet.access_token);
@@ -159,9 +153,6 @@ async function fetchUserInfo(tokenSet: any, selectedScopes?: string[]) {
     await keychain.setTokenExpiresAt(expiresAt);
     log(`Token expires at: ${new Date(expiresAt).toISOString()}`);
   }
-
-  Object.assign(process.env, envValues);
-  log('Updated environment variables');
 }
 
 export async function refreshAccessToken(selectedScopes?: string[]): Promise<string | null> {
@@ -207,8 +198,6 @@ export async function refreshAccessToken(selectedScopes?: string[]): Promise<str
       const expiresAt = Date.now() + tokenSet.expires_in * 1000;
       await keychain.setTokenExpiresAt(expiresAt);
     }
-
-    process.env.AUTH0_TOKEN = tokenSet.access_token;
 
     log('Successfully refreshed access token');
     return tokenSet.access_token;
