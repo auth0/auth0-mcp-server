@@ -12,20 +12,18 @@ import type {
   ClientCreate,
   ClientUpdate,
 } from 'auth0';
+import { z } from 'zod';
 
 // Define all available application tools
 export const APPLICATION_TOOLS: Tool[] = [
   {
     name: 'auth0_list_applications',
     description: 'List all applications in the Auth0 tenant or search by name',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        page: { type: 'number', description: 'Page number (0-based)' },
-        per_page: { type: 'number', description: 'Number of applications per page' },
-        include_totals: { type: 'boolean', description: 'Include total count' },
-      },
-    },
+    inputSchema: z.object({
+      page: z.number().describe('Page number (0-based)'),
+      per_page: z.number().describe('Number of applications per page'),
+      include_totals: z.boolean().describe('Include total count of applications'),
+    }),
     _meta: {
       requiredScopes: ['read:clients'],
     },
@@ -33,13 +31,9 @@ export const APPLICATION_TOOLS: Tool[] = [
   {
     name: 'auth0_get_application',
     description: 'Get details about a specific Auth0 application',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        client_id: { type: 'string', description: 'Client ID of the application to retrieve' },
-      },
-      required: ['client_id'],
-    },
+    inputSchema: z.object({
+      client_id: z.string().describe('Client ID of the application to retrieve'),
+    }),
     _meta: {
       requiredScopes: ['read:clients'],
     },
@@ -47,77 +41,64 @@ export const APPLICATION_TOOLS: Tool[] = [
   {
     name: 'auth0_create_application',
     description: 'Create a new Auth0 application',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        name: {
-          type: 'string',
-          description:
-            'Name of the application (min length: 1 character, does not allow < or >). Required.',
-        },
-        app_type: {
-          type: 'string',
-          enum: ['spa', 'native', 'non_interactive', 'regular_web'],
-          description: 'Type of client used to determine which settings are applicable.',
-        },
-        description: {
-          type: 'string',
-          description: 'Free text description of this client (max length: 140 characters).',
-        },
-        callbacks: {
-          type: 'array',
-          items: { type: 'string' },
-          description: 'URLs whitelisted for Auth0 to use as callback after authentication.',
-        },
-        allowed_origins: {
-          type: 'array',
-          items: { type: 'string' },
-          description:
-            'URLs allowed to make requests from JavaScript to Auth0 API (typically used with CORS).',
-        },
-        allowed_clients: {
-          type: 'array',
-          items: { type: 'string' },
-          description: 'List of allowed clients and API ids for delegation requests.',
-        },
-        allowed_logout_urls: {
-          type: 'array',
-          items: { type: 'string' },
-          description: 'URLs valid to redirect to after logout from Auth0.',
-        },
-        is_first_party: {
-          type: 'boolean',
-          description: 'Whether this client is a first party client.',
-        },
-        oidc_conformant: {
-          type: 'boolean',
-          description: 'Whether this client conforms to strict OIDC specifications.',
-        },
-        sso_disabled: {
-          type: 'boolean',
-          description: 'Disable Single Sign On.',
-        },
-        cross_origin_authentication: {
-          type: 'boolean',
-          description: 'Whether this client can make cross-origin authentication requests.',
-        },
-        logo_uri: {
-          type: 'string',
-          description: 'URL of the logo to display (recommended size: 150x150 pixels).',
-        },
-        organization_usage: {
-          type: 'string',
-          enum: ['deny', 'allow', 'require'],
-          description: 'How to proceed during authentication with regards to organization.',
-        },
-        organization_require_behavior: {
-          type: 'string',
-          enum: ['no_prompt', 'pre_login_prompt', 'post_login_prompt'],
-          description: 'How to proceed during authentication when organization_usage is require.',
-        },
-      },
-      required: ['name'],
-    },
+    inputSchema: z.object({
+      name: z
+        .string()
+        .describe(
+          'Name of the application (min length: 1 character, does not allow < or >). Required.'
+        ),
+      app_type: z
+        .enum(['spa', 'native', 'non_interactive', 'regular_web'])
+        .optional()
+        .describe('Type of client used to determine which settings are applicable.'),
+      description: z
+        .string()
+        .optional()
+        .describe('Free text description of this client (max length: 140 characters).'),
+      callbacks: z
+        .array(z.string())
+        .optional()
+        .describe('URLs whitelisted for Auth0 to use as callback after authentication.'),
+      allowed_origins: z
+        .array(z.string())
+        .optional()
+        .describe(
+          'URLs allowed to make requests from JavaScript to Auth0 API (typically used with CORS).'
+        ),
+      allowed_clients: z
+        .array(z.string())
+        .optional()
+        .describe('List of allowed clients and API ids for delegation requests.'),
+      allowed_logout_urls: z
+        .array(z.string())
+        .optional()
+        .describe('URLs valid to redirect to after logout from Auth0.'),
+      is_first_party: z
+        .boolean()
+        .optional()
+        .describe('Whether this client is a first party client.'),
+      oidc_conformant: z
+        .boolean()
+        .optional()
+        .describe('Whether this client conforms to strict OIDC specifications.'),
+      sso_disabled: z.boolean().optional().describe('Disable Single Sign On.'),
+      cross_origin_authentication: z
+        .boolean()
+        .optional()
+        .describe('Whether this client can make cross-origin authentication requests.'),
+      logo_uri: z
+        .string()
+        .optional()
+        .describe('URL of the logo to display (recommended size: 150x150 pixels).'),
+      organization_usage: z
+        .enum(['deny', 'allow', 'require'])
+        .optional()
+        .describe('How to proceed during authentication with regards to organization.'),
+      organization_require_behavior: z
+        .enum(['no_prompt', 'pre_login_prompt', 'post_login_prompt'])
+        .optional()
+        .describe('How to proceed during authentication when organization_usage is require.'),
+    }),
     _meta: {
       requiredScopes: ['create:clients'],
     },
@@ -125,102 +106,72 @@ export const APPLICATION_TOOLS: Tool[] = [
   {
     name: 'auth0_update_application',
     description: 'Update an existing Auth0 application',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        client_id: {
-          type: 'string',
-          description: 'Client ID of the application to update. Required.',
-        },
-        name: {
-          type: 'string',
-          description: 'Name of the application (min length: 1 character, does not allow < or >)',
-        },
-        app_type: {
-          type: 'string',
-          enum: ['spa', 'native', 'non_interactive', 'regular_web'],
-          description: 'Type of client used to determine which settings are applicable',
-        },
-        description: {
-          type: 'string',
-          description: 'Free text description of this client (max length: 140 characters)',
-        },
-        callbacks: {
-          type: 'array',
-          items: { type: 'string' },
-          description: 'URLs whitelisted for Auth0 to use as callback after authentication',
-        },
-        allowed_origins: {
-          type: 'array',
-          items: { type: 'string' },
-          description:
-            'URLs allowed to make requests from JavaScript to Auth0 API (typically used with CORS)',
-        },
-        allowed_clients: {
-          type: 'array',
-          items: { type: 'string' },
-          description: 'List of allowed clients and API ids for delegation requests',
-        },
-        allowed_logout_urls: {
-          type: 'array',
-          items: { type: 'string' },
-          description: 'URLs valid to redirect to after logout from Auth0',
-        },
-        grant_types: {
-          type: 'array',
-          items: { type: 'string' },
-          description: 'List of grant types for this client',
-        },
-        token_endpoint_auth_method: {
-          type: 'string',
-          enum: ['none', 'client_secret_post', 'client_secret_basic'],
-          description: 'Client authentication method for the token endpoint',
-        },
-        is_first_party: {
-          type: 'boolean',
-          description: 'Whether this client is a first party client',
-        },
-        oidc_conformant: {
-          type: 'boolean',
-          description: 'Whether this client conforms to strict OIDC specifications',
-        },
-        sso_disabled: {
-          type: 'boolean',
-          description: 'Disable Single Sign On',
-        },
-        cross_origin_authentication: {
-          type: 'boolean',
-          description: 'Whether this client can make cross-origin authentication requests',
-        },
-        logo_uri: {
-          type: 'string',
-          description: 'URL of the logo to display (recommended size: 150x150 pixels)',
-        },
-        organization_usage: {
-          type: 'string',
-          enum: ['deny', 'allow', 'require'],
-          description: 'How to proceed during authentication with regards to organization',
-        },
-        organization_require_behavior: {
-          type: 'string',
-          enum: ['no_prompt', 'pre_login_prompt', 'post_login_prompt'],
-          description: 'How to proceed during authentication when organization_usage is require',
-        },
-        jwt_configuration: {
-          type: 'object',
-          description: 'JWT configuration settings',
-        },
-        refresh_token: {
-          type: 'object',
-          description: 'Refresh token configuration',
-        },
-        mobile: {
-          type: 'object',
-          description: 'Mobile app configuration settings',
-        },
-      },
-      required: ['client_id'],
-    },
+    inputSchema: z.object({
+      client_id: z.string().describe('Client ID of the application to update. Required.'),
+      name: z
+        .string()
+        .optional()
+        .describe('Name of the application (min length: 1 character, does not allow < or >)'),
+      app_type: z
+        .enum(['spa', 'native', 'non_interactive', 'regular_web'])
+        .optional()
+        .describe('Type of client used to determine which settings are applicable'),
+      description: z
+        .string()
+        .optional()
+        .describe('Free text description of this client (max length: 140 characters)'),
+      callbacks: z
+        .array(z.string())
+        .optional()
+        .describe('URLs whitelisted for Auth0 to use as callback after authentication'),
+      allowed_origins: z
+        .array(z.string())
+        .optional()
+        .describe(
+          'URLs allowed to make requests from JavaScript to Auth0 API (typically used with CORS)'
+        ),
+      allowed_clients: z
+        .array(z.string())
+        .optional()
+        .describe('List of allowed clients and API ids for delegation requests'),
+      allowed_logout_urls: z
+        .array(z.string())
+        .optional()
+        .describe('URLs valid to redirect to after logout from Auth0'),
+      grant_types: z.array(z.string()).optional().describe('List of grant types for this client'),
+      token_endpoint_auth_method: z
+        .enum(['none', 'client_secret_post', 'client_secret_basic'])
+        .optional()
+        .describe('Client authentication method for the token endpoint'),
+      is_first_party: z
+        .boolean()
+        .optional()
+        .describe('Whether this client is a first party client'),
+      oidc_conformant: z
+        .boolean()
+        .optional()
+        .describe('Whether this client conforms to strict OIDC specifications'),
+      sso_disabled: z.boolean().optional().describe('Disable Single Sign On'),
+      cross_origin_authentication: z
+        .boolean()
+        .optional()
+        .describe('Whether this client can make cross-origin authentication requests'),
+      logo_uri: z
+        .string()
+        .optional()
+        .describe('URL of the logo to display (recommended size: 150x150 pixels)'),
+      organization_usage: z
+        .enum(['deny', 'allow', 'require'])
+        .optional()
+        .describe('How to proceed during authentication with regards to organization'),
+      organization_require_behavior: z
+        .enum(['no_prompt', 'pre_login_prompt', 'post_login_prompt'])
+        .optional()
+        .describe('How to proceed during authentication when organization_usage is require'),
+      jwt_configuration: z.object({}).optional().describe('JWT configuration settings'),
+      refresh_token: z.object({}).optional().describe('Refresh token configuration'),
+      mobile: z.object({}).optional().describe('Mobile app configuration settings'),
+    }),
     _meta: {
       requiredScopes: ['update:clients'],
     },

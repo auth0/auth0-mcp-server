@@ -24,7 +24,7 @@
     "lint:fix": "eslint . --ext .js,.ts --fix",
     "format": "prettier --write \"**/*.{js,ts,json}\"",
     "format:check": "prettier --check \"**/*.{js,ts,json}\"",
-    "generate-notice": "node utils/generate-notice.js",
+    "generate-notice": "node utils/generate-notice.js"
   },
   "keywords": [
     "auth0",
@@ -41,7 +41,8 @@
     "jwt-decode": "^4.0.0",
     "keytar": "^7.9.0",
     "open": "^10.1.0",
-    "which": "^5.0.0"
+    "which": "^5.0.0",
+    "zod": "^3.24.2"
   },
   "devDependencies": {
     "@eslint/js": "^9.23.0",

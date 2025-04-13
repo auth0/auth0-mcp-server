@@ -3,42 +3,39 @@ import { log } from '../utils/logger.js';
 import { createErrorResponse, createSuccessResponse } from '../utils/http-utility.js';
 import type { Auth0Config } from '../utils/config.js';
 import { getManagementClient } from '../utils/management-client.js';
+import { z } from 'zod';
 
 // Define all available log tools
 export const LOG_TOOLS: Tool[] = [
   {
     name: 'auth0_list_logs',
     description: 'List logs from the Auth0 tenant',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        from: {
-          type: 'string',
-          description: 'Log ID to start retrieving logs from. Optional, used for pagination.',
-        },
-        take: {
-          type: 'number',
-          description: 'Number of logs to retrieve (1-100). Optional, defaults to 50.',
-        },
-        q: {
-          type: 'string',
-          description: 'Query in Lucene query string syntax. Optional, used for filtering logs.',
-        },
-        sort: {
-          type: 'string',
-          description: 'Field to sort by. Optional, defaults to date:-1 (newest first).',
-          enum: ['date:1', 'date:-1'],
-        },
-        include_fields: {
-          type: 'boolean',
-          description: 'Whether to include all fields. Optional, defaults to true.',
-        },
-        include_totals: {
-          type: 'boolean',
-          description: 'Whether to include total count. Optional, defaults to true.',
-        },
-      },
-    },
+    inputSchema: z.object({
+      from: z
+        .string()
+        .optional()
+        .describe('Log ID to start retrieving logs from. Optional, used for pagination.'),
+      take: z
+        .number()
+        .optional()
+        .describe('Number of logs to retrieve (1-100). Optional, defaults to 50.'),
+      q: z
+        .string()
+        .optional()
+        .describe('Query in Lucene query string syntax. Optional, used for filtering logs.'),
+      sort: z
+        .enum(['date:1', 'date:-1'])
+        .optional()
+        .describe('Field to sort by. Optional, defaults to date:-1 (newest first).'),
+      include_fields: z
+        .boolean()
+        .optional()
+        .describe('Whether to include all fields. Optional, defaults to true.'),
+      include_totals: z
+        .boolean()
+        .optional()
+        .describe('Whether to include total count. Optional, defaults to true.'),
+    }),
     _meta: {
       requiredScopes: ['read:logs'],
     },
@@ -46,16 +43,9 @@ export const LOG_TOOLS: Tool[] = [
   {
     name: 'auth0_get_log',
     description: 'Get a specific log entry by ID',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        id: {
-          type: 'string',
-          description: 'ID of the log entry to retrieve. Required.',
-        },
-      },
-      required: ['id'],
-    },
+    inputSchema: z.object({
+      id: z.string().describe('ID of the log entry to retrieve. Required.'),
+    }),
     _meta: {
       requiredScopes: ['read:logs'],
     },
