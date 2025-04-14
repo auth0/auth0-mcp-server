@@ -115,18 +115,14 @@ async function configureClient(clientName: ClientName): Promise<void> {
  * @returns {Promise<void>}
  */
 const init = async (options: InitOptions): Promise<void> => {
-  try {
-    log('Initializing Auth0 MCP server...');
+  log('Initializing Auth0 MCP server...');
 
-    // Handle scope resolution
-    const selectedScopes = await resolveScopes(options.scopes);
-    await requestAuthorization(selectedScopes);
+  // Handle scope resolution
+  const selectedScopes = await resolveScopes(options.scopes);
+  await requestAuthorization(selectedScopes);
 
-    // Handle client configuration
-    await configureClient(options.client);
-  } catch (error) {
-    logError('Error initializing server:', error);
-  }
+  // Handle client configuration
+  await configureClient(options.client);
 };
 
 export default init;

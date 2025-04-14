@@ -53,30 +53,28 @@ describe('Init Module', () => {
     expect(findAndUpdateClaudeConfig).toHaveBeenCalled();
   });
 
-  it('should handle authorization errors', async () => {
+  it('should throw authorization errors', async () => {
     const mockError = new Error('Authorization failed');
     vi.mocked(promptForScopeSelection).mockResolvedValue([]);
     vi.mocked(requestAuthorization).mockRejectedValue(mockError);
 
-    await init({ client: 'claude' });
+    await expect(init({ client: 'claude' })).rejects.toThrow('Authorization failed');
 
     expect(log).toHaveBeenCalledWith('Initializing Auth0 MCP server...');
-    expect(logError).toHaveBeenCalledWith('Error initializing server:', mockError);
     expect(promptForScopeSelection).toHaveBeenCalled();
     expect(requestAuthorization).toHaveBeenCalledWith([]);
     expect(findAndUpdateClaudeConfig).not.toHaveBeenCalled();
   });
 
-  it('should handle Claude config update errors', async () => {
+  it('should throw Claude config update errors', async () => {
     const mockError = new Error('Claude config update failed');
     vi.mocked(promptForScopeSelection).mockResolvedValue([]);
     vi.mocked(findAndUpdateClaudeConfig).mockRejectedValue(mockError);
 
-    await init({ client: 'claude' });
+    await expect(init({ client: 'claude' })).rejects.toThrow('Claude config update failed');
 
     expect(log).toHaveBeenCalledWith('Initializing Auth0 MCP server...');
     expect(log).toHaveBeenCalledWith('Configuring Claude as client default...');
-    expect(logError).toHaveBeenCalledWith('Error initializing server:', mockError);
     expect(promptForScopeSelection).toHaveBeenCalled();
     expect(requestAuthorization).toHaveBeenCalledWith([]);
     expect(findAndUpdateClaudeConfig).toHaveBeenCalled();
