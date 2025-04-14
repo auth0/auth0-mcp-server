@@ -7,6 +7,9 @@ import { HANDLERS, TOOLS } from './tools/index.js';
 import { log, logInfo } from './utils/logger.js';
 import { formatDomain } from './utils/http-utility.js';
 import { maskTenantName } from './utils/cli-utility.js';
+import { zodToJsonSchema } from 'zod-to-json-schema';
+import type { ZodSchema } from 'zod';
+import type { ToolSchema } from './utils/types.js';
 
 // Server implementation
 export async function startServer() {
@@ -37,7 +40,15 @@ export async function startServer() {
 
       // Sanitize tools by removing _meta fields
       // See: https://github.com/modelcontextprotocol/modelcontextprotocol/issues/264
-      const filteredTools = TOOLS.map(({ _meta, ...rest }) => rest);
+      const filteredTools = TOOLS.map(({ _meta, ...tool }) => {
+        // Convert Zod schema to JSON schema
+        const toolSchema = zodToJsonSchema(tool.inputSchema as ZodSchema) as ToolSchema;
+        return {
+          name: tool.name,
+          description: tool.description,
+          inputSchema: toolSchema,
+        };
+      });
 
       return { tools: filteredTools };
     });

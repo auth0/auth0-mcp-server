@@ -6,9 +6,6 @@ import logout from './commands/logout.js';
 import session from './commands/session.js';
 import { logError } from './utils/logger.js';
 
-// Enable all debug logs for this package by default
-//process.env.DEBUG = (process.env.DEBUG || '') + ',auth0-mcp:*';
-
 // Set process title
 process.title = 'auth0-mcp-server';
 
