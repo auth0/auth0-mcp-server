@@ -1,11 +1,20 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
+import chalk from 'chalk';
 import init from './commands/init.js';
 import run from './commands/run.js';
-import help from './commands/help.js';
 import logout from './commands/logout.js';
 import session from './commands/session.js';
 import { logError } from './utils/logger.js';
+import { createRequire } from 'module';
+
+// For importing JSON files in ES modules
+const require = createRequire(import.meta.url);
+const packageJson = require('../package.json');
+
+// Extract package coordinates
+const packageName = packageJson.name;
+const packageVersion = packageJson.version;
 
 // Set process title
 process.title = 'auth0-mcp-server';
@@ -20,9 +29,32 @@ process.title = 'auth0-mcp-server';
 
 // Top-level CLI
 const program = new Command()
-  .name('auth0-mcp')
+  .name('auth0-mcp-server')
   .description('Auth0 MCP Server - Model Context Protocol server for Auth0 Management API')
-  .version('0.1.0-beta.1');
+  .version(packageVersion)
+  .addHelpText(
+    'before',
+    `
+${chalk.bold('Auth0 MCP Server')}
+
+A Model Context Protocol (MCP) server implementation that integrates Auth0 Management API 
+with Claude Desktop, enabling AI-assisted management of your Auth0 tenant.`
+  )
+  .addHelpText(
+    'after',
+    `
+Examples:
+  npx ${packageName} init
+  npx ${packageName} init --client claude
+  npx ${packageName} init --client windsurf
+  npx ${packageName} init --client cursor
+  npx ${packageName} run
+  npx ${packageName} session
+  npx ${packageName} logout
+  
+For more information, visit: https://github.com/auth0/auth0-mcp-server
+`
+  );
 
 // Init command
 program
@@ -39,9 +71,6 @@ program
 
 // Run command
 program.command('run').description('Start the MCP server').action(run);
-
-// Help command
-program.command('help').description('Display help information').action(help);
 
 // Logout command
 program
