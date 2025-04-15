@@ -30,7 +30,6 @@ jobs:
 
   release:
     uses: ./.github/workflows/npm-release.yml
-    needs: rl-scanner
     with:
       node-version: 18
       require-build: true
