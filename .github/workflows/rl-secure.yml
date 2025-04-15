@@ -26,7 +26,7 @@ on:
 jobs:
   rl-scanner:
     name: Run Reversing Labs Scanner
-    if: github.event_name == 'workflow_dispatch')
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     outputs:
       scan-status: ${{ steps.rl-scan-conclusion.outcome }}
