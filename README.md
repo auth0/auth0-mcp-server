@@ -1,4 +1,4 @@
-![MCP server for Auth0](assets/mcp-banner-light.png)
+![MCP server for Auth0](https://cdn.auth0.com/website/mcp/assets/mcp-banner-light.png)
 
 <div align="center">
 
@@ -16,6 +16,9 @@
 
 [MCP (Model Context Protocol)](https://modelcontextprotocol.io/introduction) is an open protocol introduced by Anthropic that standardizes how large language models communicate with external tools, resources or remote services.
 
+**⚠ Beta Feature Notice:**
+This feature is currently in Beta. Please use with caution when calling tools, as functionality may be unstable or subject to change.
+
 The Auth0 MCP Server integrates with LLMs and AI agents, allowing you to perform various Auth0 management operations using natural language. For instance, you could simply ask Claude to perform Auth0 management operations:
 
 - > Create a new Auth0 app and get the domain and client ID
@@ -25,7 +28,7 @@ The Auth0 MCP Server integrates with LLMs and AI agents, allowing you to perform
 <br/>
 
 <div align="center">
-  <img src="assets/auth0-mcp-example-demo.gif" alt="Auth0 MCP Server Demo" width="800">
+  <img src="https://cdn.auth0.com/website/mcp/assets/auth0-mcp-example-demo.gif" alt="Auth0 MCP Server Demo" width="800">
 </div>
 
 ## 🚀 Getting Started
@@ -90,7 +93,7 @@ Your browser will automatically open to initiate the OAuth 2.0 device authorizat
 Restart your MCP Client(Claude, Windsurf, Cursor, etc...) and ask it to help you manage your Auth0 tenant
 
 <div align="left">
-  <img src="assets/help-image-01.png" alt="Claude installed Help Image" width="300">
+  <img src="https://cdn.auth0.com/website/mcp/assets/help-image-01.png" alt="Claude installed Help Image" width="300">
 </div>
 
 </br>
@@ -100,8 +103,8 @@ Restart your MCP Client(Claude, Windsurf, Cursor, etc...) and ask it to help you
 The Auth0 MCP Server provides the following tools for Claude to interact with your Auth0 tenant:
 
 <div align="center" style="display: flex; justify-content: center; gap: 20px;">
-  <img src="assets/help-image-02.png" alt="Supported Tools img" width="400">
-  <img src="assets/help-image-03.png" alt="Supported Tools img" width="400">
+  <img src="https://cdn.auth0.com/website/mcp/assets/help-image-02.png" alt="Supported Tools img" width="400">
+  <img src="https://cdn.auth0.com/website/mcp/assets/help-image-03.png" alt="Supported Tools img" width="400">
 </div>
 
 ### Applications
@@ -161,7 +164,7 @@ The Auth0 MCP Server implements the Model Context Protocol, allowing Claude to:
 The server handles authentication, request validation, and secure communication with the Auth0 Management API.
 
 <div align="centre">
-  <img src="assets/auth0-mcp-server-hld.png" alt="Auth0 MCP Server HLD" width="800">
+  <img src="https://cdn.auth0.com/website/mcp/assets/auth0-mcp-server-hld.png" alt="Auth0 MCP Server HLD" width="800">
 </div>
 
 > [!NOTE]
@@ -213,7 +216,7 @@ This ensures your authentication tokens are properly removed from the system key
 The server uses OAuth 2.0 device authorization flow for secure authentication with Auth0. Your credentials are stored securely in your system's keychain and are never exposed in plain text.
 
 <div align="centre">
-  <img src="assets/mcp-server-auth.png" alt="Authentication Sequence Diagram" width="800">
+  <img src="https://cdn.auth0.com/website/mcp/assets/mcp-server-auth.png" alt="Authentication Sequence Diagram" width="800">
 </div>
 
 </br>
