@@ -8,7 +8,10 @@
     "auth0-mcp": "dist/index.js"
   },
   "files": [
-    "dist"
+    "dist",
+    "package.json",
+    "README.md",
+    "LICENSE"
   ],
   "scripts": {
     "prebuild": "npm run format && npm run lint",
@@ -24,7 +27,7 @@
     "lint:fix": "eslint . --ext .js,.ts --fix",
     "format": "prettier --write \"**/*.{js,ts,json}\"",
     "format:check": "prettier --check \"**/*.{js,ts,json}\"",
-    "generate-notice": "node utils/generate-notice.js",
+    "generate-notice": "node utils/generate-notice.js"
   },
   "keywords": [
     "auth0",
