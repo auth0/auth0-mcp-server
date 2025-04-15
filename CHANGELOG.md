@@ -1,4 +1,10 @@
-# Changelog
+# Change Log
+
+## [v0.0.1-beta.0](https://github.com/auth0/auth0-mcp-server/tree/v0.0.1-beta.0) (2025-04-15)
+
+**Added**
+- chore: remove postbump script from .shiprc configuration [\#8](https://github.com/auth0/auth0-mcp-server/pull/8) ([gyaneshgouraw-okta](https://github.com/gyaneshgouraw-okta))
+- feat: initial MCP server support for auth0 [\#1](https://github.com/auth0/auth0-mcp-server/pull/1) ([gyaneshgouraw-okta](https://github.com/gyaneshgouraw-okta))
 
 All notable changes to the Auth0 MCP Server will be documented in this file.
 
