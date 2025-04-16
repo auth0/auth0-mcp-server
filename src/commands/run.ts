@@ -2,8 +2,18 @@ import { startServer } from '../server.js';
 import { log, logError } from '../utils/logger.js';
 import * as os from 'os';
 
-// Main function to start server
-const run = async () => {
+/**
+ * Command options for the run command
+ */
+export type RunOptions = Record<string, never>;
+
+/**
+ * Main function to start server
+ *
+ * @param {RunOptions} _options - Command options from commander (unused)
+ * @returns {Promise<void>}
+ */
+const run = async (_options?: RunOptions): Promise<void> => {
   try {
     if (!process.env.HOME) {
       process.env.HOME = os.homedir();

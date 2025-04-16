@@ -1,8 +1,8 @@
-import { describe, it, expect, vi, beforeEach, afterAll } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import init from '../../src/commands/init.js';
 import { requestAuthorization } from '../../src/auth/device-auth-flow';
 import { findAndUpdateClaudeConfig } from '../../src/clients/claude';
-import { log } from '../../src/utils/logger';
+import { log, logError } from '../../src/utils/logger';
 import { promptForScopeSelection } from '../../src/utils/cli-utility';
 
 // Mock dependencies
@@ -45,8 +45,7 @@ describe('Init Module', () => {
   it('should initialize the server successfully', async () => {
     // Set up mock for promptForScopeSelection to return empty array
     vi.mocked(promptForScopeSelection).mockResolvedValue([]);
-
-    await init([]);
+    await init({ client: 'claude' });
 
     expect(log).toHaveBeenCalledWith('Initializing Auth0 MCP server...');
     expect(promptForScopeSelection).toHaveBeenCalled();
@@ -54,29 +53,28 @@ describe('Init Module', () => {
     expect(findAndUpdateClaudeConfig).toHaveBeenCalled();
   });
 
-  it('should handle authorization errors', async () => {
+  it('should throw authorization errors', async () => {
     const mockError = new Error('Authorization failed');
     vi.mocked(promptForScopeSelection).mockResolvedValue([]);
     vi.mocked(requestAuthorization).mockRejectedValue(mockError);
 
-    await init([]);
+    await expect(init({ client: 'claude' })).rejects.toThrow('Authorization failed');
 
     expect(log).toHaveBeenCalledWith('Initializing Auth0 MCP server...');
-    expect(log).toHaveBeenCalledWith('Error initializing server:', mockError);
     expect(promptForScopeSelection).toHaveBeenCalled();
     expect(requestAuthorization).toHaveBeenCalledWith([]);
     expect(findAndUpdateClaudeConfig).not.toHaveBeenCalled();
   });
 
-  it('should handle Claude config update errors', async () => {
+  it('should throw Claude config update errors', async () => {
     const mockError = new Error('Claude config update failed');
     vi.mocked(promptForScopeSelection).mockResolvedValue([]);
     vi.mocked(findAndUpdateClaudeConfig).mockRejectedValue(mockError);
 
-    await init([]);
+    await expect(init({ client: 'claude' })).rejects.toThrow('Claude config update failed');
 
     expect(log).toHaveBeenCalledWith('Initializing Auth0 MCP server...');
-    expect(log).toHaveBeenCalledWith('Error initializing server:', mockError);
+    expect(log).toHaveBeenCalledWith('Configuring Claude as client default...');
     expect(promptForScopeSelection).toHaveBeenCalled();
     expect(requestAuthorization).toHaveBeenCalledWith([]);
     expect(findAndUpdateClaudeConfig).toHaveBeenCalled();
@@ -85,11 +83,10 @@ describe('Init Module', () => {
   it('should use provided scopes with --scopes flag and comma separation', async () => {
     // First reset the mock completely then give it a basic implementation
     vi.mocked(promptForScopeSelection).mockReset();
-
     const mockScopes = ['read:clients', 'create:clients'];
     vi.mocked(promptForScopeSelection).mockResolvedValue(mockScopes);
 
-    await init(['--scopes', 'read:clients,create:clients']);
+    await init({ client: 'claude', scopes: ['read:clients', 'create:clients'] });
 
     expect(log).toHaveBeenCalledWith('Initializing Auth0 MCP server...');
     expect(promptForScopeSelection).toHaveBeenCalled();
@@ -100,11 +97,10 @@ describe('Init Module', () => {
   it('should handle whitespace in comma-separated scopes', async () => {
     // Reset the mock
     vi.mocked(promptForScopeSelection).mockReset();
-
     const mockScopes = ['read:clients', 'create:clients'];
     vi.mocked(promptForScopeSelection).mockResolvedValue(mockScopes);
 
-    await init(['--scopes', 'read:clients, create:clients']);
+    await init({ client: 'claude', scopes: ['read:clients', 'create:clients'] });
 
     expect(log).toHaveBeenCalledWith('Initializing Auth0 MCP server...');
     expect(promptForScopeSelection).toHaveBeenCalled();
@@ -117,7 +113,7 @@ describe('Init Module', () => {
     vi.mocked(promptForScopeSelection).mockReset();
     vi.mocked(promptForScopeSelection).mockResolvedValue(['read:clients', 'read:actions']);
 
-    await init(['--scopes', 'read:*']);
+    await init({ client: 'claude', scopes: ['read:*'] });
 
     expect(log).toHaveBeenCalledWith('Initializing Auth0 MCP server...');
     expect(promptForScopeSelection).toHaveBeenCalled();
@@ -132,10 +128,9 @@ describe('Init Module', () => {
 
     try {
       // Run init with invalid scope
-      await init(['--scopes', 'invalid:scope']);
+      await init({ client: 'claude', scopes: ['invalid:scope'] });
 
       // Check for error messages - these should be called before process.exit
-      const { logError } = await import('../../src/utils/logger');
       expect(logError).toHaveBeenCalledWith(
         expect.stringContaining('Error: The following scopes are not valid: invalid:scope')
       );
@@ -155,7 +150,7 @@ describe('Init Module', () => {
     const mockSelectedScopes = ['read:clients', 'read:actions'];
     vi.mocked(promptForScopeSelection).mockResolvedValue(mockSelectedScopes);
 
-    await init([]);
+    await init({ client: 'claude' });
 
     expect(log).toHaveBeenCalledWith('Initializing Auth0 MCP server...');
     expect(promptForScopeSelection).toHaveBeenCalled();

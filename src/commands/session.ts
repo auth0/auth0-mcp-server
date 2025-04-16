@@ -69,10 +69,17 @@ const createErrorMessage = (): string => {
 };
 
 /**
+ * Command options for the session command
+ */
+export type SessionOptions = Record<string, never>;
+
+/**
  * Displays information about the current authentication session
+ *
+ * @param {SessionOptions} _options - Command options from commander (unused)
  * @returns A promise that resolves when the display is complete
  */
-async function session(): Promise<void> {
+async function session(_options?: SessionOptions): Promise<void> {
   try {
     log('Retrieving session information');
 
