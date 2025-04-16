@@ -2,8 +2,9 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import chalk from 'chalk';
-import { log, logError } from '../utils/logger.js';
+import { log } from '../utils/logger.js';
 import { cliOutput } from '../utils/cli-utility.js';
+import type { ClientOptions } from '../utils/types.js';
 
 interface ClaudeMCPServer {
   args: string[];
@@ -16,9 +17,9 @@ interface ClaudeDesktopConfig {
   mcpServers: Record<string, ClaudeMCPServer>;
 }
 
-export const findAndUpdateClaudeConfig = async () => {
+export const findAndUpdateClaudeConfig = async (options: ClientOptions) => {
   const resolvedConfigPath = await getClaudeConfigPath();
-  await updateClaudeConfig(resolvedConfigPath);
+  await updateClaudeConfig(resolvedConfigPath, options);
   cliOutput(
     `\n${chalk.green('✓')} Auth0 MCP server configured. ${chalk.yellow('Restart Claude Desktop')} to apply changes.\n`
   );
@@ -55,30 +56,22 @@ export async function getClaudeConfigPath(): Promise<string> {
   return path.join(configDir, 'claude_desktop_config.json');
 }
 
-async function updateClaudeConfig(configPath: string) {
+async function updateClaudeConfig(configPath: string, options: ClientOptions) {
   let config: ClaudeDesktopConfig = { mcpServers: {} };
   if (fs.existsSync(configPath)) {
-    try {
-      const configData = fs.readFileSync(configPath, 'utf-8');
-      config = JSON.parse(configData);
-    } catch (error) {
-      logError(`Error reading config file: ${(error as Error).message}`);
-    }
+    const configData = fs.readFileSync(configPath, 'utf-8');
+    config = JSON.parse(configData);
   }
 
   config.mcpServers['auth0'] = {
     command: 'npx',
-    args: ['-y', '@auth0/auth0-mcp-server', 'run'],
+    args: ['-y', '@auth0/auth0-mcp-server', 'run', `--tools=${options.tools.join(',')}`],
     capabilities: ['tools'],
     env: {
       DEBUG: 'auth0-mcp',
     },
   };
 
-  try {
-    fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
-    log(`Updated Claude Desktop config file at: ${configPath}`);
-  } catch (error) {
-    logError(`Error writing config file: ${(error as Error).message}`);
-  }
+  fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+  log(`Updated Claude Desktop config file at: ${configPath}`);
 }
