@@ -1,5 +1,8 @@
 // This file contains common types and interfaces used across the application.
 
+import { ToolSchema } from '@modelcontextprotocol/sdk/types';
+import { z } from 'zod';
+
 // Define Tool interface
 export interface Tool {
   name: string;
@@ -50,3 +53,5 @@ export interface Auth0PaginatedResponse {
   per_page?: number;
   [key: string]: any;
 }
+
+export type ToolSchema = z.infer<(typeof ToolSchema)['shape']['inputSchema']>;

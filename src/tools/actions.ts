@@ -4,6 +4,7 @@ import { createErrorResponse, createSuccessResponse } from '../utils/http-utilit
 import type { Auth0Config } from '../utils/config.js';
 import { getManagementClient } from '../utils/management-client.js';
 import type { PatchActionRequest, PostActionRequest } from 'auth0/dist/cjs/management/index.js';
+import { z } from 'zod';
 
 interface Auth0Action {
   id: string;
@@ -37,15 +38,12 @@ export const ACTION_TOOLS: Tool[] = [
   {
     name: 'auth0_list_actions',
     description: 'List all actions in the Auth0 tenant',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        page: { type: 'number', description: 'Page number (0-based)' },
-        per_page: { type: 'number', description: 'Number of actions per page' },
-        include_totals: { type: 'boolean', description: 'Include total count' },
-        trigger_id: { type: 'string', description: 'Filter by trigger ID' },
-      },
-    },
+    inputSchema: z.object({
+      page: z.number().optional().describe('Page number (0-based)'),
+      per_page: z.number().optional().describe('Number of actions per page'),
+      include_totals: z.boolean().optional().describe('Include total count'),
+      trigger_id: z.string().optional().describe('Filter by trigger ID'),
+    }),
     _meta: {
       requiredScopes: ['read:actions'],
     },
@@ -53,13 +51,9 @@ export const ACTION_TOOLS: Tool[] = [
   {
     name: 'auth0_get_action',
     description: 'Get details about a specific Auth0 action',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        id: { type: 'string', description: 'ID of the action to retrieve' },
-      },
-      required: ['id'],
-    },
+    inputSchema: z.object({
+      id: z.string().describe('ID of the action to retrieve'),
+    }),
     _meta: {
       requiredScopes: ['read:actions'],
     },
@@ -67,60 +61,40 @@ export const ACTION_TOOLS: Tool[] = [
   {
     name: 'auth0_create_action',
     description: 'Create a new Auth0 action',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        name: {
-          type: 'string',
-          description: 'Name of the action. Required.',
-        },
-        supported_triggers: {
-          type: 'array',
-          description: 'The list of triggers that this action supports. Required.',
-          items: {
-            type: 'object',
-            properties: {
-              id: { type: 'string', description: 'ID of the trigger' },
-              version: { type: 'string', description: 'Version of the trigger (e.g., "v2")' },
-            },
-            required: ['id', 'version'],
-          },
-        },
-        code: {
-          type: 'string',
-          description: 'The source code of the action. Required.',
-        },
-        runtime: {
-          type: 'string',
-          description: 'The Node runtime. For example: "node18" or "node16". Defaults to "node18".',
-        },
-        dependencies: {
-          type: 'array',
-          description: 'List of third party npm modules that this action depends on.',
-          items: {
-            type: 'object',
-            properties: {
-              name: { type: 'string', description: 'Name of the NPM package' },
-              version: { type: 'string', description: 'Version of the NPM package' },
-            },
-            required: ['name', 'version'],
-          },
-        },
-        secrets: {
-          type: 'array',
-          description: 'List of secrets that are included in the action.',
-          items: {
-            type: 'object',
-            properties: {
-              name: { type: 'string', description: 'Name of the secret' },
-              value: { type: 'string', description: 'Value of the secret' },
-            },
-            required: ['name', 'value'],
-          },
-        },
-      },
-      required: ['name', 'supported_triggers'],
-    },
+    inputSchema: z.object({
+      name: z.string().describe('Name of the action. Required.'),
+      supported_triggers: z
+        .array(
+          z.object({
+            id: z.string().describe('ID of the trigger'),
+            version: z.string().describe('Version of the trigger (e.g., "v2")'),
+          })
+        )
+        .describe('The list of triggers that this action supports. Required.'),
+      code: z.string().describe('The source code of the action. Required.'),
+      runtime: z
+        .string()
+        .optional()
+        .describe('The Node runtime. For example: "node18" or "node16". Defaults to "node18".'),
+      dependencies: z
+        .array(
+          z.object({
+            name: z.string().describe('Name of the NPM package'),
+            version: z.string().describe('Version of the NPM package'),
+          })
+        )
+        .optional()
+        .describe('List of third party npm modules that this action depends on.'),
+      secrets: z
+        .array(
+          z.object({
+            name: z.string().describe('Name of the secret'),
+            value: z.string().describe('Value of the secret'),
+          })
+        )
+        .optional()
+        .describe('List of secrets that are included in the action.'),
+    }),
     _meta: {
       requiredScopes: ['create:actions'],
     },
@@ -128,76 +102,45 @@ export const ACTION_TOOLS: Tool[] = [
   {
     name: 'auth0_update_action',
     description: 'Update an existing Auth0 action',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        id: {
-          type: 'string',
-          description: 'ID of the action to update. Required.',
-        },
-        name: {
-          type: 'string',
-          description: 'New name of the action. Optional.',
-        },
-        supported_triggers: {
-          type: 'array',
-          description: 'The list of triggers that this action supports. Optional.',
-          items: {
-            type: 'object',
-            properties: {
-              id: { type: 'string', description: 'ID of the trigger' },
-              version: { type: 'string', description: 'Version of the trigger (e.g., "v2")' },
-            },
-            required: ['id', 'version'],
-          },
-        },
-        code: {
-          type: 'string',
-          description: 'New JavaScript code for the action. Optional.',
-        },
-        runtime: {
-          type: 'string',
-          description: 'The Node runtime. For example: "node18" or "node16".',
-        },
-        dependencies: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              name: {
-                type: 'string',
-                description: 'Name of the NPM dependency',
-              },
-              version: {
-                type: 'string',
-                description: 'Version of the NPM dependency',
-              },
-            },
-            required: ['name', 'version'],
-          },
-          description: 'Updated NPM dependencies for the action. Optional.',
-        },
-        secrets: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              name: {
-                type: 'string',
-                description: 'Name of the secret variable',
-              },
-              value: {
-                type: 'string',
-                description: 'Value of the secret. If omitted, the existing value is retained.',
-              },
-            },
-            required: ['name'],
-          },
-          description: 'Secrets to update for the action. Optional.',
-        },
-      },
-      required: ['id'],
-    },
+    inputSchema: z.object({
+      id: z.string().describe('ID of the action to update. Required.'),
+      name: z.string().optional().describe('New name of the action. Optional.'),
+      supported_triggers: z
+        .array(
+          z.object({
+            id: z.string().describe('ID of the trigger'),
+            version: z.string().describe('Version of the trigger (e.g., "v2")'),
+          })
+        )
+        .optional()
+        .describe('The list of triggers that this action supports. Optional.'),
+      code: z.string().optional().describe('New JavaScript code for the action. Optional.'),
+      runtime: z
+        .string()
+        .optional()
+        .describe('The Node runtime. For example: "node18" or "node16".'),
+      dependencies: z
+        .array(
+          z.object({
+            name: z.string().describe('Name of the NPM dependency'),
+            version: z.string().describe('Version of the NPM dependency'),
+          })
+        )
+        .optional()
+        .describe('Updated NPM dependencies for the action. Optional.'),
+      secrets: z
+        .array(
+          z.object({
+            name: z.string().describe('Name of the secret variable'),
+            value: z
+              .string()
+              .optional()
+              .describe('Value of the secret. If omitted, the existing value is retained.'),
+          })
+        )
+        .optional()
+        .describe('Secrets to update for the action. Optional.'),
+    }),
     _meta: {
       requiredScopes: ['update:actions'],
     },
@@ -205,13 +148,9 @@ export const ACTION_TOOLS: Tool[] = [
   {
     name: 'auth0_deploy_action',
     description: 'Deploy an Auth0 action',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        id: { type: 'string', description: 'ID of the action to deploy' },
-      },
-      required: ['id'],
-    },
+    inputSchema: z.object({
+      id: z.string().describe('ID of the action to deploy'),
+    }),
     _meta: {
       requiredScopes: ['update:actions'],
     },

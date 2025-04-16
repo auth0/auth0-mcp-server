@@ -10,30 +10,28 @@ import { log } from '../utils/logger.js';
 import { createErrorResponse, createSuccessResponse } from '../utils/http-utility.js';
 import type { Auth0Config } from '../utils/config.js';
 import { getManagementClient } from '../utils/management-client.js';
+import { z } from 'zod';
 
 // Define all available resource server tools
 export const RESOURCE_SERVER_TOOLS: Tool[] = [
   {
     name: 'auth0_list_resource_servers',
     description: 'List all resource servers (APIs) in the Auth0 tenant',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        page: { type: 'number', description: 'Page number (0-based)' },
-        per_page: { type: 'number', description: 'Number of resource servers per page' },
-        include_totals: { type: 'boolean', description: 'Include total count' },
-        identifiers: {
-          type: 'array',
-          items: { type: 'string' },
-          description:
-            'A list of URI encoded identifiers to filter the results by. Consider URL limits when using this parameter.',
-        },
-        include_fields: {
-          type: 'boolean',
-          description: 'Whether specified fields are to be included (true) or excluded (false)',
-        },
-      },
-    },
+    inputSchema: z.object({
+      page: z.number().optional().describe('Page number (0-based)'),
+      per_page: z.number().optional().describe('Number of resource servers per page'),
+      include_totals: z.boolean().optional().describe('Include total count'),
+      identifiers: z
+        .array(z.string())
+        .optional()
+        .describe(
+          'A list of URI encoded identifiers to filter the results by. Consider URL limits when using this parameter.'
+        ),
+      include_fields: z
+        .boolean()
+        .optional()
+        .describe('Whether specified fields are to be included (true) or excluded (false)'),
+    }),
     _meta: {
       requiredScopes: ['read:resource_servers'],
     },
@@ -41,13 +39,9 @@ export const RESOURCE_SERVER_TOOLS: Tool[] = [
   {
     name: 'auth0_get_resource_server',
     description: 'Get details about a specific Auth0 resource server',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        id: { type: 'string', description: 'ID of the resource server to retrieve' },
-      },
-      required: ['id'],
-    },
+    inputSchema: z.object({
+      id: z.string().describe('ID of the resource server to retrieve'),
+    }),
     _meta: {
       requiredScopes: ['read:resource_servers'],
     },
@@ -55,76 +49,53 @@ export const RESOURCE_SERVER_TOOLS: Tool[] = [
   {
     name: 'auth0_create_resource_server',
     description: 'Create a new Auth0 resource server (API)',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        name: {
-          type: 'string',
-          description: 'Friendly name for the resource server. Required.',
-        },
-        identifier: {
-          type: 'string',
-          description: 'Unique identifier for the API (e.g., https://api.example.com). Required.',
-        },
-        scopes: {
-          type: 'array',
-          description: 'List of permissions (scopes) that this API uses.',
-          items: {
-            type: 'object',
-            properties: {
-              value: { type: 'string' },
-              description: { type: 'string' },
-            },
-          },
-        },
-        signing_alg: {
-          type: 'string',
-          description: 'Algorithm used to sign JWTs. Can be HS256 or RS256.',
-          enum: ['HS256', 'RS256', 'PS256'],
-        },
-        signing_secret: {
-          type: 'string',
-          description: 'Secret used to sign tokens when using symmetric algorithms (HS256).',
-        },
-        allow_offline_access: {
-          type: 'boolean',
-          description: 'Whether refresh tokens can be issued for this API.',
-        },
-        token_lifetime: {
-          type: 'number',
-          description: 'Expiration value (in seconds) for access tokens.',
-        },
-        token_dialect: {
-          type: 'string',
-          description: 'Dialect of issued access token.',
-        },
-        skip_consent_for_verifiable_first_party_clients: {
-          type: 'boolean',
-          description: 'Whether to skip user consent for applications flagged as first party.',
-        },
-        enforce_policies: {
-          type: 'boolean',
-          description: 'Whether to enforce authorization policies.',
-        },
-        token_encryption: {
-          type: 'object',
-          description: 'Token encryption configuration.',
-        },
-        consent_policy: {
-          type: 'string',
-          description: 'Policy for obtaining consent.',
-        },
-        authorization_details: {
-          type: 'array',
-          description: 'Authorization details for the resource server.',
-        },
-        proof_of_possession: {
-          type: 'object',
-          description: 'Proof of possession configuration.',
-        },
-      },
-      required: ['name', 'identifier'],
-    },
+    inputSchema: z.object({
+      name: z.string().describe('Friendly name for the resource server. Required.'),
+      identifier: z
+        .string()
+        .describe('Unique identifier for the API (e.g., https://api.example.com). Required.'),
+      scopes: z
+        .array(
+          z.object({
+            value: z.string(),
+            description: z.string(),
+          })
+        )
+        .optional()
+        .describe('List of permissions (scopes) that this API uses.'),
+      signing_alg: z
+        .enum(['HS256', 'RS256', 'PS256'])
+        .optional()
+        .describe('Algorithm used to sign JWTs. Can be HS256 or RS256.'),
+      signing_secret: z
+        .string()
+        .optional()
+        .describe('Secret used to sign tokens when using symmetric algorithms (HS256).'),
+      allow_offline_access: z
+        .boolean()
+        .optional()
+        .describe('Whether refresh tokens can be issued for this API.'),
+      token_lifetime: z
+        .number()
+        .optional()
+        .describe('Expiration value (in seconds) for access tokens.'),
+      token_dialect: z.string().optional().describe('Dialect of issued access token.'),
+      skip_consent_for_verifiable_first_party_clients: z
+        .boolean()
+        .optional()
+        .describe('Whether to skip user consent for applications flagged as first party.'),
+      enforce_policies: z
+        .boolean()
+        .optional()
+        .describe('Whether to enforce authorization policies.'),
+      token_encryption: z.object({}).optional().describe('Token encryption configuration.'),
+      consent_policy: z.string().optional().describe('Policy for obtaining consent.'),
+      authorization_details: z
+        .array(z.any())
+        .optional()
+        .describe('Authorization details for the resource server.'),
+      proof_of_possession: z.object({}).optional().describe('Proof of possession configuration.'),
+    }),
     _meta: {
       requiredScopes: ['create:resource_servers'],
     },
@@ -132,76 +103,51 @@ export const RESOURCE_SERVER_TOOLS: Tool[] = [
   {
     name: 'auth0_update_resource_server',
     description: 'Update an existing Auth0 resource server',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        id: {
-          type: 'string',
-          description: 'ID of the resource server to update. Required.',
-        },
-        name: {
-          type: 'string',
-          description: 'New friendly name for the resource server.',
-        },
-        scopes: {
-          type: 'array',
-          description: 'List of permissions (scopes) that this API uses.',
-          items: {
-            type: 'object',
-            properties: {
-              value: { type: 'string' },
-              description: { type: 'string' },
-            },
-          },
-        },
-        signing_alg: {
-          type: 'string',
-          description: 'Algorithm used to sign JWTs. Can be HS256 or RS256.',
-          enum: ['HS256', 'RS256', 'PS256'],
-        },
-        signing_secret: {
-          type: 'string',
-          description: 'Secret used to sign tokens when using symmetric algorithms (HS256).',
-        },
-        allow_offline_access: {
-          type: 'boolean',
-          description: 'Whether refresh tokens can be issued for this API.',
-        },
-        token_lifetime: {
-          type: 'number',
-          description: 'Expiration value (in seconds) for access tokens.',
-        },
-        token_dialect: {
-          type: 'string',
-          description: 'Dialect of issued access token.',
-        },
-        skip_consent_for_verifiable_first_party_clients: {
-          type: 'boolean',
-          description: 'Whether to skip user consent for applications flagged as first party.',
-        },
-        enforce_policies: {
-          type: 'boolean',
-          description: 'Whether to enforce authorization policies.',
-        },
-        token_encryption: {
-          type: 'object',
-          description: 'Token encryption configuration.',
-        },
-        consent_policy: {
-          type: 'string',
-          description: 'Policy for obtaining consent.',
-        },
-        authorization_details: {
-          type: 'array',
-          description: 'Authorization details for the resource server.',
-        },
-        proof_of_possession: {
-          type: 'object',
-          description: 'Proof of possession configuration.',
-        },
-      },
-      required: ['id'],
-    },
+    inputSchema: z.object({
+      id: z.string().describe('ID of the resource server to update. Required.'),
+      name: z.string().optional().describe('New friendly name for the resource server.'),
+      scopes: z
+        .array(
+          z.object({
+            value: z.string(),
+            description: z.string(),
+          })
+        )
+        .optional()
+        .describe('List of permissions (scopes) that this API uses.'),
+      signing_alg: z
+        .enum(['HS256', 'RS256', 'PS256'])
+        .optional()
+        .describe('Algorithm used to sign JWTs. Can be HS256 or RS256.'),
+      signing_secret: z
+        .string()
+        .optional()
+        .describe('Secret used to sign tokens when using symmetric algorithms (HS256).'),
+      allow_offline_access: z
+        .boolean()
+        .optional()
+        .describe('Whether refresh tokens can be issued for this API.'),
+      token_lifetime: z
+        .number()
+        .optional()
+        .describe('Expiration value (in seconds) for access tokens.'),
+      token_dialect: z.string().optional().describe('Dialect of issued access token.'),
+      skip_consent_for_verifiable_first_party_clients: z
+        .boolean()
+        .optional()
+        .describe('Whether to skip user consent for applications flagged as first party.'),
+      enforce_policies: z
+        .boolean()
+        .optional()
+        .describe('Whether to enforce authorization policies.'),
+      token_encryption: z.object({}).optional().describe('Token encryption configuration.'),
+      consent_policy: z.string().optional().describe('Policy for obtaining consent.'),
+      authorization_details: z
+        .array(z.any())
+        .optional()
+        .describe('Authorization details for the resource server.'),
+      proof_of_possession: z.object({}).optional().describe('Proof of possession configuration.'),
+    }),
     _meta: {
       requiredScopes: ['update:resource_servers'],
     },

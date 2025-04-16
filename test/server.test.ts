@@ -36,6 +36,11 @@ vi.mock('@modelcontextprotocol/sdk/server/index.js', () => ({
   Server: vi.fn().mockImplementation(() => mockServer),
 }));
 
+// Mock zod-to-json-schema
+vi.mock('zod-to-json-schema', () => ({
+  zodToJsonSchema: vi.fn().mockReturnValue({ type: 'object', properties: {} }),
+}));
+
 // Mock the handlers
 vi.mock('../src/tools/index.js', () => {
   const mockHandler = vi.fn().mockResolvedValue({
@@ -43,8 +48,17 @@ vi.mock('../src/tools/index.js', () => {
     isError: false,
   });
 
+  // Create a mock Zod schema object with the necessary properties and methods
+  const mockZodSchema = {
+    _def: { typeName: 'ZodObject' },
+    parse: vi.fn(),
+    safeParse: vi.fn(),
+    optional: vi.fn(),
+    nullable: vi.fn(),
+  };
+
   return {
-    TOOLS: [{ name: 'test_tool', description: 'Test tool', inputSchema: {} }],
+    TOOLS: [{ name: 'test_tool', description: 'Test tool', inputSchema: mockZodSchema }],
     HANDLERS: {
       test_tool: mockHandler,
     },
@@ -111,7 +125,14 @@ describe('Server', () => {
 
       // Call the handler and verify it returns the expected tools
       const result = await handlerFn();
-      expect(result).toEqual({ tools: TOOLS });
+
+      // The handler transforms the tools, so we need to check the structure rather than exact equality
+      expect(result).toHaveProperty('tools');
+      expect(Array.isArray(result.tools)).toBe(true);
+      expect(result.tools.length).toBe(1);
+      expect(result.tools[0]).toHaveProperty('name', 'test_tool');
+      expect(result.tools[0]).toHaveProperty('description', 'Test tool');
+      expect(result.tools[0]).toHaveProperty('inputSchema');
     });
 
     it('should set up CallToolRequestSchema handler', async () => {

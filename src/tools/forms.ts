@@ -4,20 +4,18 @@ import { createErrorResponse, createSuccessResponse } from '../utils/http-utilit
 import type { Auth0Config } from '../utils/config.js';
 import { getManagementClient } from '../utils/management-client.js';
 import type { PostFormsRequest } from 'auth0/dist/cjs/management/index.js';
+import { z } from 'zod';
 
 // Define all available form tools
 export const FORM_TOOLS: Tool[] = [
   {
     name: 'auth0_list_forms',
     description: 'List all forms in the Auth0 tenant',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        page: { type: 'number', description: 'Page number (0-based)' },
-        per_page: { type: 'number', description: 'Number of forms per page default:50' },
-        include_totals: { type: 'boolean', description: 'Include total count' },
-      },
-    },
+    inputSchema: z.object({
+      page: z.number().optional().describe('Page number (0-based)'),
+      per_page: z.number().optional().describe('Number of forms per page default:50'),
+      include_totals: z.boolean().optional().describe('Include total count'),
+    }),
     _meta: {
       requiredScopes: ['read:forms'],
     },
@@ -25,13 +23,9 @@ export const FORM_TOOLS: Tool[] = [
   {
     name: 'auth0_get_form',
     description: 'Get details about a specific Auth0 form',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        id: { type: 'string', description: 'ID of the form to retrieve' },
-      },
-      required: ['id'],
-    },
+    inputSchema: z.object({
+      id: z.string().describe('ID of the form to retrieve'),
+    }),
     _meta: {
       requiredScopes: ['read:forms'],
     },
@@ -39,47 +33,19 @@ export const FORM_TOOLS: Tool[] = [
   {
     name: 'auth0_create_form',
     description: 'Create a new Auth0 form',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        name: {
-          type: 'string',
-          description: 'Name of the form. Required.',
-        },
-        messages: {
-          type: 'object',
-          description: 'Message settings for the form',
-        },
-        languages: {
-          type: 'object',
-          description: 'Language settings for the form',
-        },
-        translations: {
-          type: 'object',
-          description: 'Translations for form content',
-        },
-        nodes: {
-          type: 'array',
-          description: 'Nodes defining form structure and behavior',
-          items: {
-            type: 'object',
-          },
-        },
-        start: {
-          type: 'object',
-          description: 'Settings for form start configuration',
-        },
-        ending: {
-          type: 'object',
-          description: 'Settings for form completion',
-        },
-        style: {
-          type: 'object',
-          description: 'Style settings for the form',
-        },
-      },
-      required: ['name'],
-    },
+    inputSchema: z.object({
+      name: z.string().describe('Name of the form. Required.'),
+      messages: z.object({}).optional().describe('Message settings for the form'),
+      languages: z.object({}).optional().describe('Language settings for the form'),
+      translations: z.object({}).optional().describe('Translations for form content'),
+      nodes: z
+        .array(z.object({}))
+        .optional()
+        .describe('Nodes defining form structure and behavior'),
+      start: z.object({}).optional().describe('Settings for form start configuration'),
+      ending: z.object({}).optional().describe('Settings for form completion'),
+      style: z.object({}).optional().describe('Style settings for the form'),
+    }),
     _meta: {
       requiredScopes: ['create:forms'],
     },
@@ -87,51 +53,20 @@ export const FORM_TOOLS: Tool[] = [
   {
     name: 'auth0_update_form',
     description: 'Update an existing Auth0 form',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        id: {
-          type: 'string',
-          description: 'ID of the form to update. Required.',
-        },
-        name: {
-          type: 'string',
-          description: 'Name of the form',
-        },
-        messages: {
-          type: 'object',
-          description: 'Message settings for the form',
-        },
-        languages: {
-          type: 'object',
-          description: 'Language settings for the form',
-        },
-        translations: {
-          type: 'object',
-          description: 'Translations for form content',
-        },
-        nodes: {
-          type: 'array',
-          description: 'Nodes defining form structure and behavior',
-          items: {
-            type: 'object',
-          },
-        },
-        start: {
-          type: 'object',
-          description: 'Settings for form start configuration',
-        },
-        ending: {
-          type: 'object',
-          description: 'Settings for form completion',
-        },
-        style: {
-          type: 'object',
-          description: 'Style settings for the form',
-        },
-      },
-      required: ['id'],
-    },
+    inputSchema: z.object({
+      id: z.string().describe('ID of the form to update. Required.'),
+      name: z.string().optional().describe('Name of the form'),
+      messages: z.object({}).optional().describe('Message settings for the form'),
+      languages: z.object({}).optional().describe('Language settings for the form'),
+      translations: z.object({}).optional().describe('Translations for form content'),
+      nodes: z
+        .array(z.object({}))
+        .optional()
+        .describe('Nodes defining form structure and behavior'),
+      start: z.object({}).optional().describe('Settings for form start configuration'),
+      ending: z.object({}).optional().describe('Settings for form completion'),
+      style: z.object({}).optional().describe('Style settings for the form'),
+    }),
     _meta: {
       requiredScopes: ['update:forms'],
     },

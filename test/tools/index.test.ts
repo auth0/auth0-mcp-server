@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+import { z } from 'zod';
 import { TOOLS, HANDLERS } from '../../src/tools/index';
 import { ACTION_TOOLS, ACTION_HANDLERS } from '../../src/tools/actions';
 import { APPLICATION_TOOLS, APPLICATION_HANDLERS } from '../../src/tools/applications';
@@ -33,6 +34,9 @@ describe('Tools Index', () => {
         const foundTool = TOOLS.find((t) => t.name === tool.name);
         expect(foundTool).toBeDefined();
         expect(foundTool?.description).toBe(tool.description);
+        // Verify that each tool has a valid Zod schema
+        expect(foundTool?.inputSchema).toBeDefined();
+        expect(foundTool?.inputSchema instanceof z.ZodObject).toBe(true);
       });
     });
   });
