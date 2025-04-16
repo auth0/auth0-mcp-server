@@ -9,7 +9,7 @@
 
 <div align="center">
 
-📚 [Documentation](http://auth0.com/docs/getstarted/ai-tools/model-context-protocol-MCP) • 🚀 [Getting Started](#getting-started) • 💻 [Supported Tools](#supported-tools) • 💬 [Feedback](#feedback)
+📚 [Documentation](https://auth0.com/docs/get-started/mcp) • 🚀 [Getting Started](#-getting-started) • 💻 [Supported Tools](#%EF%B8%8F-supported-tools) • 💬 [Feedback](#-feedback-and-contributing)
 </div>
 
 </br>
