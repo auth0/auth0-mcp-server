@@ -28,6 +28,11 @@ export interface HandlerResponse {
   isError: boolean;
 }
 
+// Client Options interface
+export interface ClientOptions {
+  tools: string[];
+}
+
 // Auth0 response interfaces
 export interface Auth0Application {
   client_id: string;

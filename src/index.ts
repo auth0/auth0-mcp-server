@@ -7,6 +7,8 @@ import logout from './commands/logout.js';
 import session from './commands/session.js';
 import { logError } from './utils/logger.js';
 import { createRequire } from 'module';
+import { TOOLS } from './tools/index.js';
+import { validatePatterns } from './utils/tools.js';
 
 // For importing JSON files in ES modules
 const require = createRequire(import.meta.url);
@@ -27,6 +29,31 @@ process.title = 'auth0-mcp-server';
   });
 });
 
+/**
+ * Parses and validates comma-separated tool patterns from command line input.
+ * This function processes a comma-delimited string of tool patterns,
+ * normalizes them by trimming whitespace, and validates each pattern
+ * against the available tools. If the input is empty, it returns a
+ * wildcard pattern ['*'] that matches all tools.
+ *
+ * @param {string} value - Raw command line input containing comma-separated patterns
+ * @returns {string[]} Array of validated tool pattern strings
+ * @throws {Error} If any pattern is invalid or doesn't match available tools
+ */
+function parseToolPatterns(value: string): string[] {
+  if (!value) return ['*'];
+
+  const patterns = value
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  // Validate the patterns against available tools
+  validatePatterns(patterns, TOOLS);
+
+  return patterns;
+}
+
 // Top-level CLI
 const program = new Command()
   .name('auth0-mcp-server')
@@ -45,15 +72,14 @@ with Claude Desktop, enabling AI-assisted management of your Auth0 tenant.`
     `
 Examples:
   npx ${packageName} init
-  npx ${packageName} init --client claude
-  npx ${packageName} init --client windsurf
-  npx ${packageName} init --client cursor
+  npx ${packageName} init --tools='auth0_*' --client claude
+  npx ${packageName} init --tools='auth0_*_applications' --client windsurf
+  npx ${packageName} init --tools='auth0_list_*,auth0_get_*' --client cursor
   npx ${packageName} run
   npx ${packageName} session
   npx ${packageName} logout
   
-For more information, visit: https://github.com/auth0/auth0-mcp-server
-`
+  For more information, visit: https://github.com/auth0/auth0-mcp-server`
   );
 
 // Init command
@@ -67,10 +93,25 @@ program
       .map((scope) => scope.trim())
       .filter(Boolean)
   )
+  .option(
+    '--tools <tools>',
+    'Comma-separated list of tools or glob patterns to enable (defaults to "*" if not provided)',
+    parseToolPatterns,
+    ['*']
+  )
   .action(init);
 
 // Run command
-program.command('run').description('Start the MCP server').action(run);
+program
+  .command('run')
+  .description('Start the MCP server')
+  .option(
+    '--tools <tools>',
+    'Comma-separated list of tools or glob patterns to enable (defaults to "*" if not provided)',
+    parseToolPatterns,
+    ['*']
+  )
+  .action(run);
 
 // Logout command
 program

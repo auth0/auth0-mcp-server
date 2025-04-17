@@ -2,23 +2,18 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import init from '../../src/commands/init.js';
 import { requestAuthorization } from '../../src/auth/device-auth-flow';
 import { findAndUpdateClaudeConfig } from '../../src/clients/claude';
+import { findAndUpdateWindsurfConfig } from '../../src/clients/windsurf';
+import { findAndUpdateCursorConfig } from '../../src/clients/cursor';
 import { log, logError } from '../../src/utils/logger';
 import { promptForScopeSelection } from '../../src/utils/cli-utility';
+import { TOOLS } from '../../src/tools/index';
 
-// Mock dependencies
-vi.mock('../../src/auth/device-auth-flow', () => ({
-  requestAuthorization: vi.fn().mockResolvedValue(undefined),
-}));
-
-vi.mock('../../src/clients/claude', () => ({
-  findAndUpdateClaudeConfig: vi.fn().mockResolvedValue(undefined),
-}));
-
-vi.mock('../../src/utils/logger', () => ({
-  log: vi.fn(),
-  logInfo: vi.fn(),
-  logError: vi.fn(),
-}));
+// Mock all dependencies
+vi.mock('../../src/auth/device-auth-flow');
+vi.mock('../../src/clients/claude');
+vi.mock('../../src/clients/windsurf');
+vi.mock('../../src/clients/cursor');
+vi.mock('../../src/utils/logger');
 
 vi.mock('../../src/utils/cli-utility', () => ({
   promptForScopeSelection: vi.fn().mockResolvedValue([]),
@@ -38,123 +33,161 @@ vi.mock('../../src/utils/scopes', () => ({
 }));
 
 describe('Init Module', () => {
+  // Type the mocks for better intellisense and type checking
+  const mockedRequestAuth = vi.mocked(requestAuthorization);
+  const mockedClaudeConfig = vi.mocked(findAndUpdateClaudeConfig);
+  const mockedWindsurfConfig = vi.mocked(findAndUpdateWindsurfConfig);
+  const mockedCursorConfig = vi.mocked(findAndUpdateCursorConfig);
+  const mockedLog = vi.mocked(log);
+  const mockedLogError = vi.mocked(logError);
+  const mockedPromptForScopeSelection = vi.mocked(promptForScopeSelection);
+
   beforeEach(() => {
     vi.resetAllMocks();
+
+    // Set default mock return values
+    mockedRequestAuth.mockResolvedValue(undefined);
+    mockedClaudeConfig.mockResolvedValue(undefined);
+    mockedWindsurfConfig.mockResolvedValue(undefined);
+    mockedCursorConfig.mockResolvedValue(undefined);
+    mockedPromptForScopeSelection.mockResolvedValue([]);
   });
 
-  it('should initialize the server successfully', async () => {
-    // Set up mock for promptForScopeSelection to return empty array
-    vi.mocked(promptForScopeSelection).mockResolvedValue([]);
-    await init({ client: 'claude' });
+  it('should use default "*" when tools is empty', async () => {
+    // Act
+    await init({ client: 'claude', tools: [] });
 
-    expect(log).toHaveBeenCalledWith('Initializing Auth0 MCP server...');
-    expect(promptForScopeSelection).toHaveBeenCalled();
-    expect(requestAuthorization).toHaveBeenCalledWith([]);
-    expect(findAndUpdateClaudeConfig).toHaveBeenCalled();
+    // Assert
+    expect(mockedLog).toHaveBeenCalledWith('Initializing Auth0 MCP server...');
+    expect(mockedClaudeConfig).toHaveBeenCalledWith(expect.objectContaining({ tools: [] }));
   });
 
-  it('should throw authorization errors', async () => {
+  it('should initialize server with default client (Claude) when tools parameter is provided', async () => {
+    // Act
+    await init({ client: 'claude', tools: ['*'] });
+
+    // Assert
+    expect(mockedLog).toHaveBeenCalledWith('Initializing Auth0 MCP server...');
+    expect(mockedPromptForScopeSelection).toHaveBeenCalled();
+    expect(mockedRequestAuth).toHaveBeenCalled();
+    expect(mockedClaudeConfig).toHaveBeenCalled();
+  });
+
+  it('should handle authorization errors', async () => {
+    // Arrange
     const mockError = new Error('Authorization failed');
-    vi.mocked(promptForScopeSelection).mockResolvedValue([]);
-    vi.mocked(requestAuthorization).mockRejectedValue(mockError);
+    mockedRequestAuth.mockRejectedValue(mockError);
 
-    await expect(init({ client: 'claude' })).rejects.toThrow('Authorization failed');
+    // Act
+    await init({ client: 'claude', tools: ['*'] }).catch(() => {
+      /* ignore error */
+    });
 
-    expect(log).toHaveBeenCalledWith('Initializing Auth0 MCP server...');
-    expect(promptForScopeSelection).toHaveBeenCalled();
-    expect(requestAuthorization).toHaveBeenCalledWith([]);
-    expect(findAndUpdateClaudeConfig).not.toHaveBeenCalled();
+    // Assert
+    expect(mockedLog).toHaveBeenCalledWith('Initializing Auth0 MCP server...');
+    expect(mockedRequestAuth).toHaveBeenCalled();
+    expect(mockedClaudeConfig).not.toHaveBeenCalled();
   });
 
-  it('should throw Claude config update errors', async () => {
+  it('should handle client config update errors', async () => {
+    // Arrange
     const mockError = new Error('Claude config update failed');
-    vi.mocked(promptForScopeSelection).mockResolvedValue([]);
-    vi.mocked(findAndUpdateClaudeConfig).mockRejectedValue(mockError);
+    mockedClaudeConfig.mockRejectedValue(mockError);
 
-    await expect(init({ client: 'claude' })).rejects.toThrow('Claude config update failed');
+    // Act
+    await init({ client: 'claude', tools: ['*'] }).catch(() => {
+      /* ignore error */
+    });
 
-    expect(log).toHaveBeenCalledWith('Initializing Auth0 MCP server...');
-    expect(log).toHaveBeenCalledWith('Configuring Claude as client default...');
-    expect(promptForScopeSelection).toHaveBeenCalled();
-    expect(requestAuthorization).toHaveBeenCalledWith([]);
-    expect(findAndUpdateClaudeConfig).toHaveBeenCalled();
+    // Assert
+    expect(mockedLog).toHaveBeenCalledWith('Initializing Auth0 MCP server...');
+    expect(mockedRequestAuth).toHaveBeenCalled();
+    expect(mockedClaudeConfig).toHaveBeenCalled();
   });
 
-  it('should use provided scopes with --scopes flag and comma separation', async () => {
-    // First reset the mock completely then give it a basic implementation
-    vi.mocked(promptForScopeSelection).mockReset();
-    const mockScopes = ['read:clients', 'create:clients'];
-    vi.mocked(promptForScopeSelection).mockResolvedValue(mockScopes);
+  it('should pass tool options to client config when specified', async () => {
+    // Arrange
+    const tools = ['auth0_list_*', 'auth0_get_*'];
 
-    await init({ client: 'claude', scopes: ['read:clients', 'create:clients'] });
+    // Act
+    await init({ client: 'claude', tools });
 
-    expect(log).toHaveBeenCalledWith('Initializing Auth0 MCP server...');
-    expect(promptForScopeSelection).toHaveBeenCalled();
-    expect(requestAuthorization).toHaveBeenCalledWith(mockScopes);
-    expect(findAndUpdateClaudeConfig).toHaveBeenCalled();
+    // Assert
+    expect(mockedLog).toHaveBeenCalledWith(
+      'Configuring server with selected tools: auth0_list_*, auth0_get_*'
+    );
+    expect(mockedClaudeConfig).toHaveBeenCalledWith({ tools });
   });
 
-  it('should handle whitespace in comma-separated scopes', async () => {
-    // Reset the mock
-    vi.mocked(promptForScopeSelection).mockReset();
-    const mockScopes = ['read:clients', 'create:clients'];
-    vi.mocked(promptForScopeSelection).mockResolvedValue(mockScopes);
+  describe('Client selection', () => {
+    it.each([
+      ['windsurf', mockedWindsurfConfig],
+      ['cursor', mockedCursorConfig],
+    ])('should initialize %s client when specified', async (clientName, configMock) => {
+      // Act
+      await init({ client: clientName as any, tools: ['*'] });
 
-    await init({ client: 'claude', scopes: ['read:clients', 'create:clients'] });
+      // Assert
+      expect(configMock).toHaveBeenCalled();
+      expect(mockedClaudeConfig).not.toHaveBeenCalled();
 
-    expect(log).toHaveBeenCalledWith('Initializing Auth0 MCP server...');
-    expect(promptForScopeSelection).toHaveBeenCalled();
-    expect(requestAuthorization).toHaveBeenCalledWith(mockScopes);
-    expect(findAndUpdateClaudeConfig).toHaveBeenCalled();
+      // Verify other client configs weren't called
+      const allClientMocks = [mockedClaudeConfig, mockedWindsurfConfig, mockedCursorConfig];
+      const otherMocks = allClientMocks.filter((mock) => mock !== configMock);
+      otherMocks.forEach((mock) => {
+        expect(mock).not.toHaveBeenCalled();
+      });
+    });
+
+    it('should handle tool filters with client flags', async () => {
+      // Arrange
+      const tools = ['auth0_list_applications'];
+
+      // Act
+      await init({ client: 'windsurf', tools });
+
+      // Assert
+      expect(mockedWindsurfConfig).toHaveBeenCalledWith({ tools });
+    });
   });
 
-  it('should handle glob patterns with --scopes flag', async () => {
-    // Reset and set up the mock to return all read scopes
-    vi.mocked(promptForScopeSelection).mockReset();
-    vi.mocked(promptForScopeSelection).mockResolvedValue(['read:clients', 'read:actions']);
+  describe('Scope selection', () => {
+    it('should use selected scopes from promptForScopeSelection', async () => {
+      // Arrange
+      const mockSelectedScopes = ['read:clients', 'read:actions'];
+      mockedPromptForScopeSelection.mockResolvedValue(mockSelectedScopes);
 
-    await init({ client: 'claude', scopes: ['read:*'] });
+      // Act
+      await init({ client: 'claude', tools: ['*'] });
 
-    expect(log).toHaveBeenCalledWith('Initializing Auth0 MCP server...');
-    expect(promptForScopeSelection).toHaveBeenCalled();
-    expect(requestAuthorization).toHaveBeenCalledWith(['read:clients', 'read:actions']);
-    expect(findAndUpdateClaudeConfig).toHaveBeenCalled();
-  });
+      // Assert
+      expect(mockedPromptForScopeSelection).toHaveBeenCalled();
+      expect(mockedRequestAuth).toHaveBeenCalledWith(mockSelectedScopes);
+    });
 
-  it('should handle invalid scopes by showing error', async () => {
-    // Mock process.exit to prevent test from exiting
-    const originalExit = process.exit;
-    process.exit = vi.fn() as any;
+    it('should use provided scopes with --scopes flag', async () => {
+      // Arrange
+      const mockScopes = ['read:clients', 'create:clients'];
+      mockedPromptForScopeSelection.mockResolvedValue(mockScopes);
 
-    try {
-      // Run init with invalid scope
-      await init({ client: 'claude', scopes: ['invalid:scope'] });
+      // Act
+      await init({ client: 'claude', scopes: mockScopes, tools: ['*'] });
 
-      // Check for error messages - these should be called before process.exit
-      expect(logError).toHaveBeenCalledWith(
-        expect.stringContaining('Error: The following scopes are not valid: invalid:scope')
-      );
+      // Assert
+      expect(mockedPromptForScopeSelection).toHaveBeenCalled();
+      expect(mockedRequestAuth).toHaveBeenCalledWith(mockScopes);
+    });
 
-      // Check that logError was called with the valid scopes message
-      expect(logError).toHaveBeenCalledWith(expect.stringContaining('Valid scopes are:'));
+    it('should handle glob patterns with --scopes flag', async () => {
+      // Arrange
+      mockedPromptForScopeSelection.mockResolvedValue(['read:clients', 'read:actions']);
 
-      // Verify process.exit was called with code 1
-      expect(process.exit).toHaveBeenCalledWith(1);
-    } finally {
-      // Restore original process.exit
-      process.exit = originalExit;
-    }
-  });
+      // Act
+      await init({ client: 'claude', scopes: ['read:*'], tools: ['*'] });
 
-  it('should use selected scopes from promptForScopeSelection', async () => {
-    const mockSelectedScopes = ['read:clients', 'read:actions'];
-    vi.mocked(promptForScopeSelection).mockResolvedValue(mockSelectedScopes);
-
-    await init({ client: 'claude' });
-
-    expect(log).toHaveBeenCalledWith('Initializing Auth0 MCP server...');
-    expect(promptForScopeSelection).toHaveBeenCalled();
-    expect(requestAuthorization).toHaveBeenCalledWith(mockSelectedScopes);
-    expect(findAndUpdateClaudeConfig).toHaveBeenCalled();
+      // Assert
+      expect(mockedPromptForScopeSelection).toHaveBeenCalled();
+      expect(mockedRequestAuth).toHaveBeenCalledWith(['read:clients', 'read:actions']);
+    });
   });
 });

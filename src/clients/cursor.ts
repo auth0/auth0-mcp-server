@@ -2,8 +2,9 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import chalk from 'chalk';
-import { log, logError } from '../utils/logger.js';
+import { log } from '../utils/logger.js';
 import { cliOutput } from '../utils/cli-utility.js';
+import type { ClientOptions } from '../utils/types.js';
 
 interface CursorMCPServer {
   args: string[];
@@ -15,9 +16,9 @@ interface CursorConfig {
   mcpServers: Record<string, CursorMCPServer>;
 }
 
-export const findAndUpdateCursorConfig = async () => {
+export const findAndUpdateCursorConfig = async (options: ClientOptions) => {
   const resolvedConfigPath = await getCursorConfigPath();
-  await updateCursorConfig(resolvedConfigPath);
+  await updateCursorConfig(resolvedConfigPath, options);
   cliOutput(
     `\n${chalk.green('✓')} Auth0 MCP server configured. ${chalk.yellow('Restart Cursor')} to apply changes.\n`
   );
@@ -54,29 +55,21 @@ export async function getCursorConfigPath(): Promise<string> {
   return path.join(configDir, 'mcp.json');
 }
 
-async function updateCursorConfig(configPath: string) {
+async function updateCursorConfig(configPath: string, options: ClientOptions) {
   let config: CursorConfig = { mcpServers: {} };
   if (fs.existsSync(configPath)) {
-    try {
-      const configData = fs.readFileSync(configPath, 'utf-8');
-      config = JSON.parse(configData);
-    } catch (error) {
-      logError(`Error reading config file: ${(error as Error).message}`);
-    }
+    const configData = fs.readFileSync(configPath, 'utf-8');
+    config = JSON.parse(configData);
   }
 
   config.mcpServers['auth0'] = {
     command: 'npx',
-    args: ['-y', '@auth0/auth0-mcp-server', 'run'],
+    args: ['-y', '@auth0/auth0-mcp-server', 'run', `--tools=${options.tools.join(',')}`],
     env: {
       DEBUG: 'auth0-mcp',
     },
   };
 
-  try {
-    fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
-    log(`Updated Cursor config file at: ${configPath}`);
-  } catch (error) {
-    logError(`Error writing config file: ${(error as Error).message}`);
-  }
+  fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+  log(`Updated Cursor config file at: ${configPath}`);
 }
