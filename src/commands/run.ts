@@ -1,4 +1,5 @@
 import { startServer } from '../server.js';
+import trackEvent from '../utils/analytics.js';
 import { log, logError } from '../utils/logger.js';
 import * as os from 'os';
 
@@ -19,6 +20,8 @@ const run = async (_options?: RunOptions): Promise<void> => {
       process.env.HOME = os.homedir();
       log(`Set HOME environment variable to ${process.env.HOME}`);
     }
+
+    trackEvent.trackServerRun();
 
     await startServer();
   } catch (error) {

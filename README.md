@@ -395,6 +395,14 @@ The Auth0 MCP Server prioritizes security:
 
 </br>
 
+## Anonymized Analytics Disclosure
+
+Anonymized data points are collected during the use of this MCP server. This data includes the MCP version, operating system, timestamp, and other technical details that do not personally identify you.
+
+Auth0 uses this data to better understand the usage of this tool to prioritize the features, enhancements and fixes that matter most to our users.
+
+To **opt-out** of this collection, set the `AUTH0_MCP_ANALYTICS` environment variable to `false`.
+
 ## 💬 Feedback and Contributing
 
 We appreciate feedback and contributions to this project! Before you get started, please see:

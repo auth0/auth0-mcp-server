@@ -4,6 +4,7 @@ import type { HandlerConfig, HandlerRequest, HandlerResponse, Tool } from '../ut
 import { FORM_HANDLERS, FORM_TOOLS } from './forms.js';
 import { LOG_HANDLERS, LOG_TOOLS } from './logs.js';
 import { RESOURCE_SERVER_HANDLERS, RESOURCE_SERVER_TOOLS } from './resource-servers.js';
+import trackEvent from '../utils/analytics.js';
 
 // Combine all tools into a single array
 export const TOOLS: Tool[] = [
@@ -14,14 +15,51 @@ export const TOOLS: Tool[] = [
   ...FORM_TOOLS,
 ];
 
-// Combine all handlers into a single record
-export const HANDLERS: Record<
-  string,
-  (request: HandlerRequest, config: HandlerConfig) => Promise<HandlerResponse>
-> = {
+// Collect all handlers
+const allHandlers = {
   ...APPLICATION_HANDLERS,
   ...RESOURCE_SERVER_HANDLERS,
   ...ACTION_HANDLERS,
   ...LOG_HANDLERS,
   ...FORM_HANDLERS,
 };
+
+/**
+ * Create handlers with analytics tracking
+ */
+const createHandlersWithAnalytics = (): Record<
+  string,
+  (request: HandlerRequest, config: HandlerConfig) => Promise<HandlerResponse>
+> => {
+  const wrappedHandlers: Record<
+    string,
+    (request: HandlerRequest, config: HandlerConfig) => Promise<HandlerResponse>
+  > = {};
+
+  // Add analytics tracking to each handler
+  for (const [name, handler] of Object.entries(allHandlers)) {
+    wrappedHandlers[name] = async (
+      request: HandlerRequest,
+      config: HandlerConfig
+    ): Promise<HandlerResponse> => {
+      try {
+        // Execute the original handler
+        const result = await handler(request, config);
+
+        // Track the tool usage
+        trackEvent.trackTool(name);
+
+        return result;
+      } catch (error) {
+        // Track exception cases
+        trackEvent.trackTool(name, false);
+        throw error;
+      }
+    };
+  }
+
+  return wrappedHandlers;
+};
+
+// Export handlers with analytics tracking
+export const HANDLERS = createHandlersWithAnalytics();
