@@ -4,12 +4,14 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
-![Downloads](https://img.shields.io/npm/dw/auth0-mcp-server)
+![NPM Downloads](https://img.shields.io/npm/d18m/%40auth0%2Fauth0-mcp-server?color=orange)
+
 </div>
 
 <div align="center">
 
 📚 [Documentation](https://auth0.com/docs/get-started/mcp) • 🚀 [Getting Started](#-getting-started) • 💻 [Supported Tools](#%EF%B8%8F-supported-tools) • 💬 [Feedback](#-feedback-and-contributing)
+
 </div>
 
 </br>
@@ -43,12 +45,14 @@ The Auth0 MCP Server integrates with LLMs and AI agents, allowing you to perform
 
 ### Install the Auth0 MCP Server
 
-Install Auth0 MCP Server and configure it to work with your preferred MCP client. 
+Install Auth0 MCP Server and configure it to work with your preferred MCP client.
 
 **Claude Desktop**
+
 ```bash
 npx @auth0/auth0-mcp-server init
 ```
+
 **Windsurf**
 
 ```bash
@@ -64,7 +68,7 @@ npx @auth0/auth0-mcp-server init --client cursor
 **Other MCP Clients**
 
 To use Auth0 MCP Server with any other MCP Client, you can manually add this configuration to the client and restart for changes to take effect:
- 
+
 ```bash
 {
   "mcpServers": {
@@ -78,13 +82,15 @@ To use Auth0 MCP Server with any other MCP Client, you can manually add this con
     }
   }
 ```
+
 </br>
 
 ### Authenticate with Auth0
-Your browser will automatically open to initiate the OAuth 2.0 device authorization flow. Log into your Auth0 account and grant the requested permissions. 
+
+Your browser will automatically open to initiate the OAuth 2.0 device authorization flow. Log into your Auth0 account and grant the requested permissions.
 
 > [!NOTE]
-> Credentials are securely stored in your system's keychain. You can optionally verify storage through your keychain management tool. Checkout [Authentication](#-authentication) for more info. 
+> Credentials are securely stored in your system's keychain. You can optionally verify storage through your keychain management tool. Checkout [Authentication](#-authentication) for more info.
 
 </br>
 
@@ -109,49 +115,48 @@ The Auth0 MCP Server provides the following tools for Claude to interact with yo
 
 ### Applications
 
-| Tool                      | Description                                       | Usage Examples                                                                                                                                                              |
-|---------------------------|---------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `auth0_list_applications` | List all applications in the Auth0 tenant or search by name | - `Show me all my Auth0 applications` <br> - `Find applications with 'api' in their name` <br> - `What applications do I have in my Auth0 tenant?`              |
-| `auth0_get_application`  | Get details about a specific Auth0 application     | - `Show me details for the application called 'Customer Portal'` <br> - `Get information about my application with client ID abc123` <br> - `What are the callback URLs for my 'Mobile App'?` |
-| `auth0_create_application`| Create a new Auth0 application                      | - `Create a new single-page application called 'Analytics Dashboard'` <br> - `Set up a new native mobile app called 'iOS Client'` <br> - `Create a machine-to-machine application for our background service` |
-| `auth0_update_application`| Update an existing Auth0 application                | - `Update the callback URLs for my 'Web App' to include https://staging.example.com/callback` <br> - `Change the logout URL for the 'Customer Portal'` <br> - `Add development environment metadata to my 'Admin Dashboard' application` |
+| Tool                       | Description                                                 | Usage Examples                                                                                                                                                                                                                           |
+| -------------------------- | ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `auth0_list_applications`  | List all applications in the Auth0 tenant or search by name | - `Show me all my Auth0 applications` <br> - `Find applications with 'api' in their name` <br> - `What applications do I have in my Auth0 tenant?`                                                                                       |
+| `auth0_get_application`    | Get details about a specific Auth0 application              | - `Show me details for the application called 'Customer Portal'` <br> - `Get information about my application with client ID abc123` <br> - `What are the callback URLs for my 'Mobile App'?`                                            |
+| `auth0_create_application` | Create a new Auth0 application                              | - `Create a new single-page application called 'Analytics Dashboard'` <br> - `Set up a new native mobile app called 'iOS Client'` <br> - `Create a machine-to-machine application for our background service`                            |
+| `auth0_update_application` | Update an existing Auth0 application                        | - `Update the callback URLs for my 'Web App' to include https://staging.example.com/callback` <br> - `Change the logout URL for the 'Customer Portal'` <br> - `Add development environment metadata to my 'Admin Dashboard' application` |
 
 ### Resource Servers
 
-| Tool                          | Description                                             | Usage Examples                                                                                                                                                              |
-|-------------------------------|---------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `auth0_list_resource_servers` | List all resource servers (APIs) in the Auth0 tenant     | - `Show me all the APIs in my Auth0 tenant` <br> - `List my resource servers` <br> - `What APIs have I configured in Auth0?`                                         |
-| `auth0_get_resource_server`  | Get details about a specific Auth0 resource server      | - `Show me details for the 'User API'` <br> - `What scopes are defined for my 'Payment API'?` <br> - `Get information about the resource server with identifier https://api.example.com"` |
-| `auth0_create_resource_server`| Create a new Auth0 resource server (API)                | - `Create a new API called 'Inventory API' with read and write scopes` <br> - `Set up a resource server for our customer data API` <br> - `Create an API with the identifier https://orders.example.com"` |
-| `auth0_update_resource_server`| Update an existing Auth0 resource server               | - `Add an 'admin' scope to the 'User API'` <br> - `Update the token lifetime for my 'Payment API' to 1 hour` <br> - `Change the signing algorithm for my API to RS256`         |
+| Tool                           | Description                                          | Usage Examples                                                                                                                                                                                            |
+| ------------------------------ | ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `auth0_list_resource_servers`  | List all resource servers (APIs) in the Auth0 tenant | - `Show me all the APIs in my Auth0 tenant` <br> - `List my resource servers` <br> - `What APIs have I configured in Auth0?`                                                                              |
+| `auth0_get_resource_server`    | Get details about a specific Auth0 resource server   | - `Show me details for the 'User API'` <br> - `What scopes are defined for my 'Payment API'?` <br> - `Get information about the resource server with identifier https://api.example.com"`                 |
+| `auth0_create_resource_server` | Create a new Auth0 resource server (API)             | - `Create a new API called 'Inventory API' with read and write scopes` <br> - `Set up a resource server for our customer data API` <br> - `Create an API with the identifier https://orders.example.com"` |
+| `auth0_update_resource_server` | Update an existing Auth0 resource server             | - `Add an 'admin' scope to the 'User API'` <br> - `Update the token lifetime for my 'Payment API' to 1 hour` <br> - `Change the signing algorithm for my API to RS256`                                    |
 
 ### Actions
 
-| Tool                  | Description                          | Usage Examples                                                                                                                               |
-|-----------------------|--------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------|
-| `auth0_list_actions`  | List all actions in the Auth0 tenant | - `Show me all my Auth0 actions` <br> - `What actions do I have configured?` <br> - `List the actions in my tenant`                            |
-| `auth0_get_action`   | Get details about a specific Auth0 action | - `Show me the code for my 'Enrich User Profile' action` <br> - `Get details about my login flow action` <br> - `What does my 'Add Custom Claims' action do?` |
-| `auth0_create_action`| Create a new Auth0 action            | - `Create an action that adds user roles to tokens` <br> - `Set up an action to log failed login attempts` <br> - `Create a post-login action that checks user location` |
-| `auth0_update_action`| Update an existing Auth0 action      | - `Update my 'Add Custom Claims' action to include department information` <br> - `Modify the IP filtering logic in my security action` <br> - `Fix the bug in my user enrichment action` |
-| `auth0_deploy_action`| Deploy an Auth0 action               | - `Deploy my 'Add Custom Claims' action to production` <br> - `Make my new security action live` <br> - `Deploy the updated user enrichment action` |
+| Tool                  | Description                               | Usage Examples                                                                                                                                                                            |
+| --------------------- | ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `auth0_list_actions`  | List all actions in the Auth0 tenant      | - `Show me all my Auth0 actions` <br> - `What actions do I have configured?` <br> - `List the actions in my tenant`                                                                       |
+| `auth0_get_action`    | Get details about a specific Auth0 action | - `Show me the code for my 'Enrich User Profile' action` <br> - `Get details about my login flow action` <br> - `What does my 'Add Custom Claims' action do?`                             |
+| `auth0_create_action` | Create a new Auth0 action                 | - `Create an action that adds user roles to tokens` <br> - `Set up an action to log failed login attempts` <br> - `Create a post-login action that checks user location`                  |
+| `auth0_update_action` | Update an existing Auth0 action           | - `Update my 'Add Custom Claims' action to include department information` <br> - `Modify the IP filtering logic in my security action` <br> - `Fix the bug in my user enrichment action` |
+| `auth0_deploy_action` | Deploy an Auth0 action                    | - `Deploy my 'Add Custom Claims' action to production` <br> - `Make my new security action live` <br> - `Deploy the updated user enrichment action`                                       |
 
 ### Logs
 
-| Tool             | Description                     | Usage Examples                                                                                                                               |
-|------------------|---------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------|
+| Tool              | Description                     | Usage Examples                                                                                                                                                                                    |
+| ----------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `auth0_list_logs` | List logs from the Auth0 tenant | - `Show me recent login attempts` <br> - `Find failed logins from the past 24 hours` <br> - `Get authentication logs from yesterday` <br> - `Show me successful logins for user john@example.com` |
-| `auth0_get_log`  | Get a specific log entry by ID  | - `Show me details for log entry abc123` <br> - `Get more information about this failed login attempt` <br> - `What caused this authentication error?` |
+| `auth0_get_log`   | Get a specific log entry by ID  | - `Show me details for log entry abc123` <br> - `Get more information about this failed login attempt` <br> - `What caused this authentication error?`                                            |
 
 ### Forms
 
-| Tool                   | Description                       | Usage Examples                                                                                                                               |
-|------------------------|-----------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------|
-| `auth0_list_forms`     | List all forms in the Auth0 tenant | - `Show me all my Auth0 forms` <br> - `What login forms do I have configured?` <br> - `List the custom forms in my tenant`                      |
-| `auth0_get_form`      | Get details about a specific Auth0 form | - `Show me the details of my 'Corporate Login' form` <br> - `What does my password reset form look like?` <br> - `Get the configuration for my signup form` |
-| `auth0_create_form`    | Create a new Auth0 form           | - `Create a new login form with our company branding` <br> - `Set up a custom signup form that collects department information` <br> - `Create a password reset form with our logo` |
-| `auth0_update_form`    | Update an existing Auth0 form     | - `Update the colors on our login form to match our new brand guidelines` <br> - `Add a privacy policy link to our signup form` <br> - `Change the logo on our password reset form` |
-| `auth0_publish_form`   | Publish an Auth0 form             | - `Publish my updated login form` <br> - `Make the new signup form live` <br> - `Deploy the password reset form to production`                |
-
+| Tool                 | Description                             | Usage Examples                                                                                                                                                                      |
+| -------------------- | --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `auth0_list_forms`   | List all forms in the Auth0 tenant      | - `Show me all my Auth0 forms` <br> - `What login forms do I have configured?` <br> - `List the custom forms in my tenant`                                                          |
+| `auth0_get_form`     | Get details about a specific Auth0 form | - `Show me the details of my 'Corporate Login' form` <br> - `What does my password reset form look like?` <br> - `Get the configuration for my signup form`                         |
+| `auth0_create_form`  | Create a new Auth0 form                 | - `Create a new login form with our company branding` <br> - `Set up a custom signup form that collects department information` <br> - `Create a password reset form with our logo` |
+| `auth0_update_form`  | Update an existing Auth0 form           | - `Update the colors on our login form to match our new brand guidelines` <br> - `Add a privacy policy link to our signup form` <br> - `Change the logo on our password reset form` |
+| `auth0_publish_form` | Publish an Auth0 form                   | - `Publish my updated login form` <br> - `Make the new signup form live` <br> - `Deploy the password reset form to production`                                                      |
 
 ## 🕸️ Architecture
 
@@ -188,6 +193,7 @@ This will start the device authorization flow, allowing you to log in to your Au
 
 > [!IMPORTANT]
 > The `init` command needs to be run whenever:
+>
 > - You're setting up the MCP Server for the first time
 > - You've logged out from a previous session
 > - You want to switch to a different tenant
@@ -262,10 +268,11 @@ The server provides an interactive scope selection interface during initializati
 - **Interactive Selection**: Navigate with arrow keys and toggle selections with spacebar
 - **No Default Scopes**: By default, no scopes are selected for maximum security
 - **Glob Pattern Support**: Quickly select multiple related scopes with patterns:
+
   ```bash
   # Select all read scopes
   npx @auth0/auth0-mcp-server init --scopes 'read:*'
-  
+
   # Select multiple scope patterns (comma-separated)
   npx @auth0/auth0-mcp-server init --scopes 'read:*,create:clients,update:actions'
   ```
@@ -298,6 +305,7 @@ To use Auth0 MCP Server with any other MCP Client, you can add this configuratio
 > you can manually update if needed or if any unexpected errors occur during the npx init command.
 
 ### 🚨 Common Issues
+
 1. **Authentication Failures**
 
    - Ensure you have the correct permissions in your Auth0 tenant
@@ -309,7 +317,7 @@ To use Auth0 MCP Server with any other MCP Client, you can add this configuratio
    - Check that the server is running with `ps aux | grep auth0-mcp`
 
 3. **API Errors or Permission Issues**
- 
+
    - Enable debug mode with `export DEBUG=auth0-mcp`
    - Check your Auth0 token permissions and expiration
    - Reinitialize with specific scopes: `npx @auth0/auth0-mcp-server init --scopes 'read:*,update:*,create:*'`
@@ -323,9 +331,11 @@ To use Auth0 MCP Server with any other MCP Client, you can add this configuratio
 ## 📋 Debug logs
 
 Enable debug mode to view detailed logs:
+
 ```sh
 export DEBUG=auth0-mcp
 ```
+
 Get detailed MCP Client logs from Claude Desktop:
 
 ```sh
@@ -344,6 +354,7 @@ For detailed MCP Server logs, run the server in debug mode:
 ```bash
 DEBUG=auth0-mcp npx @auth0/auth0-mcp-server run
 ```
+
 </br>
 
 ## 👨‍💻 Development
