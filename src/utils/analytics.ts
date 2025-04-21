@@ -19,6 +19,7 @@ const VERSION_KEY = 'version';
 const OS_KEY = 'os';
 const ARCH_KEY = 'arch';
 const NODE_VERSION = 'node_version';
+const APP_NAME = 'app_name';
 
 interface HeapEvent {
   app_id: string;
@@ -184,6 +185,7 @@ export class TrackEvent {
    */
   private getCommonProperties(): Record<string, string> {
     return {
+      [APP_NAME]: EVENT_NAME_PREFIX,
       [VERSION_KEY]: packageVersion,
       [OS_KEY]: process.platform,
       [ARCH_KEY]: process.arch,
