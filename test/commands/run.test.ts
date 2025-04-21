@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import run from '../../src/commands/run.js';
 import { startServer } from '../../src/server';
-import { log } from '../../src/utils/logger';
+import { log, logInfo } from '../../src/utils/logger';
 import * as os from 'os';
 
 // Mock dependencies first, before any imports
@@ -64,7 +64,7 @@ describe('Run Module', () => {
     await run(options);
 
     expect(startServer).toHaveBeenCalledWith(options);
-    expect(log).toHaveBeenCalledWith(
+    expect(logInfo).toHaveBeenCalledWith(
       'Starting server with selected tools: auth0_list_applications, auth0_get_application'
     );
     expect(process.exit).not.toHaveBeenCalled();

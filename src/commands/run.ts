@@ -1,5 +1,5 @@
 import { startServer } from '../server.js';
-import { log, logError } from '../utils/logger.js';
+import { log, logError, logInfo } from '../utils/logger.js';
 import * as os from 'os';
 
 /**
@@ -22,7 +22,7 @@ const run = async (options: RunOptions): Promise<void> => {
       log(`Set HOME environment variable to ${process.env.HOME}`);
     }
 
-    log(`Starting server with selected tools: ${options.tools.join(', ')}`);
+    logInfo(`Starting server with selected tools: ${options.tools.join(', ')}`);
     await startServer(options);
   } catch (error) {
     logError('Fatal error starting server:', error);
