@@ -50,7 +50,7 @@ npx @auth0/auth0-mcp-server init
 
 **Claude Desktop with read-only tools**
 ```bash
-npx @auth0/auth0-mcp-server init --tools='auth0_list_*,auth0_get_*'
+npx @auth0/auth0-mcp-server init --tools 'auth0_list_*,auth0_get_*'
 ```
 
 **Windsurf**
@@ -68,7 +68,7 @@ npx @auth0/auth0-mcp-server init --client cursor
 **With limited tools access**
 
 ```bash
-npx @auth0/auth0-mcp-server init --client cursor --tools='auth0_list_applications,auth0_get_application'
+npx @auth0/auth0-mcp-server init --client cursor --tools 'auth0_list_applications,auth0_get_application'
 ```
 
 **Other MCP Clients**
@@ -90,7 +90,7 @@ To use Auth0 MCP Server with any other MCP Client, you can manually add this con
 }
 ```
 
-You can add `--tools='<pattern>'` to the args array to control which tools are available. See [Security Best Practices](#-security-best-practices-for-tool-access) for recommended patterns.
+You can add `--tools '<pattern>'` to the args array to control which tools are available. See [Security Best Practices](#-security-best-practices-for-tool-access) for recommended patterns.
 
 ### Authenticate with Auth0
 Your browser will automatically open to initiate the OAuth 2.0 device authorization flow. Log into your Auth0 account and grant the requested permissions. 
@@ -168,16 +168,16 @@ You can easily restrict tool access using the `--tools` flag when starting the s
 
 ```bash
 # Enable only read-only operations
-npx @auth0/auth0-mcp-server run --tools='auth0_list_*,auth0_get_*'
+npx @auth0/auth0-mcp-server run --tools 'auth0_list_*,auth0_get_*'
 
 # Limit to just application-related tools
-npx @auth0/auth0-mcp-server run --tools='auth0_*_application*'
+npx @auth0/auth0-mcp-server run --tools 'auth0_*_application*'
 
 # Restrict to only log viewing capabilities
-npx @auth0/auth0-mcp-server run --tools='auth0_list_logs,auth0_get_log'
+npx @auth0/auth0-mcp-server run --tools 'auth0_list_logs,auth0_get_log'
 
 # Run the server with all tools enabled
-npx @auth0/auth0-mcp-server run --tools='*'
+npx @auth0/auth0-mcp-server run --tools '*'
 ```
 
 This approach offers several important benefits:

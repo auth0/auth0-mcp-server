@@ -70,15 +70,15 @@ describe('Index Module', () => {
     expect(helpText).toContain('https://github.com/auth0/auth0-mcp-server');
 
     // Check for example commands
-    expect(helpText).toContain('npx @auth0/auth0-mcp-server init --tools=');
+    expect(helpText).toContain('npx @auth0/auth0-mcp-server init --tools ');
     expect(helpText).toContain(
-      "npx @auth0/auth0-mcp-server init --tools='auth0_*' --client claude"
+      "npx @auth0/auth0-mcp-server init --tools 'auth0_*' --client claude"
     );
     expect(helpText).toContain(
-      "npx @auth0/auth0-mcp-server init --tools='auth0_*_applications' --client windsurf"
+      "npx @auth0/auth0-mcp-server init --tools 'auth0_*_applications' --client windsurf"
     );
     expect(helpText).toContain(
-      "npx @auth0/auth0-mcp-server init --tools='auth0_list_*,auth0_get_*' --client cursor"
+      "npx @auth0/auth0-mcp-server init --tools 'auth0_list_*,auth0_get_*' --client cursor"
     );
     expect(helpText).toContain('npx @auth0/auth0-mcp-server run');
   });

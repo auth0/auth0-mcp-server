@@ -65,7 +65,7 @@ async function updateWindsurfConfig(configPath: string, options: ClientOptions) 
 
   config.mcpServers['auth0'] = {
     command: 'npx',
-    args: ['-y', '@auth0/auth0-mcp-server', 'run', `--tools=${options.tools.join(',')}`],
+    args: ['-y', '@auth0/auth0-mcp-server', 'run', `--tools ${options.tools.join(',')}`],
     env: {
       DEBUG: 'auth0-mcp',
     },
