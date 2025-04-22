@@ -12,7 +12,7 @@ const packageJson = require('../../package.json');
 const packageVersion = packageJson.version;
 
 // Constants
-const EVENT_NAME_PREFIX = 'Auth0-MCP-server';
+const EVENT_NAME_PREFIX = 'auth0-mcp-server';
 
 // Common property keys
 const VERSION_KEY = 'version';
@@ -61,7 +61,7 @@ export class TrackEvent {
    * @param clientType - Type of client being configured
    */
   trackInit(clientType?: string): void {
-    const eventName = `${EVENT_NAME_PREFIX}-Init`;
+    const eventName = `${EVENT_NAME_PREFIX}-init`;
     const properties = {
       clientType: clientType || 'unknown',
       ...this.getCommonProperties(),
@@ -74,7 +74,7 @@ export class TrackEvent {
    *
    */
   trackServerRun(): void {
-    const eventName = `${EVENT_NAME_PREFIX}-Run`;
+    const eventName = `${EVENT_NAME_PREFIX}-run`;
     this.track(eventName);
   }
 
@@ -85,7 +85,7 @@ export class TrackEvent {
    * @param success - Whether the tool execution was successful
    */
   trackTool(toolName: string, success: boolean = true): void {
-    const eventName = `${EVENT_NAME_PREFIX}-Tool-${toolName}`;
+    const eventName = `${EVENT_NAME_PREFIX}-tool-${toolName}`;
     const properties = {
       success,
       ...this.getCommonProperties(),

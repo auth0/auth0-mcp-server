@@ -49,7 +49,7 @@ describe('TrackEvent', () => {
       trackEvent.trackCommandRun(command);
 
       // Assert
-      expect(spy).toHaveBeenCalledWith('Auth0-MCP-server-Test-Command-Run');
+      expect(spy).toHaveBeenCalledWith('auth0-mcp-server-Test-Command-Run');
     });
   });
 
@@ -64,7 +64,7 @@ describe('TrackEvent', () => {
 
       // Assert
       expect(spy).toHaveBeenCalledWith(
-        'Auth0-MCP-server-Init',
+        'auth0-mcp-server-init',
         expect.objectContaining({
           clientType: 'claude',
         })
@@ -80,7 +80,7 @@ describe('TrackEvent', () => {
 
       // Assert
       expect(spy).toHaveBeenCalledWith(
-        'Auth0-MCP-server-Init',
+        'auth0-mcp-server-init',
         expect.objectContaining({
           clientType: 'unknown',
         })
@@ -97,7 +97,7 @@ describe('TrackEvent', () => {
       trackEvent.trackServerRun();
 
       // Assert
-      expect(spy).toHaveBeenCalledWith('Auth0-MCP-server-Run');
+      expect(spy).toHaveBeenCalledWith('auth0-mcp-server-run');
     });
   });
 
@@ -112,7 +112,7 @@ describe('TrackEvent', () => {
 
       // Assert
       expect(spy).toHaveBeenCalledWith(
-        `Auth0-MCP-server-Tool-${toolName}`,
+        `auth0-mcp-server-tool-${toolName}`,
         expect.objectContaining({
           success: true,
         })
@@ -129,7 +129,7 @@ describe('TrackEvent', () => {
 
       // Assert
       expect(spy).toHaveBeenCalledWith(
-        `Auth0-MCP-server-Tool-${toolName}`,
+        `auth0-mcp-server-tool-${toolName}`,
         expect.objectContaining({
           success: false,
         })
@@ -192,7 +192,7 @@ describe('TrackEvent', () => {
           properties: expect.objectContaining({
             test: 'value',
             // Common properties should be included
-            app_name: 'Auth0-MCP-server',
+            app_name: 'auth0-mcp-server',
             version: expect.any(String),
             os: expect.any(String),
             arch: expect.any(String),
@@ -225,7 +225,7 @@ describe('TrackEvent', () => {
         const result = (trackEvent as any).generateRunEventName('test command');
 
         // Assert
-        expect(result).toBe('Auth0-MCP-server-Test-Command-Run');
+        expect(result).toBe('auth0-mcp-server-Test-Command-Run');
       });
     });
 
@@ -235,7 +235,7 @@ describe('TrackEvent', () => {
         const result = (trackEvent as any).generateEventName('test', 'Action');
 
         // Assert
-        expect(result).toBe('Auth0-MCP-server-Test-Action');
+        expect(result).toBe('auth0-mcp-server-Test-Action');
       });
 
       it('should handle two-part command', () => {
@@ -243,7 +243,7 @@ describe('TrackEvent', () => {
         const result = (trackEvent as any).generateEventName('test subcommand', 'Action');
 
         // Assert
-        expect(result).toBe('Auth0-MCP-server-Test-Subcommand-Action');
+        expect(result).toBe('auth0-mcp-server-Test-Subcommand-Action');
       });
 
       it('should handle multi-part command', () => {
@@ -251,7 +251,7 @@ describe('TrackEvent', () => {
         const result = (trackEvent as any).generateEventName('cli test long subcommand', 'Action');
 
         // Assert
-        expect(result).toBe('Auth0-MCP-server-Test-Long Subcommand-Action');
+        expect(result).toBe('auth0-mcp-server-Test-Long Subcommand-Action');
       });
 
       it('should handle empty command', () => {
@@ -260,7 +260,7 @@ describe('TrackEvent', () => {
 
         // Assert
         // For empty command, the implementation treats it as a single command with an empty string
-        expect(result).toBe('Auth0-MCP-server--Action');
+        expect(result).toBe('auth0-mcp-server--Action');
       });
     });
 
@@ -271,7 +271,7 @@ describe('TrackEvent', () => {
 
         // Assert
         expect(result).toEqual({
-          app_name: 'Auth0-MCP-server',
+          app_name: 'auth0-mcp-server',
           version: expect.any(String),
           os: expect.any(String),
           arch: expect.any(String),
