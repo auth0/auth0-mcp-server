@@ -12,7 +12,7 @@ const packageJson = require('../../package.json');
 const packageVersion = packageJson.version;
 
 // Constants
-const EVENT_NAME_PREFIX = 'Auth0 MCP-server';
+const EVENT_NAME_PREFIX = 'Auth0-MCP-server';
 
 // Common property keys
 const VERSION_KEY = 'version';
@@ -61,7 +61,7 @@ export class TrackEvent {
    * @param clientType - Type of client being configured
    */
   trackInit(clientType?: string): void {
-    const eventName = `${EVENT_NAME_PREFIX} - Init`;
+    const eventName = `${EVENT_NAME_PREFIX}-Init`;
     const properties = {
       clientType: clientType || 'unknown',
       ...this.getCommonProperties(),
@@ -74,7 +74,7 @@ export class TrackEvent {
    *
    */
   trackServerRun(): void {
-    const eventName = `${EVENT_NAME_PREFIX} - Run`;
+    const eventName = `${EVENT_NAME_PREFIX}-Run`;
     this.track(eventName);
   }
 
@@ -85,7 +85,7 @@ export class TrackEvent {
    * @param success - Whether the tool execution was successful
    */
   trackTool(toolName: string, success: boolean = true): void {
-    const eventName = `${EVENT_NAME_PREFIX} - Tool - ${toolName}`;
+    const eventName = `${EVENT_NAME_PREFIX}-Tool-${toolName}`;
     const properties = {
       success,
       ...this.getCommonProperties(),
@@ -173,11 +173,11 @@ export class TrackEvent {
       .map((cmd) => cmd.charAt(0).toUpperCase() + cmd.slice(1));
 
     if (commands.length === 1) {
-      return `${EVENT_NAME_PREFIX} - ${commands[0]} - ${action}`;
+      return `${EVENT_NAME_PREFIX}-${commands[0]}-${action}`;
     } else if (commands.length === 2) {
-      return `${EVENT_NAME_PREFIX} - ${commands[0]} - ${commands[1]} - ${action}`;
+      return `${EVENT_NAME_PREFIX}-${commands[0]}-${commands[1]}-${action}`;
     } else if (commands.length >= 3) {
-      return `${EVENT_NAME_PREFIX} - ${commands[1]} - ${commands.slice(2).join(' ')} - ${action}`;
+      return `${EVENT_NAME_PREFIX}-${commands[1]}-${commands.slice(2).join(' ')}-${action}`;
     } else {
       return EVENT_NAME_PREFIX;
     }
