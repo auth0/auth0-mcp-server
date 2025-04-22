@@ -10,4 +10,3 @@
 - Auth0 management operations through natural language
 - Device authorization flow for secure authentication
 - Tools for managing applications, resource servers, actions, logs, and forms
-

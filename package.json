@@ -25,8 +25,8 @@
     "debug-server": "DEBUG=auth0-mcp node dist/index.js run",
     "lint": "eslint . --ext .js,.ts",
     "lint:fix": "eslint . --ext .js,.ts --fix",
-    "format": "prettier --write \"**/*.{js,ts,json}\"",
-    "format:check": "prettier --check \"**/*.{js,ts,json}\"",
+    "format": "prettier --write \"**/*.{js,ts,json,md}\"",
+    "format:check": "prettier --check \"**/*.{js,ts,json,md}\"",
     "generate-notice": "node utils/generate-notice.js"
   },
   "keywords": [
