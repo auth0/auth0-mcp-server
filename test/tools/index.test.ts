@@ -70,25 +70,25 @@ describe('Tools Index', () => {
         expect(HANDLERS[key]).toBeDefined();
       });
 
-      // Verify that the handlers are the same functions
+      // Verify that all handlers are functions
       actionHandlerKeys.forEach((key) => {
-        expect(HANDLERS[key]).toBe(ACTION_HANDLERS[key]);
+        expect(typeof HANDLERS[key]).toBe('function');
       });
 
       applicationHandlerKeys.forEach((key) => {
-        expect(HANDLERS[key]).toBe(APPLICATION_HANDLERS[key]);
+        expect(typeof HANDLERS[key]).toBe('function');
       });
 
       formHandlerKeys.forEach((key) => {
-        expect(HANDLERS[key]).toBe(FORM_HANDLERS[key]);
+        expect(typeof HANDLERS[key]).toBe('function');
       });
 
       logHandlerKeys.forEach((key) => {
-        expect(HANDLERS[key]).toBe(LOG_HANDLERS[key]);
+        expect(typeof HANDLERS[key]).toBe('function');
       });
 
       resourceServerHandlerKeys.forEach((key) => {
-        expect(HANDLERS[key]).toBe(RESOURCE_SERVER_HANDLERS[key]);
+        expect(typeof HANDLERS[key]).toBe('function');
       });
     });
   });

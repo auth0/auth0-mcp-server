@@ -7,6 +7,7 @@ import { promptForScopeSelection } from '../utils/cli-utility.js';
 import { getAllScopes } from '../utils/scopes.js';
 import { Glob } from '../utils/glob.js';
 import chalk from 'chalk';
+import trackEvent from '../utils/analytics.js';
 import type { ClientOptions } from '../utils/types.js';
 
 /**
@@ -148,7 +149,9 @@ const init = async (options: InitOptions): Promise<void> => {
   log('Initializing Auth0 MCP server...');
   log(`Configuring server with selected tools: ${options.tools.join(', ')}`);
 
-  // Handle scope resolution and authorization
+  trackEvent.trackInit(options.client);
+
+  // Handle scope resolution
   const selectedScopes = await resolveScopes(options.scopes);
   await requestAuthorization(selectedScopes);
 
