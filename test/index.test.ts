@@ -38,7 +38,7 @@ vi.mock('module', () => {
   };
 });
 
-describe('Commander Help Integration', () => {
+describe('Index Module', () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
@@ -48,7 +48,7 @@ describe('Commander Help Integration', () => {
 
   it('validates the integration with Commander.js help system', async () => {
     // Import the index file to initialize Commander
-    await import('../../src/index.js');
+    await import('../src/index.js');
 
     // Verify version was called with the package version
     expect(mockVersion).toHaveBeenCalled();
@@ -70,11 +70,22 @@ describe('Commander Help Integration', () => {
     expect(helpText).toContain('https://github.com/auth0/auth0-mcp-server');
 
     // Check for example commands
-    expect(helpText).toContain('npx @auth0/auth0-mcp-server init');
-    expect(helpText).toContain('npx @auth0/auth0-mcp-server init --client claude');
-    expect(helpText).toContain('npx @auth0/auth0-mcp-server init --client windsurf');
-    expect(helpText).toContain('npx @auth0/auth0-mcp-server init --client cursor');
+    expect(helpText).toContain('npx @auth0/auth0-mcp-server init --tools ');
+    expect(helpText).toContain(
+      "npx @auth0/auth0-mcp-server init --tools 'auth0_*' --client claude"
+    );
+    expect(helpText).toContain(
+      "npx @auth0/auth0-mcp-server init --tools 'auth0_*_applications' --client windsurf"
+    );
+    expect(helpText).toContain(
+      "npx @auth0/auth0-mcp-server init --tools 'auth0_list_*,auth0_get_*' --client cursor"
+    );
     expect(helpText).toContain('npx @auth0/auth0-mcp-server run');
+  });
+
+  it('sets up all required commands', async () => {
+    // Import the index file to initialize Commander
+    await import('../src/index.js');
 
     // Verify commander command setup
     expect(mockCommand).toHaveBeenCalledWith('init');
