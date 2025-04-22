@@ -419,9 +419,6 @@ The Auth0 MCP Server prioritizes security:
 > [!CAUTION]
 > Always review the permissions requested during the authentication process to ensure they align with your security requirements.
 
-<<<<<<< HEAD
-</br>
-
 ## Anonymized Analytics Disclosure
 
 Anonymized data points are collected during the use of this MCP server. This data includes the MCP version, operating system, timestamp, and other technical details that do not personally identify you.
@@ -429,10 +426,6 @@ Anonymized data points are collected during the use of this MCP server. This dat
 Auth0 uses this data to better understand the usage of this tool to prioritize the features, enhancements and fixes that matter most to our users.
 
 To **opt-out** of this collection, set the `AUTH0_MCP_ANALYTICS` environment variable to `false`.
-
-=======
-
-> > > > > > > main
 
 ## 💬 Feedback and Contributing
 
