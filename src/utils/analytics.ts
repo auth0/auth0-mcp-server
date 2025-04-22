@@ -167,7 +167,7 @@ export class TrackEvent {
    * Generate an event name from a command path and action
    */
   private generateEventName(command: string, action: string): string {
-    const commands = command.split(' ').map((cmd) => cmd.charAt(0).toUpperCase() + cmd.slice(1));
+    const commands = command.trim().split(/\s+/).map((cmd) => cmd.charAt(0).toUpperCase() + cmd.slice(1));
 
     if (commands.length === 1) {
       return `${EVENT_NAME_PREFIX} - ${commands[0]} - ${action}`;
