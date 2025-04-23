@@ -5,43 +5,65 @@ import { log, logError } from '../utils/logger.js';
 import { requestAuthorization } from '../auth/device-auth-flow.js';
 import { promptForScopeSelection } from '../utils/cli-utility.js';
 import { getAllScopes } from '../utils/scopes.js';
-import { Glob } from '../utils/glob.js'; // Import the Glob class
+import { Glob } from '../utils/glob.js';
 import chalk from 'chalk';
+import trackEvent from '../utils/analytics.js';
+import type { ClientOptions } from '../utils/types.js';
 
 /**
- * Resolves scopes based on command line arguments
+ * Supported client types
+ */
+export type ClientName = 'claude' | 'windsurf' | 'cursor';
+
+/**
+ * Command options for the init command
+ */
+export interface InitOptions {
+  client: ClientName;
+  scopes?: string[];
+  tools: string[];
+}
+
+interface ClientAction {
+  message: string;
+  action: (options: ClientOptions) => Promise<void>;
+}
+
+/**
+ * Maps client names to their config functions and messages
+ */
+const CLIENT_CONFIGS: Record<ClientName, ClientAction> = {
+  windsurf: {
+    message: 'Configuring Windsurf as client...',
+    action: findAndUpdateWindsurfConfig,
+  },
+  cursor: {
+    message: 'Configuring Cursor as client...',
+    action: findAndUpdateCursorConfig,
+  },
+  claude: {
+    message: 'Configuring Claude as client default...',
+    action: findAndUpdateClaudeConfig,
+  },
+};
+
+/**
+ * Resolves scope patterns to actual scope values
  *
- * @param {string[]} args - Command line arguments
+ * @param {string[] | undefined} scopePatterns - Scope patterns from command line
  * @returns {Promise<string[]>} - The selected scopes
  */
-async function resolveScopes(args: string[]): Promise<string[]> {
-  const scopesFlagIndex = args.findIndex((arg) => arg === '--scopes');
-
-  // If no --scopes flag or no value provided, prompt for selection
-  if (
-    scopesFlagIndex === -1 ||
-    scopesFlagIndex + 1 >= args.length ||
-    args[scopesFlagIndex + 1].startsWith('--')
-  ) {
+async function resolveScopes(scopePatterns?: string[]): Promise<string[]> {
+  // If no scopes provided, prompt user for selection
+  if (!scopePatterns?.length) {
     return promptForScopeSelection();
   }
 
-  // Parse scope patterns
-  const scopesArg = args[scopesFlagIndex + 1];
-  const scopePatterns = scopesArg
-    .split(',')
-    .map((pattern) => pattern.trim())
-    .filter(Boolean);
-
-  if (scopePatterns.length === 0) {
-    return promptForScopeSelection();
-  }
-
-  // Match patterns against available scopes
   const allAvailableScopes = getAllScopes();
   const matchedScopes = new Set<string>();
   const invalidScopes = new Set<string>();
 
+  // Match patterns against available scopes
   for (const pattern of scopePatterns) {
     let foundMatch = false;
     const glob = new Glob(pattern);
@@ -53,7 +75,7 @@ async function resolveScopes(args: string[]): Promise<string[]> {
       }
     }
 
-    // Track invalid scopes (non-wildcard patterns with no matches)
+    // Track non-wildcard patterns that didn't match anything
     if (!glob.hasWildcards() && !foundMatch) {
       invalidScopes.add(pattern);
     }
@@ -78,86 +100,63 @@ async function resolveScopes(args: string[]): Promise<string[]> {
 }
 
 /**
- * Client configuration options supported by the application
- */
-type ClientName = 'claude' | 'windsurf' | 'cursor';
-
-/**
- * Resolves the client to use based on command line arguments
- *
- * @param {string[]} args - Command line arguments
- * @returns {ClientName} - The selected client name
- */
-function resolveClient(args: string[]): ClientName {
-  const clientFlagIndex = args.findIndex((arg) => arg === '--client');
-
-  if (clientFlagIndex !== -1 && clientFlagIndex < args.length - 1) {
-    const clientValue = args[clientFlagIndex + 1].toLowerCase();
-
-    if (clientValue === 'windsurf' || clientValue === 'cursor' || clientValue === 'claude') {
-      return clientValue;
-    }
-  }
-
-  return 'claude'; // Default client
-}
-
-/**
- * Client configuration mapping
- */
-interface ClientConfig {
-  message: string;
-  action: () => Promise<void>;
-}
-
-/**
- * Configures the specified client
+ * Configures the specified client with options
  *
  * @param {ClientName} clientName - Name of the client to configure
- * @returns {Promise<void>}
+ * @param {InitOptions} options - Configuration options
  */
-async function configureClient(clientName: ClientName): Promise<void> {
-  const clientConfigs: Record<ClientName, ClientConfig> = {
-    windsurf: {
-      message: 'Configuring Windsurf as client...',
-      action: findAndUpdateWindsurfConfig,
-    },
-    cursor: {
-      message: 'Configuring Cursor as client...',
-      action: findAndUpdateCursorConfig,
-    },
-    claude: {
-      message: 'Configuring Claude as client default...',
-      action: findAndUpdateClaudeConfig,
-    },
+async function configureClient(clientName: ClientName, options: InitOptions): Promise<void> {
+  const config = CLIENT_CONFIGS[clientName];
+  log(config.message);
+
+  const clientOptions: ClientOptions = {
+    tools: options.tools,
   };
 
-  const config = clientConfigs[clientName];
-  log(config.message);
-  await config.action();
+  await config.action(clientOptions);
 }
 
 /**
- * Initializes the Auth0 MCP server by handling scope selection, authorization,
- * and client configuration.
+ * Initializes the Auth0 MCP server with the specified client, tools and scopes.
  *
- * @param {string[]} args - Command line arguments passed to the application
- * @returns {Promise<void>}
+ * This function orchestrates the complete initialization process by:
+ * 1. Resolving and validating requested scopes
+ * 2. Obtaining authorization through the device flow
+ * 3. Configuring the selected client (Claude, Windsurf, or Cursor)
+ *
+ * @param {InitOptions} options - Configuration options including:
+ *   - client: The target client to configure ('claude', 'windsurf', or 'cursor')
+ *   - scopes: Optional scope patterns for authorization (will prompt if omitted)
+ *   - tools: Tool patterns to enable (e.g., ['auth0_list_*'])
+ *
+ * @returns {Promise<void>} A promise that resolves when initialization is complete
+ *
+ * @throws {Error} If authorization fails or client configuration encounters an error
+ *
+ * @example
+ * // Initialize with Claude client and all tools
+ * await init({ client: 'claude', tools: ['*'] });
+ *
+ * @example
+ * // Initialize with Windsurf client and specific tools
+ * await init({
+ *   client: 'windsurf',
+ *   tools: ['auth0_list_*', 'auth0_get_*'],
+ *   scopes: ['read:*']
+ * });
  */
-const init = async (args: string[]): Promise<void> => {
-  try {
-    log('Initializing Auth0 MCP server...');
+const init = async (options: InitOptions): Promise<void> => {
+  log('Initializing Auth0 MCP server...');
+  log(`Configuring server with selected tools: ${options.tools.join(', ')}`);
 
-    // Handle scope resolution
-    const selectedScopes = await resolveScopes(args);
-    await requestAuthorization(selectedScopes);
+  trackEvent.trackInit(options.client);
 
-    // Handle client configuration
-    const clientName = resolveClient(args);
-    await configureClient(clientName);
-  } catch (error) {
-    log('Error initializing server:', error);
-  }
+  // Handle scope resolution
+  const selectedScopes = await resolveScopes(options.scopes);
+  await requestAuthorization(selectedScopes);
+
+  // Configure the requested client
+  await configureClient(options.client, options);
 };
 
 export default init;

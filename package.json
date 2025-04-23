@@ -8,7 +8,10 @@
     "auth0-mcp": "dist/index.js"
   },
   "files": [
-    "dist"
+    "dist",
+    "package.json",
+    "README.md",
+    "LICENSE"
   ],
   "scripts": {
     "prebuild": "npm run format && npm run lint",
@@ -22,8 +25,8 @@
     "debug-server": "DEBUG=auth0-mcp node dist/index.js run",
     "lint": "eslint . --ext .js,.ts",
     "lint:fix": "eslint . --ext .js,.ts --fix",
-    "format": "prettier --write \"**/*.{js,ts,json}\"",
-    "format:check": "prettier --check \"**/*.{js,ts,json}\"",
+    "format": "prettier --write \"**/*.{js,ts,json,md}\"",
+    "format:check": "prettier --check \"**/*.{js,ts,json,md}\"",
     "generate-notice": "node utils/generate-notice.js"
   },
   "keywords": [
@@ -37,6 +40,7 @@
     "@modelcontextprotocol/sdk": "^1.8.0",
     "auth0": "^4.21.0",
     "chalk": "^5.4.1",
+    "commander": "^13.1.0",
     "debug": "^4.4.0",
     "jwt-decode": "^4.0.0",
     "keytar": "^7.9.0",
@@ -61,5 +65,9 @@
   },
   "engines": {
     "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/auth0/auth0-mcp-server"
   }
 }

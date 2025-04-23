@@ -1,4 +1,4 @@
-import { http, HttpResponse } from 'msw';
+import { http, HttpResponse, delay } from 'msw';
 import { mockApplications } from './auth0/applications';
 import { mockLogs } from './auth0/logs';
 import { mockActions, mockActionListResponse } from './auth0/actions';
@@ -7,6 +7,17 @@ import { mockResourceServers, mockResourceServerListResponse } from './auth0/res
 
 // Define handlers for Auth0 API endpoints
 export const handlers = [
+  // Analytics endpoints
+  http.post('https://heapanalytics.com/api/track', async () => {
+    // Simulate a small delay to mimic network latency
+    await delay(10);
+    return new HttpResponse(null, { status: 200 });
+  }),
+
+  // Test endpoint for analytics tests
+  http.post('https://test-endpoint.com/track', async () => {
+    return new HttpResponse(null, { status: 200 });
+  }),
   // Auth0 Device Authorization Flow
   http.post('https://*/oauth/device/code', async ({ request }) => {
     return HttpResponse.json({

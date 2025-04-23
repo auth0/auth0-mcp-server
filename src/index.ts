@@ -1,64 +1,132 @@
 #!/usr/bin/env node
+import { Command } from 'commander';
+import chalk from 'chalk';
 import init from './commands/init.js';
 import run from './commands/run.js';
-import help from './commands/help.js';
 import logout from './commands/logout.js';
 import session from './commands/session.js';
 import { logError } from './utils/logger.js';
+import { createRequire } from 'module';
+import { TOOLS } from './tools/index.js';
+import { validatePatterns } from './utils/tools.js';
 
-// Enable all debug logs for this package by default
-//process.env.DEBUG = (process.env.DEBUG || '') + ',auth0-mcp:*';
+// For importing JSON files in ES modules
+const require = createRequire(import.meta.url);
+const packageJson = require('../package.json');
+
+// Extract package coordinates
+const packageName = packageJson.name;
+const packageVersion = packageJson.version;
 
 // Set process title
 process.title = 'auth0-mcp-server';
 
-// Handle process events
-process.on('uncaughtException', (error) => {
-  logError('Uncaught exception:', error);
-  process.exit(1);
-});
-
-process.on('unhandledRejection', (error) => {
-  logError('Unhandled rejection:', error);
-  process.exit(1);
-});
-
-// Parse command line arguments
-const command = process.argv[2];
-
-// Wrap the main execution in an async function to handle top-level await properly
-async function main() {
-  try {
-    if (command === 'run') {
-      // Main function to start server
-      await run();
-    } else if (command === 'init') {
-      const args = process.argv.slice(3);
-      await init(args);
-    } else if (command === 'help') {
-      await help();
-    } else if (command === 'logout') {
-      await logout();
-    } else if (command === 'session') {
-      await session();
-    } else {
-      logError(
-        `Usage: auth0-mcp <command>\nValid commands: 'init', 'run', 'logout', 'session', or 'help'`
-      );
-      logError(`Run 'auth0-mcp help' for more information.`);
-      process.exit(1);
-    }
-  } catch (error) {
-    logError('Error executing command:', error);
+// Global error handlers
+['uncaughtException', 'unhandledRejection'].forEach((event) => {
+  process.on(event, (error) => {
+    logError(`${event}:`, error);
     process.exit(1);
-  }
+  });
+});
+
+/**
+ * Parses and validates comma-separated tool patterns from command line input.
+ * This function processes a comma-delimited string of tool patterns,
+ * normalizes them by trimming whitespace, and validates each pattern
+ * against the available tools. If the input is empty, it returns a
+ * wildcard pattern ['*'] that matches all tools.
+ *
+ * @param {string} value - Raw command line input containing comma-separated patterns
+ * @returns {string[]} Array of validated tool pattern strings
+ * @throws {Error} If any pattern is invalid or doesn't match available tools
+ */
+function parseToolPatterns(value: string): string[] {
+  if (!value) return ['*'];
+
+  const patterns = value
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  // Validate the patterns against available tools
+  validatePatterns(patterns, TOOLS);
+
+  return patterns;
 }
 
-// Execute the main function
-main().catch((error) => {
-  logError('Unhandled error in main execution:', error);
+// Top-level CLI
+const program = new Command()
+  .name('auth0-mcp-server')
+  .description('Auth0 MCP Server - Model Context Protocol server for Auth0 Management API')
+  .version(packageVersion)
+  .addHelpText(
+    'before',
+    `
+${chalk.bold('Auth0 MCP Server')}
+
+A Model Context Protocol (MCP) server implementation that integrates Auth0 Management API 
+with Claude Desktop, enabling AI-assisted management of your Auth0 tenant.`
+  )
+  .addHelpText(
+    'after',
+    `
+Examples:
+  npx ${packageName} init
+  npx ${packageName} init --tools 'auth0_*' --client claude
+  npx ${packageName} init --tools 'auth0_*_applications' --client windsurf
+  npx ${packageName} init --tools 'auth0_list_*,auth0_get_*' --client cursor
+  npx ${packageName} run
+  npx ${packageName} session
+  npx ${packageName} logout
+  
+  For more information, visit: https://github.com/auth0/auth0-mcp-server`
+  );
+
+// Init command
+program
+  .command('init')
+  .description('Initialize the server (authenticate and configure)')
+  .option('--client <client>', 'Configure specific client (claude, windsurf, or cursor)', 'claude')
+  .option('--scopes <scopes>', 'Comma-separated list of Auth0 API scopes', (text) =>
+    text
+      .split(',')
+      .map((scope) => scope.trim())
+      .filter(Boolean)
+  )
+  .option(
+    '--tools <tools>',
+    'Comma-separated list of tools or glob patterns to enable (defaults to "*" if not provided)',
+    parseToolPatterns,
+    ['*']
+  )
+  .action(init);
+
+// Run command
+program
+  .command('run')
+  .description('Start the MCP server')
+  .option(
+    '--tools <tools>',
+    'Comma-separated list of tools or glob patterns to enable (defaults to "*" if not provided)',
+    parseToolPatterns,
+    ['*']
+  )
+  .action(run);
+
+// Logout command
+program
+  .command('logout')
+  .description('Remove all stored Auth0 tokens from the system keychain')
+  .action(logout);
+
+// Session command
+program
+  .command('session')
+  .description('Display current authentication session information')
+  .action(session);
+
+// Parse arguments and handle potential errors
+program.parseAsync().catch((error) => {
+  logError('Command execution error:', error);
   process.exit(1);
 });
-
-// Export for use in bin script
-export { run };
