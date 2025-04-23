@@ -1,4 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 // Create mocks for imported modules
 const mockAddHelpText = vi.fn().mockReturnThis();
@@ -26,13 +29,18 @@ vi.mock('commander', () => {
   };
 });
 
-// Mock the createRequire function to return a mocked package.json
+// Read the actual package.json for the test
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const packageJsonPath = path.resolve(__dirname, '../package.json');
+const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+
+// Mock the createRequire function to return the actual package.json data
 vi.mock('module', () => {
   return {
     createRequire: vi.fn().mockImplementation(() => {
       return () => ({
-        name: '@auth0/auth0-mcp-server',
-        version: '0.1.0-beta.1',
+        name: packageJson.name,
+        version: packageJson.version,
       });
     }),
   };

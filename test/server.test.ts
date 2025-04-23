@@ -5,18 +5,20 @@ import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { TOOLS, HANDLERS } from '../src/tools/index';
 
-// Mock modules before importing the module that uses them
+// Mock dependencies
+vi.mock('../src/utils/package.js', () => ({
+  packageName: 'auth0-mcp-server',
+  packageVersion: '0.1.0-beta.1',
+}));
 vi.mock('../src/utils/config.js', () => ({
   loadConfig: vi.fn().mockImplementation(() => mockLoadConfig()),
   validateConfig: vi.fn().mockImplementation((config) => mockValidateConfig(config)),
 }));
-
 vi.mock('../src/utils/logger.js', () => ({
   log: vi.fn(),
   logInfo: vi.fn(),
   logError: vi.fn(),
 }));
-
 vi.mock('../src/utils/http-utility.js', () => ({
   formatDomain: vi.fn().mockImplementation((domain) => domain),
 }));
@@ -25,11 +27,13 @@ vi.mock('../src/utils/http-utility.js', () => ({
 const mockSetRequestHandler = vi.fn();
 const mockConnect = vi.fn().mockResolvedValue(undefined);
 const mockClose = vi.fn().mockResolvedValue(undefined);
+const mockSendLoggingMessage = vi.fn().mockResolvedValue(undefined);
 const mockServer = {
   setRequestHandler: mockSetRequestHandler,
   connect: mockConnect,
   close: mockClose,
   onerror: vi.fn(),
+  sendLoggingMessage: mockSendLoggingMessage,
 };
 
 vi.mock('@modelcontextprotocol/sdk/server/index.js', () => ({
@@ -69,8 +73,8 @@ describe('Server', () => {
       expect(mockValidateConfig).toHaveBeenCalledWith(mockConfig);
       expect(server).toBeDefined();
       expect(Server).toHaveBeenCalledWith(
-        { name: 'auth0', version: '1.0.0' },
-        { capabilities: { tools: {} } }
+        { name: 'auth0', version: '0.1.0-beta.1' },
+        { capabilities: { tools: {}, logging: {} } }
       );
     });
 

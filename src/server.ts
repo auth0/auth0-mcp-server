@@ -9,6 +9,7 @@ import { formatDomain } from './utils/http-utility.js';
 import { maskTenantName } from './utils/cli-utility.js';
 import { getAvailableTools } from './utils/tools.js';
 import type { RunOptions } from './commands/run.js';
+import { packageVersion } from './utils/package.js';
 
 type ServerOptions = RunOptions;
 
@@ -36,7 +37,10 @@ export async function startServer(options: ServerOptions) {
     const availableTools = getAvailableTools(TOOLS, options?.tools);
 
     // Create server instance
-    const server = new Server({ name: 'auth0', version: '1.0.0' }, { capabilities: { tools: {} } });
+    const server = new Server(
+      { name: 'auth0', version: packageVersion },
+      { capabilities: { tools: {}, logging: {} } }
+    );
 
     // Handle list tools request
     server.setRequestHandler(ListToolsRequestSchema, async () => {
@@ -123,9 +127,10 @@ export async function startServer(options: ServerOptions) {
       // Log server start information
       const enabledToolsCount = availableTools.length;
       const totalToolsCount = TOOLS.length;
-      const logMsg = `Auth0 MCP Server running on stdio with ${enabledToolsCount}/${totalToolsCount} tools available`;
+      const logMsg = `Auth0 MCP Server version ${packageVersion} running on stdio with ${enabledToolsCount}/${totalToolsCount} tools available`;
       logInfo(logMsg);
       log(logMsg);
+      server.sendLoggingMessage({ level: 'info', data: logMsg });
 
       return server;
     } catch (connectError) {
