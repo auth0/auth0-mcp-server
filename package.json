@@ -23,6 +23,7 @@
     "test:coverage": "vitest run --coverage",
     "local-setup": "node utils/local-setup.js",
     "debug-server": "DEBUG=auth0-mcp node dist/index.js run",
+    "inspect-server": "npx @modelcontextprotocol/inspector node dist/index.js run",
     "lint": "eslint . --ext .js,.ts",
     "lint:fix": "eslint . --ext .js,.ts --fix",
     "format": "prettier --write \"**/*.{js,ts,json,md}\"",

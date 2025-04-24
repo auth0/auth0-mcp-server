@@ -6,20 +6,12 @@ import run from './commands/run.js';
 import logout from './commands/logout.js';
 import session from './commands/session.js';
 import { logError } from './utils/logger.js';
-import { createRequire } from 'module';
 import { TOOLS } from './tools/index.js';
 import { validatePatterns } from './utils/tools.js';
-
-// For importing JSON files in ES modules
-const require = createRequire(import.meta.url);
-const packageJson = require('../package.json');
-
-// Extract package coordinates
-const packageName = packageJson.name;
-const packageVersion = packageJson.version;
+import { packageName, packageVersion } from './utils/package.js';
 
 // Set process title
-process.title = 'auth0-mcp-server';
+process.title = packageName;
 
 // Global error handlers
 ['uncaughtException', 'unhandledRejection'].forEach((event) => {
