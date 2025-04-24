@@ -28,6 +28,7 @@ export const APPLICATION_TOOLS: Tool[] = [
     },
     _meta: {
       requiredScopes: ['read:clients'],
+      readOnly: true,
     },
   },
   {
@@ -42,6 +43,7 @@ export const APPLICATION_TOOLS: Tool[] = [
     },
     _meta: {
       requiredScopes: ['read:clients'],
+      readOnly: true,
     },
   },
   {

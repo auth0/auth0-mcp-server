@@ -54,6 +54,12 @@ npx @auth0/auth0-mcp-server init
 **Claude Desktop with read-only tools**
 
 ```bash
+npx @auth0/auth0-mcp-server init --read-only
+```
+
+You can also explicitly select read-only tools:
+
+```bash
 npx @auth0/auth0-mcp-server init --tools 'auth0_list_*,auth0_get_*'
 ```
 
@@ -173,10 +179,16 @@ You can easily restrict tool access using the `--tools` flag when starting the s
 
 ```bash
 # Enable only read-only operations
+npx @auth0/auth0-mcp-server run --read-only
+
+# Alternative way to enable only read-only operations
 npx @auth0/auth0-mcp-server run --tools 'auth0_list_*,auth0_get_*'
 
 # Limit to just application-related tools
 npx @auth0/auth0-mcp-server run --tools 'auth0_*_application*'
+
+# Limit to read-only application-related tools
+npx @auth0/auth0-mcp-server run --tools 'auth0_*_application*' --read-only
 
 # Restrict to only log viewing capabilities
 npx @auth0/auth0-mcp-server run --tools 'auth0_list_logs,auth0_get_log'

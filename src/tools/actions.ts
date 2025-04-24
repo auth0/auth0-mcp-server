@@ -48,6 +48,7 @@ export const ACTION_TOOLS: Tool[] = [
     },
     _meta: {
       requiredScopes: ['read:actions'],
+      readOnly: true,
     },
   },
   {
@@ -62,6 +63,7 @@ export const ACTION_TOOLS: Tool[] = [
     },
     _meta: {
       requiredScopes: ['read:actions'],
+      readOnly: true,
     },
   },
   {

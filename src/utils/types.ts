@@ -7,6 +7,7 @@ export interface Tool {
   inputSchema?: Record<string, any>;
   _meta?: {
     requiredScopes: string[];
+    readOnly?: boolean;
   };
 }
 
@@ -31,6 +32,7 @@ export interface HandlerResponse {
 // Client Options interface
 export interface ClientOptions {
   tools: string[];
+  readOnly?: boolean;
 }
 
 // Auth0 response interfaces

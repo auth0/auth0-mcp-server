@@ -63,9 +63,17 @@ async function updateClaudeConfig(configPath: string, options: ClientOptions) {
     config = JSON.parse(configData);
   }
 
+  // Build args array
+  const args = ['-y', '@auth0/auth0-mcp-server', 'run', '--tools', `${options.tools.join(',')}`];
+
+  // Add read-only flag if specified
+  if (options.readOnly) {
+    args.push('--read-only');
+  }
+
   config.mcpServers['auth0'] = {
     command: 'npx',
-    args: ['-y', '@auth0/auth0-mcp-server', 'run', '--tools', `${options.tools.join(',')}`],
+    args,
     capabilities: ['tools'],
     env: {
       DEBUG: 'auth0-mcp',

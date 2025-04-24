@@ -65,9 +65,11 @@ with Claude Desktop, enabling AI-assisted management of your Auth0 tenant.`
 Examples:
   npx ${packageName} init
   npx ${packageName} init --tools 'auth0_*' --client claude
+  npx ${packageName} init --read-only --client claude
   npx ${packageName} init --tools 'auth0_*_applications' --client windsurf
   npx ${packageName} init --tools 'auth0_list_*,auth0_get_*' --client cursor
   npx ${packageName} run
+  npx ${packageName} run --read-only
   npx ${packageName} session
   npx ${packageName} logout
   
@@ -91,6 +93,7 @@ program
     parseToolPatterns,
     ['*']
   )
+  .option('--read-only', 'Only expose read-only tools (list and get operations)', false)
   .action(init);
 
 // Run command
@@ -103,6 +106,7 @@ program
     parseToolPatterns,
     ['*']
   )
+  .option('--read-only', 'Only expose read-only tools (list and get operations)', false)
   .action(run);
 
 // Logout command

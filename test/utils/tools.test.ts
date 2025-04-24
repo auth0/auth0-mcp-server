@@ -12,12 +12,52 @@ vi.mock('../../src/utils/logger.js', () => ({
 describe('Tool Utilities', () => {
   // Common test fixtures
   const testTools: Tool[] = [
-    { name: 'auth0_list_applications', description: 'List all applications' },
-    { name: 'auth0_get_application', description: 'Get application details' },
-    { name: 'auth0_create_application', description: 'Create application' },
-    { name: 'auth0_update_application', description: 'Update application' },
-    { name: 'auth0_list_resource_servers', description: 'List resource servers' },
-    { name: 'auth0_get_resource_server', description: 'Get resource server details' },
+    {
+      name: 'auth0_list_applications',
+      description: 'List all applications',
+      _meta: {
+        requiredScopes: ['read:clients'],
+        readOnly: true,
+      },
+    },
+    {
+      name: 'auth0_get_application',
+      description: 'Get application details',
+      _meta: {
+        requiredScopes: ['read:clients'],
+        readOnly: true,
+      },
+    },
+    {
+      name: 'auth0_create_application',
+      description: 'Create application',
+      _meta: {
+        requiredScopes: ['create:clients'],
+      },
+    },
+    {
+      name: 'auth0_update_application',
+      description: 'Update application',
+      _meta: {
+        requiredScopes: ['update:clients'],
+      },
+    },
+    {
+      name: 'auth0_list_resource_servers',
+      description: 'List resource servers',
+      _meta: {
+        requiredScopes: ['read:resource_servers'],
+        readOnly: true,
+      },
+    },
+    {
+      name: 'auth0_get_resource_server',
+      description: 'Get resource server details',
+      _meta: {
+        requiredScopes: ['read:resource_servers'],
+        readOnly: true,
+      },
+    },
   ];
 
   describe('validatePatterns function', () => {
@@ -165,6 +205,32 @@ describe('Tool Utilities', () => {
       // we'll verify that the function doesn't throw even with invalid globs.
       const result = getAvailableTools(testTools, ['[']); // Invalid regex pattern
       expect(result).toBeDefined();
+    });
+
+    it('should filter tools when readOnly is true', () => {
+      const result = getAvailableTools(testTools, undefined, true);
+
+      expect(result).toHaveLength(4);
+      // Should only include list_* and get_* tools
+      expect(result.map((t) => t.name)).toContain('auth0_list_applications');
+      expect(result.map((t) => t.name)).toContain('auth0_get_application');
+      expect(result.map((t) => t.name)).toContain('auth0_list_resource_servers');
+      expect(result.map((t) => t.name)).toContain('auth0_get_resource_server');
+
+      // Should not include create or update tools
+      expect(result.map((t) => t.name)).not.toContain('auth0_create_application');
+      expect(result.map((t) => t.name)).not.toContain('auth0_update_application');
+    });
+
+    it('should apply readOnly filter after pattern filtering', () => {
+      // First filter by applications, then apply readOnly
+      const result = getAvailableTools(testTools, ['auth0_*_application*'], true);
+
+      expect(result).toHaveLength(2);
+      expect(result.map((t) => t.name)).toContain('auth0_list_applications');
+      expect(result.map((t) => t.name)).toContain('auth0_get_application');
+      expect(result.map((t) => t.name)).not.toContain('auth0_create_application');
+      expect(result.map((t) => t.name)).not.toContain('auth0_update_application');
     });
   });
 });

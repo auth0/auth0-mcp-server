@@ -41,6 +41,7 @@ export const LOG_TOOLS: Tool[] = [
     },
     _meta: {
       requiredScopes: ['read:logs'],
+      readOnly: true,
     },
   },
   {
@@ -58,6 +59,7 @@ export const LOG_TOOLS: Tool[] = [
     },
     _meta: {
       requiredScopes: ['read:logs'],
+      readOnly: true,
     },
   },
 ];

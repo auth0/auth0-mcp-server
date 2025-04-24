@@ -14,7 +14,7 @@ import { packageVersion } from './utils/package.js';
 type ServerOptions = RunOptions;
 
 // Server implementation
-export async function startServer(options: ServerOptions) {
+export async function startServer(options?: ServerOptions) {
   try {
     log('Initializing Auth0 MCP server...');
 
@@ -34,7 +34,7 @@ export async function startServer(options: ServerOptions) {
     log(`Successfully loaded configuration for tenant: ${maskTenantName(config.tenantName)}`);
 
     // Get available tools based on options if provided
-    const availableTools = getAvailableTools(TOOLS, options?.tools);
+    const availableTools = getAvailableTools(TOOLS, options?.tools, options?.readOnly);
 
     // Create server instance
     const server = new Server(

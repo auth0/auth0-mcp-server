@@ -22,6 +22,7 @@ export interface InitOptions {
   client: ClientName;
   scopes?: string[];
   tools: string[];
+  readOnly?: boolean;
 }
 
 interface ClientAction {
@@ -111,6 +112,7 @@ async function configureClient(clientName: ClientName, options: InitOptions): Pr
 
   const clientOptions: ClientOptions = {
     tools: options.tools,
+    readOnly: options.readOnly,
   };
 
   await config.action(clientOptions);
@@ -148,6 +150,9 @@ async function configureClient(clientName: ClientName, options: InitOptions): Pr
 const init = async (options: InitOptions): Promise<void> => {
   log('Initializing Auth0 MCP server...');
   log(`Configuring server with selected tools: ${options.tools.join(', ')}`);
+  if (options.readOnly) {
+    log('Running in read-only mode - only read operations will be available');
+  }
 
   trackEvent.trackInit(options.client);
 

@@ -8,6 +8,7 @@ import * as os from 'os';
  */
 export interface RunOptions {
   tools: string[];
+  readOnly?: boolean;
 }
 
 /**
@@ -25,7 +26,14 @@ const run = async (options: RunOptions): Promise<void> => {
 
     trackEvent.trackServerRun();
 
-    logInfo(`Starting server with selected tools: ${options.tools.join(', ')}`);
+    if (options.readOnly && options.tools.length === 1 && options.tools[0] === '*') {
+      logInfo('Starting server in read-only mode');
+    } else {
+      const readOnlyPrefix = options.readOnly ? 'read-only ' : '';
+      logInfo(
+        `Starting server with ${readOnlyPrefix}tools matching the following pattern(s): ${options.tools.join(', ')}`
+      );
+    }
     await startServer(options);
   } catch (error) {
     logError('Fatal error starting server:', error);
