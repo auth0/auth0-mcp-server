@@ -2,7 +2,7 @@ import chalk from 'chalk';
 import { log, logError } from '../utils/logger.js';
 import { cliOutput } from '../utils/cli-utility.js';
 import { keychain, KeychainItem, type KeychainOperationResult } from '../utils/keychain.js';
-
+import { revokeRefreshToken } from '../auth/device-auth-flow.js';
 /**
  * Maps technical keychain item names to user-friendly descriptions
  * @param item - The keychain item key
@@ -82,6 +82,9 @@ async function logout(_options?: LogoutOptions): Promise<void> {
   try {
     log('Removing Auth0 tokens from keychain');
     cliOutput(`\n${chalk.blue('i')} Clearing authentication data...\n`);
+
+    log('Revoke refresh token if present');
+    revokeRefreshToken();
 
     // Delete all items from the keychain
     const deletionResults = await keychain.clearAll();

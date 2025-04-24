@@ -207,6 +207,32 @@ export async function refreshAccessToken(selectedScopes?: string[]): Promise<str
   }
 }
 
+export async function revokeRefreshToken() {
+  try {
+    log('Attempting to revoke refresh token');
+
+    const refreshToken = await keychain.getRefreshToken();
+    if (!refreshToken) {
+      log('No refresh token found `in keychain');
+      return;
+    }
+    const config = getConfig();
+    const response = await fetch(`https://${config.tenant}/oauth/revoke`, {
+      method: 'POST',
+      body: new URLSearchParams({
+        client_id: config.clientId,
+        token: refreshToken,
+      }),
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+    });
+
+  } catch (error) {
+    log('Error revoking refresh token:', error);
+  }
+}
+
 export async function isTokenExpired(bufferSeconds = 300): Promise<boolean> {
   try {
     const expiresAt = await keychain.getTokenExpiresAt();
