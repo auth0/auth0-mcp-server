@@ -210,7 +210,7 @@ export async function refreshAccessToken(selectedScopes?: string[]): Promise<str
 /**
  * Revokes the refresh token that is previously set within keychain when offline_access is requested.
  * Returns true if the call is successful or if the refresh token does not exist.
- * @returns {Promise <boolean>}
+ * @returns {Promise<boolean>}
  */
 export async function revokeRefreshToken(): Promise<boolean> {
   try {
