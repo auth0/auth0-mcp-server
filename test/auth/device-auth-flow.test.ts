@@ -196,7 +196,6 @@ describe('Device Auth Flow', () => {
     });
   });
 
-
   describe('revokeRefreshToken', () => {
     // Since we can't easily test the actual implementation due to mocking challenges,
     // we'll just test that the function exists and can be called
@@ -244,7 +243,7 @@ describe('Device Auth Flow', () => {
           error: 'unauthorized',
         })
       );
-      
+
       const result = await deviceAuthFlow.revokeRefreshToken();
 
       expect(result).toBe(false);
@@ -258,10 +257,7 @@ describe('Device Auth Flow', () => {
       vi.mocked(keytar.getPassword).mockResolvedValue('mock-rt');
 
       // Mock fetch response with error
-      mockFetch.mockResolvedValue(
-        mockFetchResponse(200, {
-        })
-      );
+      mockFetch.mockResolvedValue(mockFetchResponse(200, {}));
 
       const result = await deviceAuthFlow.revokeRefreshToken();
 
@@ -271,7 +267,6 @@ describe('Device Auth Flow', () => {
         KeychainItem.REFRESH_TOKEN
       );
     });
-
   });
 
   // Simple test to verify no Auth0 values are set to environment variables

@@ -208,9 +208,9 @@ export async function refreshAccessToken(selectedScopes?: string[]): Promise<str
 }
 
 /**
- * Revokes the refresh token that is previously set within keychain when offline_access is requested. 
- * Returns true if the call is successful or if the refresh token does not exist. 
- * @returns {boolean} 
+ * Revokes the refresh token that is previously set within keychain when offline_access is requested.
+ * Returns true if the call is successful or if the refresh token does not exist.
+ * @returns {Promise <boolean>}
  */
 export async function revokeRefreshToken(): Promise<boolean> {
   try {
@@ -222,7 +222,7 @@ export async function revokeRefreshToken(): Promise<boolean> {
       return true;
     }
     const config = getConfig();
-    return fetch(`https://${config.tenant}/oauth/revoke`, {
+    const response = await fetch(`https://${config.tenant}/oauth/revoke`, {
       method: 'POST',
       body: new URLSearchParams({
         client_id: config.clientId,
@@ -231,13 +231,15 @@ export async function revokeRefreshToken(): Promise<boolean> {
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
-    }).then((response) => {
-      if (response.status != 200) {
-        log('Error calling revoke API: ', response.statusText);
-        return false;
-      }
-      return true;
     });
+
+    if (response.status === 200) {
+      log('Refresh token successfully revoked');
+      return true;
+    } else {
+      log('Error calling revoke API: ', response.statusText);
+      return false;
+    }
   } catch (error) {
     log('Error revoking refresh token:', error);
     return false;
