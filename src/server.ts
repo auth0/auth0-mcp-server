@@ -12,16 +12,12 @@ import type { RunOptions } from './commands/run.js';
 import { packageVersion } from './utils/package.js';
 import { StreamableHttpServerTransport } from './utils/http-transport.js';
 import { Authorization } from './utils/authorization.js';
-import type { HttpServerOptions, RequestHandlerExtra } from './utils/types.js';
+import type { RequestHandlerExtra } from './utils/types.js';
 
-type ServerOptions = {
-  tools?: string[];
-  useHttpTransport?: boolean;
-  httpOptions?: HttpServerOptions;
-};
+type ServerOptions = RunOptions;
 
 // Server implementation
-export async function startServer(options?: ServerOptions) {
+export async function startServer(options: ServerOptions) {
   try {
     log('Initializing Auth0 MCP server...');
 
