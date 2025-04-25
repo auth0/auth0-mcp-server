@@ -227,7 +227,7 @@ export async function revokeRefreshToken(): Promise<boolean> {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
     }).then((response) => {
-      if (!response.ok) {
+      if (response.status != 200) {
         log('Error calling revoke API: ', response.statusText);
         return false;
       }
