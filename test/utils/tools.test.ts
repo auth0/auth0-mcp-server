@@ -232,5 +232,19 @@ describe('Tool Utilities', () => {
       expect(result.map((t) => t.name)).not.toContain('auth0_create_application');
       expect(result.map((t) => t.name)).not.toContain('auth0_update_application');
     });
+
+    it('should prioritize --read-only flag over --tools when both are specified', () => {
+      // Pattern includes all application tools (including create/update)
+      // But --read-only should take priority and filter out non-read-only tools
+      const result = getAvailableTools(testTools, ['auth0_*_application*'], true);
+      
+      // Should ONLY include read-only tools, even though pattern matched non-read-only tools too
+      expect(result.length).toBeGreaterThan(0);
+      expect(result.every(tool => tool._meta?.readOnly === true)).toBe(true);
+      expect(result.map(t => t.name)).toContain('auth0_list_applications');
+      expect(result.map(t => t.name)).toContain('auth0_get_application');
+      expect(result.map(t => t.name)).not.toContain('auth0_create_application');
+      expect(result.map(t => t.name)).not.toContain('auth0_update_application');
+    });
   });
 });

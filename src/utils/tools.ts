@@ -9,13 +9,18 @@ import { Glob } from './glob.js';
  * empty pattern arrays, and pattern matching errors. When readOnly is true,
  * it only returns tools that have _meta.readOnly set to true or tools that follow read-only patterns.
  *
+ * IMPORTANT: The readOnly flag takes priority over pattern matching for security reasons.
+ * Even if patterns match non-read-only tools, when readOnly=true is specified, 
+ * only read-only tools will be returned.
+ *
  * @param allTools - Complete collection of available tools to be filtered
  * @param patterns - Optional glob patterns to filter tools by (e.g., 'auth0*', 'jwt-*')
  *                   If omitted or empty, all tools will be returned
  *                   A single '*' pattern will return all tools
  * @param readOnly - Optional flag to only return read-only tools
  *                   When true, only returns tools marked as readOnly
- * @returns Array of Tool objects that match the specified readOnly criteria
+ *                   Takes priority over pattern matching for security
+ * @returns Array of Tool objects that match the specified criteria
  *          Returns all tools if no patterns provided or on error
  *
  * @example
@@ -23,8 +28,14 @@ import { Glob } from './glob.js';
  * const authTools = getAvailableTools(tools, ['auth*']);
  *
  * @example
- * // Return all read-only tools
+ * // Return all read-only tools (regardless of pattern matching)
  * const readOnlyTools = getAvailableTools(tools, ['*'], true);
+ * 
+ * @example
+ * // Return only read-only tools that match the pattern
+ * // Note: --read-only takes priority, so even if the pattern matches non-read-only tools,
+ * // only the read-only ones will be returned
+ * const readOnlyAuthTools = getAvailableTools(tools, ['auth0_*_application'], true);
  */
 export function getAvailableTools(
   allTools: Tool[],
@@ -40,6 +51,9 @@ export function getAvailableTools(
   }
 
   // Apply read-only filtering if requested
+  // IMPORTANT: This is applied AFTER pattern filtering, ensuring that 
+  // --read-only takes priority over --tools for security
+  // Even if non-read-only tools match the pattern, they will be filtered out here
   if (readOnly) {
     filteredTools = filterToolsByReadOnly(filteredTools);
   }

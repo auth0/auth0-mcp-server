@@ -175,7 +175,7 @@ The Auth0 MCP Server provides the following tools for Claude to interact with yo
 
 When configuring the Auth0 MCP Server, it's important to follow security best practices by limiting tool access based on your specific needs. The server provides flexible configuration options that let you control which tools AI assistants can access.
 
-You can easily restrict tool access using the `--tools` flag when starting the server:
+You can easily restrict tool access using the `--tools` and `--read-only` flags when starting the server:
 
 ```bash
 # Enable only read-only operations
@@ -187,7 +187,8 @@ npx @auth0/auth0-mcp-server run --tools 'auth0_list_*,auth0_get_*'
 # Limit to just application-related tools
 npx @auth0/auth0-mcp-server run --tools 'auth0_*_application*'
 
-# Limit to read-only application-related tools
+# Limit to read-only application-related tools 
+# Note: --read-only takes priority when used with --tools
 npx @auth0/auth0-mcp-server run --tools 'auth0_*_application*' --read-only
 
 # Restrict to only log viewing capabilities
@@ -196,6 +197,9 @@ npx @auth0/auth0-mcp-server run --tools 'auth0_list_logs,auth0_get_log'
 # Run the server with all tools enabled
 npx @auth0/auth0-mcp-server run --tools '*'
 ```
+
+> [!IMPORTANT]
+> When both `--read-only` and `--tools` flags are used together, the `--read-only` flag takes priority for security. This means even if your `--tools` pattern matches non-read-only tools, only read-only operations will be available. This ensures you can rely on the `--read-only` flag as a security guardrail.
 
 This approach offers several important benefits:
 

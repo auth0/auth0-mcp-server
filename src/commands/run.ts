@@ -28,10 +28,13 @@ const run = async (options: RunOptions): Promise<void> => {
 
     if (options.readOnly && options.tools.length === 1 && options.tools[0] === '*') {
       logInfo('Starting server in read-only mode');
-    } else {
-      const readOnlyPrefix = options.readOnly ? 'read-only ' : '';
+    } else if (options.readOnly) {
       logInfo(
-        `Starting server with ${readOnlyPrefix}tools matching the following pattern(s): ${options.tools.join(', ')}`
+        `Starting server in read-only mode with tools matching the following pattern(s): ${options.tools.join(', ')} (--read-only has priority)`
+      );
+    } else {
+      logInfo(
+        `Starting server with tools matching the following pattern(s): ${options.tools.join(', ')}`
       );
     }
     await startServer(options);

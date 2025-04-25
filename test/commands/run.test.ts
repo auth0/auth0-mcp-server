@@ -110,7 +110,7 @@ describe('Run Module', () => {
 
     expect(startServer).toHaveBeenCalledWith(options);
     expect(logInfo).toHaveBeenCalledWith(
-      'Starting server with read-only tools matching the following pattern(s): auth0_*'
+      'Starting server in read-only mode with tools matching the following pattern(s): auth0_* (--read-only has priority)'
     );
     expect(process.exit).not.toHaveBeenCalled();
   });
