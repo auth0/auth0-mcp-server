@@ -84,7 +84,7 @@ async function logout(_options?: LogoutOptions): Promise<void> {
     cliOutput(`\n${chalk.blue('i')} Clearing authentication data...\n`);
 
     log('Revoke refresh token if present');
-    revokeRefreshToken();
+    await revokeRefreshToken();
 
     // Delete all items from the keychain
     const deletionResults = await keychain.clearAll();

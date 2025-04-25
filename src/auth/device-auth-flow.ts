@@ -207,17 +207,17 @@ export async function refreshAccessToken(selectedScopes?: string[]): Promise<str
   }
 }
 
-export async function revokeRefreshToken() {
+export async function revokeRefreshToken(): Promise<boolean> {
   try {
     log('Attempting to revoke refresh token');
 
     const refreshToken = await keychain.getRefreshToken();
     if (!refreshToken) {
-      log('No refresh token found `in keychain');
-      return;
+      log('No refresh token found in keychain');
+      return true;
     }
     const config = getConfig();
-    const response = await fetch(`https://${config.tenant}/oauth/revoke`, {
+    return fetch(`https://${config.tenant}/oauth/revoke`, {
       method: 'POST',
       body: new URLSearchParams({
         client_id: config.clientId,
@@ -226,10 +226,16 @@ export async function revokeRefreshToken() {
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
+    }).then((response) => {
+      if (!response.ok) {
+        log('Error calling revoke API: ', response.statusText);
+        return false;
+      }
+      return true;
     });
-
   } catch (error) {
     log('Error revoking refresh token:', error);
+    return false;
   }
 }
 
