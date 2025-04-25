@@ -393,9 +393,23 @@ npm run build
 npx . init
 
 # Configure your MCP client(Claude Desktop) with MCP server path
-npm run local-setup
+npm run setup
+```
 
-# Restart MCP client, in this case claude desktop app
+### Development Scripts
+
+```bash
+# Run directly with TypeScript (no build needed)
+npm run dev
+
+# Run with debug logs enabled
+npm run dev:debug
+
+# Run with MCP inspector for debugging
+npm run dev:inspect
+
+# Run the compiled JavaScript version
+npm run start
 ```
 
 > [!NOTE]
