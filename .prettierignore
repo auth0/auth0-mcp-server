@@ -24,3 +24,5 @@ yarn.lock
 
 # Coverage directory
 coverage/
+
+CHANGELOG.md
