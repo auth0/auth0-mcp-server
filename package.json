@@ -70,5 +70,9 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/auth0/auth0-mcp-server"
+  },
+  "homepage": "https://github.com/auth0/auth0-mcp-server#readme",
+  "publishConfig": {
+    "access": "public"
   }
 }

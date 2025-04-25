@@ -4,7 +4,8 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
-![NPM Downloads](https://img.shields.io/npm/d18m/%40auth0%2Fauth0-mcp-server?color=orange)
+[![NPM Downloads](https://img.shields.io/npm/dw/%40auth0%2Fauth0-mcp-server)](https://www.npmjs.com/package/@auth0/auth0-mcp-server)
+[![NPM Version](https://img.shields.io/npm/v/@auth0/auth0-mcp-server)](https://www.npmjs.com/package/@auth0/auth0-mcp-server)
 
 </div>
 
