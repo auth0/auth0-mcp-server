@@ -43,6 +43,13 @@ export const LOG_TOOLS: Tool[] = [
       requiredScopes: ['read:logs'],
       readOnly: true,
     },
+    annotations: {
+      title: 'List Auth0 Logs',
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
   },
   {
     name: 'auth0_get_log',
@@ -60,6 +67,13 @@ export const LOG_TOOLS: Tool[] = [
     _meta: {
       requiredScopes: ['read:logs'],
       readOnly: true,
+    },
+    annotations: {
+      title: 'Get Auth0 Log Entry',
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
     },
   },
 ];

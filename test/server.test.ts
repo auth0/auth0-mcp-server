@@ -74,7 +74,7 @@ describe('Server', () => {
       expect(server).toBeDefined();
       expect(Server).toHaveBeenCalledWith(
         { name: 'auth0', version: '0.1.0-beta.1' },
-        { capabilities: { tools: {}, logging: {} } }
+        { capabilities: { tools: {}, streaming: true, logging: {} } }
       );
     });
 
