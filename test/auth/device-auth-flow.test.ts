@@ -201,13 +201,13 @@ describe('Device Auth Flow', () => {
     it('should not set any Auth0 values in environment variables', async () => {
       // Save original environment
       const originalEnv = { ...process.env };
-      
+
       // Clear all Auth0 environment variables
       delete process.env.AUTH0_TOKEN;
       delete process.env.AUTH0_DOMAIN;
       delete process.env.AUTH0_TENANT_NAME;
       delete process.env.AUTH0_CLIENT_ID;
-      
+
       // Mock successful token response
       mockFetch.mockResolvedValue(
         mockFetchResponse(200, {
@@ -216,16 +216,16 @@ describe('Device Auth Flow', () => {
           expires_in: 86400,
         })
       );
-      
+
       // Call the token function
       await deviceAuthFlow.refreshAccessToken();
-      
+
       // Simply verify no Auth0 values are in the environment
       expect(process.env.AUTH0_TOKEN).toBeUndefined();
       expect(process.env.AUTH0_DOMAIN).toBeUndefined();
       expect(process.env.AUTH0_TENANT_NAME).toBeUndefined();
       expect(process.env.AUTH0_CLIENT_ID).toBeUndefined();
-      
+
       // Restore original environment
       process.env = originalEnv;
     });

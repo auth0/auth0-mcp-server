@@ -29,6 +29,13 @@ export const APPLICATION_TOOLS: Tool[] = [
     _meta: {
       requiredScopes: ['read:clients'],
     },
+    annotations: {
+      title: 'List Auth0 Applications',
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
   },
   {
     name: 'auth0_get_application',
@@ -43,10 +50,18 @@ export const APPLICATION_TOOLS: Tool[] = [
     _meta: {
       requiredScopes: ['read:clients'],
     },
+    annotations: {
+      title: 'Get Auth0 Application Details',
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
   },
   {
     name: 'auth0_create_application',
-    description: 'Create a new Auth0 application',
+    description:
+      'Create a new Auth0 application with the tenant. Prefer OIDC compliant unless otherwise specified.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -120,6 +135,13 @@ export const APPLICATION_TOOLS: Tool[] = [
     },
     _meta: {
       requiredScopes: ['create:clients'],
+    },
+    annotations: {
+      title: 'Create Auth0 Application',
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: false,
     },
   },
   {
@@ -223,6 +245,13 @@ export const APPLICATION_TOOLS: Tool[] = [
     },
     _meta: {
       requiredScopes: ['update:clients'],
+    },
+    annotations: {
+      title: 'Update Auth0 Application',
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: true,
+      openWorldHint: false,
     },
   },
 ];
@@ -356,7 +385,7 @@ export const APPLICATION_HANDLERS: Record<
       }
     } catch (error: any) {
       // Handle any other errors
-      log('Error processing request')
+      log('Error processing request');
 
       return createErrorResponse(
         `Error: ${error instanceof Error ? error.message : String(error)}`
@@ -428,7 +457,7 @@ export const APPLICATION_HANDLERS: Record<
       }
     } catch (error: any) {
       // Handle any other errors
-      log('Error processing request')
+      log('Error processing request');
 
       return createErrorResponse(
         `Error: ${error instanceof Error ? error.message : String(error)}`
@@ -592,7 +621,7 @@ export const APPLICATION_HANDLERS: Record<
       }
     } catch (error: any) {
       // Handle any other errors
-      log('Error processing request')
+      log('Error processing request');
 
       return createErrorResponse(
         `Error: ${error instanceof Error ? error.message : String(error)}`
@@ -757,7 +786,7 @@ export const APPLICATION_HANDLERS: Record<
       }
     } catch (error: any) {
       // Handle any other errors
-      log('Error processing request')
+      log('Error processing request');
 
       return createErrorResponse(
         `Error: ${error instanceof Error ? error.message : String(error)}`

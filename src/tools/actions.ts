@@ -49,6 +49,13 @@ export const ACTION_TOOLS: Tool[] = [
     _meta: {
       requiredScopes: ['read:actions'],
     },
+    annotations: {
+      title: 'List Auth0 Actions',
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
   },
   {
     name: 'auth0_get_action',
@@ -62,6 +69,13 @@ export const ACTION_TOOLS: Tool[] = [
     },
     _meta: {
       requiredScopes: ['read:actions'],
+    },
+    annotations: {
+      title: 'Get Auth0 Action Details',
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
     },
   },
   {
@@ -123,6 +137,13 @@ export const ACTION_TOOLS: Tool[] = [
     },
     _meta: {
       requiredScopes: ['create:actions'],
+    },
+    annotations: {
+      title: 'Create Auth0 Action',
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: false,
     },
   },
   {
@@ -201,6 +222,13 @@ export const ACTION_TOOLS: Tool[] = [
     _meta: {
       requiredScopes: ['update:actions'],
     },
+    annotations: {
+      title: 'Update Auth0 Action',
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
   },
   {
     name: 'auth0_deploy_action',
@@ -214,6 +242,13 @@ export const ACTION_TOOLS: Tool[] = [
     },
     _meta: {
       requiredScopes: ['update:actions'],
+    },
+    annotations: {
+      title: 'Deploy Auth0 Action',
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: false,
+      openWorldHint: false,
     },
   },
 ];

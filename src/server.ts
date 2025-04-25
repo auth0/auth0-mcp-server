@@ -7,9 +7,15 @@ import { HANDLERS, TOOLS } from './tools/index.js';
 import { log, logInfo } from './utils/logger.js';
 import { formatDomain } from './utils/http-utility.js';
 import { maskTenantName } from './utils/cli-utility.js';
+import { StreamableHttpServerTransport } from './utils/http-transport.js';
+import { Authorization } from './utils/authorization.js';
+import type { HttpServerOptions, RequestHandlerExtra } from './utils/types.js';
 
 // Server implementation
-export async function startServer() {
+export async function startServer(options?: {
+  useHttpTransport?: boolean;
+  httpOptions?: HttpServerOptions;
+}) {
   try {
     log('Initializing Auth0 MCP server...');
 
@@ -28,28 +34,87 @@ export async function startServer() {
 
     log(`Successfully loaded configuration for tenant: ${maskTenantName(config.tenantName)}`);
 
-    // Create server instance
-    const server = new Server({ name: 'auth0', version: '1.0.0' }, { capabilities: { tools: {} } });
-
-    // Handle list tools request
-    server.setRequestHandler(ListToolsRequestSchema, async () => {
-      log('Received list tools request');
-
-      // Sanitize tools by removing _meta fields
-      // See: https://github.com/modelcontextprotocol/modelcontextprotocol/issues/264
-      const filteredTools = TOOLS.map(({ _meta, ...rest }) => rest);
-
-      return { tools: filteredTools };
+    // Initialize authorization
+    const auth = new Authorization({
+      type: 'bearer',
+      token: config.token,
     });
 
+    // Create server instance with streaming capabilities
+    const server = new Server(
+      { name: 'auth0', version: '1.0.0' },
+      {
+        capabilities: {
+          tools: {},
+          streaming: true,
+        },
+      }
+    );
+
+    // Handle list tools request
+    server.setRequestHandler(
+      ListToolsRequestSchema,
+      async (request, extra: RequestHandlerExtra) => {
+        log('Received list tools request');
+
+        // Sanitize tools by removing _meta fields
+        const filteredTools = TOOLS.map(({ _meta, ...rest }) => rest);
+        const response = { tools: filteredTools };
+
+        // Handle streaming response if available
+        if (extra?.streaming) {
+          extra.streaming.write(response);
+          extra.streaming.end();
+        }
+
+        // Always return the response
+        return response;
+      }
+    );
+
     // Handle tool calls
-    server.setRequestHandler(CallToolRequestSchema, async (request) => {
+    server.setRequestHandler(CallToolRequestSchema, async (request, extra: RequestHandlerExtra) => {
       const toolName = request.params.name;
       log(`Received tool call: ${toolName}`);
 
       try {
         if (!HANDLERS[toolName]) {
-          throw new Error(`Unknown tool: ${toolName}`);
+          const errorResponse = {
+            content: [{ type: 'text', text: `Error: Unknown tool: ${toolName}` }],
+            isError: true,
+          };
+
+          if (extra?.streaming) {
+            extra.streaming.write(errorResponse);
+            extra.streaming.end();
+          }
+
+          return errorResponse;
+        }
+
+        // Find tool definition to get required scopes
+        const toolDefinition = TOOLS.find((tool) => tool.name === toolName);
+        const requiredScopes = toolDefinition?._meta?.requiredScopes || [];
+
+        // Verify authorization if tool requires scopes
+        // The headers might be in different places depending on the transport
+        const headers = (request as any).headers || {};
+        const authHeader = headers.authorization;
+        const isAuthorized = await auth.isAuthorized(requiredScopes, authHeader);
+        if (requiredScopes.length > 0 && !isAuthorized) {
+          const errorResponse = {
+            content: [
+              { type: 'text', text: 'Unauthorized: Missing required scopes for this tool' },
+            ],
+            isError: true,
+          };
+
+          if (extra?.streaming) {
+            extra.streaming.write(errorResponse);
+            extra.streaming.end();
+          }
+
+          return errorResponse;
         }
 
         // Check if config is still valid, reload if needed
@@ -58,9 +123,22 @@ export async function startServer() {
           config = await loadConfig();
 
           if (!validateConfig(config)) {
-            throw new Error(
-              'Auth0 configuration is invalid or missing. Please check auth0-cli login status.'
-            );
+            const errorResponse = {
+              content: [
+                {
+                  type: 'text',
+                  text: 'Auth0 configuration is invalid or missing. Please check auth0-cli login status.',
+                },
+              ],
+              isError: true,
+            };
+
+            if (extra?.streaming) {
+              extra.streaming.write(errorResponse);
+              extra.streaming.end();
+            }
+
+            return errorResponse;
           }
 
           log('Successfully reloaded configuration');
@@ -70,26 +148,52 @@ export async function startServer() {
         const requestWithToken = {
           token: config.token,
           parameters: request.params.arguments || {},
+          authHeader: authHeader,
         };
 
         if (!config.domain) {
-          throw new Error('Error: AUTH0_DOMAIN environment variable is not set');
+          const errorResponse = {
+            content: [
+              { type: 'text', text: 'Error: AUTH0_DOMAIN environment variable is not set' },
+            ],
+            isError: true,
+          };
+
+          if (extra?.streaming) {
+            extra.streaming.write(errorResponse);
+            extra.streaming.end();
+          }
+
+          return errorResponse;
         }
 
         const domain = formatDomain(config.domain);
 
         // Execute handler
         log(`Executing handler for tool: ${toolName}`);
-        const result = await HANDLERS[toolName](requestWithToken, { domain: domain });
+
+        // Standard non-streaming mode - but support streaming if available
+        const result = await HANDLERS[toolName](requestWithToken, { domain });
         log(`Handler execution completed for: ${toolName}`);
 
+        // If we have streaming capabilities, stream the result
+        if (extra?.streaming) {
+          extra.streaming.write({
+            content: result.content,
+            isError: result.isError || false,
+          });
+          extra.streaming.end();
+        }
+
+        // Return the standard result
         return {
           content: result.content,
           isError: result.isError || false,
         };
       } catch (error) {
         log(`Error handling tool call: ${error instanceof Error ? error.message : String(error)}`);
-        return {
+
+        const errorResponse = {
           content: [
             {
               type: 'text',
@@ -98,12 +202,34 @@ export async function startServer() {
           ],
           isError: true,
         };
+
+        // Handle streaming response
+        if (extra?.streaming) {
+          extra.streaming.write(errorResponse);
+          extra.streaming.end();
+        }
+
+        return errorResponse;
       }
     });
 
-    // Connect to transport
-    log('Creating stdio transport...');
-    const transport = new StdioServerTransport();
+    // Select transport based on options
+    let transport;
+    if (options?.useHttpTransport) {
+      // Use HTTP transport with streamable support
+      log('Creating HTTP streamable transport...');
+      transport = new StreamableHttpServerTransport({
+        port: options.httpOptions?.port || 3000,
+        authToken: config.token,
+      });
+
+      // Start the HTTP server
+      await transport.start();
+    } else {
+      // Use standard stdio transport
+      log('Creating stdio transport...');
+      transport = new StdioServerTransport();
+    }
 
     // Connection with timeout
     log('Connecting server to transport...');
@@ -113,7 +239,8 @@ export async function startServer() {
         new Promise((_, reject) => setTimeout(() => reject(new Error('Connection timeout')), 5000)),
       ]);
 
-      const logMsg = `Server started and running successfully`;
+      const transportType = options?.useHttpTransport ? 'HTTP' : 'stdio';
+      const logMsg = `Server started and running successfully using ${transportType} transport`;
 
       logInfo(logMsg);
       log(logMsg);
@@ -124,9 +251,7 @@ export async function startServer() {
         `Transport connection error: ${connectError instanceof Error ? connectError.message : String(connectError)}`
       );
       if (connectError instanceof Error && connectError.message === 'Connection timeout') {
-        log(
-          'Connection to transport timed out. This might indicate an issue with the stdio transport.'
-        );
+        log('Connection to transport timed out. This might indicate an issue with the transport.');
       }
       throw connectError;
     }

@@ -35,7 +35,7 @@
   "author": "auth0",
   "license": "MIT",
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.8.0",
+    "@modelcontextprotocol/sdk": "^1.10.2",
     "auth0": "^4.21.0",
     "chalk": "^5.4.1",
     "debug": "^4.4.0",

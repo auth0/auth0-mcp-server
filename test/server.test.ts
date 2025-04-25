@@ -70,7 +70,7 @@ describe('Server', () => {
       expect(server).toBeDefined();
       expect(Server).toHaveBeenCalledWith(
         { name: 'auth0', version: '1.0.0' },
-        { capabilities: { tools: {} } }
+        { capabilities: { tools: {}, streaming: true } }
       );
     });
 
