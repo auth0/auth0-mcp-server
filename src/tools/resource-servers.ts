@@ -36,6 +36,7 @@ export const RESOURCE_SERVER_TOOLS: Tool[] = [
     },
     _meta: {
       requiredScopes: ['read:resource_servers'],
+      readOnly: true,
     },
   },
   {
@@ -50,6 +51,7 @@ export const RESOURCE_SERVER_TOOLS: Tool[] = [
     },
     _meta: {
       requiredScopes: ['read:resource_servers'],
+      readOnly: true,
     },
   },
   {

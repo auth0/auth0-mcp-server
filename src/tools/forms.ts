@@ -20,6 +20,7 @@ export const FORM_TOOLS: Tool[] = [
     },
     _meta: {
       requiredScopes: ['read:forms'],
+      readOnly: true,
     },
   },
   {
@@ -34,6 +35,7 @@ export const FORM_TOOLS: Tool[] = [
     },
     _meta: {
       requiredScopes: ['read:forms'],
+      readOnly: true,
     },
   },
   {

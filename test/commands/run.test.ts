@@ -65,7 +65,7 @@ describe('Run Module', () => {
 
     expect(startServer).toHaveBeenCalledWith(options);
     expect(logInfo).toHaveBeenCalledWith(
-      'Starting server with selected tools: auth0_list_applications, auth0_get_application'
+      'Starting server with tools matching the following pattern(s): auth0_list_applications, auth0_get_application'
     );
     expect(process.exit).not.toHaveBeenCalled();
   });
@@ -98,5 +98,33 @@ describe('Run Module', () => {
     vi.mocked(startServer).mockRejectedValue(mockError);
 
     await run({ tools: ['*'] });
+  });
+
+  it('should start the server with read-only option', async () => {
+    const options = {
+      tools: ['auth0_*'],
+      readOnly: true,
+    };
+
+    await run(options);
+
+    expect(startServer).toHaveBeenCalledWith(options);
+    expect(logInfo).toHaveBeenCalledWith(
+      'Starting server in read-only mode with tools matching the following pattern(s): auth0_* (--read-only has priority)'
+    );
+    expect(process.exit).not.toHaveBeenCalled();
+  });
+
+  it('should show read-only mode message when using wildcard with read-only option', async () => {
+    const options = {
+      tools: ['*'],
+      readOnly: true,
+    };
+
+    await run(options);
+
+    expect(startServer).toHaveBeenCalledWith(options);
+    expect(logInfo).toHaveBeenCalledWith('Starting server in read-only mode');
+    expect(process.exit).not.toHaveBeenCalled();
   });
 });
