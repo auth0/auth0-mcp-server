@@ -10,7 +10,7 @@ import { Glob } from './glob.js';
  * it only returns tools that have _meta.readOnly set to true or tools that follow read-only patterns.
  *
  * IMPORTANT: The readOnly flag takes priority over pattern matching for security reasons.
- * Even if patterns match non-read-only tools, when readOnly=true is specified, 
+ * Even if patterns match non-read-only tools, when readOnly=true is specified,
  * only read-only tools will be returned.
  *
  * @param allTools - Complete collection of available tools to be filtered
@@ -30,7 +30,7 @@ import { Glob } from './glob.js';
  * @example
  * // Return all read-only tools (regardless of pattern matching)
  * const readOnlyTools = getAvailableTools(tools, ['*'], true);
- * 
+ *
  * @example
  * // Return only read-only tools that match the pattern
  * // Note: --read-only takes priority, so even if the pattern matches non-read-only tools,
@@ -51,7 +51,7 @@ export function getAvailableTools(
   }
 
   // Apply read-only filtering if requested
-  // IMPORTANT: This is applied AFTER pattern filtering, ensuring that 
+  // IMPORTANT: This is applied AFTER pattern filtering, ensuring that
   // --read-only takes priority over --tools for security
   // Even if non-read-only tools match the pattern, they will be filtered out here
   if (readOnly) {

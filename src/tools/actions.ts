@@ -233,7 +233,7 @@ export const ACTION_HANDLERS: Record<
       // Check for token
       if (!request.token) {
         log('Warning: Token is empty or undefined');
-        return createErrorResponse('Error: Missing authentication token');
+        return createErrorResponse('Error: Missing authorization token');
       }
 
       // Check if domain is configured
@@ -371,7 +371,7 @@ export const ACTION_HANDLERS: Record<
       // Check for token
       if (!request.token) {
         log('Warning: Token is empty or undefined');
-        return createErrorResponse('Error: Missing authentication token');
+        return createErrorResponse('Error: Missing authorization token');
       }
 
       // Check if domain is configured
@@ -457,7 +457,7 @@ export const ACTION_HANDLERS: Record<
       // Check for token
       if (!request.token) {
         log('Warning: Token is empty or undefined');
-        return createErrorResponse('Error: Missing authentication token');
+        return createErrorResponse('Error: Missing authorization token');
       }
 
       // Check if domain is configured
@@ -544,7 +544,7 @@ export const ACTION_HANDLERS: Record<
       // Check for token
       if (!request.token) {
         log('Warning: Token is empty or undefined');
-        return createErrorResponse('Error: Missing authentication token');
+        return createErrorResponse('Error: Missing authorization token');
       }
 
       // Check if domain is configured
@@ -616,7 +616,7 @@ export const ACTION_HANDLERS: Record<
       // Check for token
       if (!request.token) {
         log('Warning: Token is empty or undefined');
-        return createErrorResponse('Error: Missing authentication token');
+        return createErrorResponse('Error: Missing authorization token');
       }
 
       // Check if domain is configured

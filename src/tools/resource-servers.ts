@@ -222,7 +222,7 @@ export const RESOURCE_SERVER_HANDLERS: Record<
     try {
       if (!request.token) {
         log('Warning: Token is missing');
-        return createErrorResponse('Error: Missing authentication token');
+        return createErrorResponse('Error: Missing authorization token');
       }
 
       // Check if domain is configured
@@ -366,7 +366,7 @@ export const RESOURCE_SERVER_HANDLERS: Record<
       // Check for token
       if (!request.token) {
         log('Warning: Token is empty or undefined');
-        return createErrorResponse('Error: Missing authentication token');
+        return createErrorResponse('Error: Missing authorization token');
       }
 
       // Check if domain is configured
@@ -453,7 +453,7 @@ export const RESOURCE_SERVER_HANDLERS: Record<
       // Check for token
       if (!request.token) {
         log('Warning: Token is empty or undefined');
-        return createErrorResponse('Error: Missing authentication token');
+        return createErrorResponse('Error: Missing authorization token');
       }
 
       // Check if domain is configured
@@ -566,7 +566,7 @@ export const RESOURCE_SERVER_HANDLERS: Record<
       // Check for token
       if (!request.token) {
         log('Warning: Token is empty or undefined');
-        return createErrorResponse('Error: Missing authentication token');
+        return createErrorResponse('Error: Missing authorization token');
       }
 
       // Check if domain is configured

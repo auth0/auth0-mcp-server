@@ -103,7 +103,7 @@ To use Auth0 MCP Server with any other MCP Client, you can manually add this con
 
 You can add `--tools '<pattern>'` to the args array to control which tools are available. See [Security Best Practices](#-security-best-practices-for-tool-access) for recommended patterns.
 
-### Authenticate with Auth0
+### Authorize with Auth0
 
 Your browser will automatically open to initiate the OAuth 2.0 device authorization flow. Log into your Auth0 account and grant the requested permissions.
 
@@ -188,7 +188,7 @@ npx @auth0/auth0-mcp-server run --tools 'auth0_list_*,auth0_get_*'
 # Limit to just application-related tools
 npx @auth0/auth0-mcp-server run --tools 'auth0_*_application*'
 
-# Limit to read-only application-related tools 
+# Limit to read-only application-related tools
 # Note: --read-only takes priority when used with --tools
 npx @auth0/auth0-mcp-server run --tools 'auth0_*_application*' --read-only
 
@@ -252,6 +252,8 @@ This will start the device authorization flow, allowing you to log in to your Au
 > - You've logged out from a previous session
 > - You want to switch to a different tenant
 > - Your token has expired
+>
+> The `run` command will automatically check for token validity before starting the server and will provide helpful error messages if authentication is needed.
 
 ### Session Management
 
@@ -357,9 +359,15 @@ To use Auth0 MCP Server with any other MCP Client, you can add this configuratio
 3. **API Errors or Permission Issues**
 
    - Enable debug mode with `export DEBUG=auth0-mcp`
-   - Check your Auth0 token permissions and expiration
+   - Check your Auth0 token status: `npx @auth0/auth0-mcp-server session`
    - Reinitialize with specific scopes: `npx @auth0/auth0-mcp-server init --scopes 'read:*,update:*,create:*'`
    - If a specific operation fails, you may be missing the required scope
+
+4. **Invalid Auth0 Configuration Error**
+
+   - This typically happens when your authorization token is missing or expired
+   - Run `npx @auth0/auth0-mcp-server session` to check your token status
+   - If expired or missing, run `npx @auth0/auth0-mcp-server init` to authenticate
 
 > [!TIP]
 > Most connection issues can be resolved by restarting both the server and Claude Desktop.
