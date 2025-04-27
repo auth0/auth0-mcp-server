@@ -1,7 +1,8 @@
 {
   "name": "@auth0/auth0-mcp-server",
   "version": "0.1.0-beta.2",
-  "description": "Auth0 MCP Server for Claude Desktop",
+  "description": "Auth0 Model Context Protocol (MCP) Server (Beta, Experimental) — A secure and extendable reference implementation of an MCP server for scoped access to the Auth0 Management API. This project is currently experimental and not intended for production workloads. It is designed to encourage best practices around security, least-privilege access, and customizable toolsets.",
+  "private": true,
   "type": "module",
   "main": "dist/index.js",
   "bin": {
@@ -17,9 +18,9 @@
     "prebuild": "npm run format && npm run lint",
     "build": "rm -rf dist && tsc",
     "postbuild": "shx chmod +x dist/*.js",
-    "dev": "tsx . run",
-    "dev:debug": "DEBUG=auth0-mcp tsx . run",
-    "dev:inspect": "npx @modelcontextprotocol/inspector tsx . run",
+    "dev": "tsx src/index.ts run",
+    "dev:debug": "DEBUG=auth0-mcp tsx src/index.ts run",
+    "dev:inspect": "npx @modelcontextprotocol/inspector tsx src/index.ts run",
     "start": "node dist/index.js run",
     "start:debug": "DEBUG=auth0-mcp node dist/index.js run",
     "start:inspect": "npx @modelcontextprotocol/inspector node dist/index.js run",
@@ -31,11 +32,15 @@
     "lint": "eslint . --ext .js,.ts",
     "lint:fix": "eslint . --ext .js,.ts --fix",
     "format": "prettier --write \"**/*.{js,ts,json,md}\"",
-    "format:check": "prettier --check \"**/*.{js,ts,json,md}\""
+    "format:check": "prettier --check \"**/*.{js,ts,json,md}\"",
+    "typecheck": "tsc --noEmit"
   },
   "keywords": [
     "auth0",
     "mcp",
+    "model context protocol",
+    "experimental",
+    "beta",
     "claude"
   ],
   "author": "auth0",
