@@ -234,8 +234,7 @@ export async function getValidAccessToken(): Promise<string | null> {
     const expired = await isTokenExpired();
 
     if (expired) {
-      //[TODO] Implement refresh token flow
-      log('Refresh token flow is not implemented yet, please try npx @auth0/auth0-mcp-server init');
+      log('Token is expired. Please authenticate again using `npx @auth0/auth0-mcp-server init`');
       return null;
     }
 
