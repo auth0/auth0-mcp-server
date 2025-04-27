@@ -5,7 +5,7 @@ import { findAndUpdateClaudeConfig } from '../../src/clients/claude';
 import { findAndUpdateWindsurfConfig } from '../../src/clients/windsurf';
 import { findAndUpdateCursorConfig } from '../../src/clients/cursor';
 import { log, logError } from '../../src/utils/logger';
-import { promptForScopeSelection } from '../../src/utils/cli-utility';
+import { promptForScopeSelection } from '../../src/utils/terminal.js';
 import { TOOLS } from '../../src/tools/index';
 
 // Mock all dependencies
@@ -14,10 +14,7 @@ vi.mock('../../src/clients/claude');
 vi.mock('../../src/clients/windsurf');
 vi.mock('../../src/clients/cursor');
 vi.mock('../../src/utils/logger');
-
-vi.mock('../../src/utils/cli-utility', () => ({
-  promptForScopeSelection: vi.fn().mockResolvedValue([]),
-}));
+vi.mock('../../src/utils/terminal', () => import('../../test/mocks/terminal'));
 
 // Mock the scope utilities
 vi.mock('../../src/utils/scopes', () => ({
