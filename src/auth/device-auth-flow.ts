@@ -6,7 +6,7 @@ import {
   getTenantFromToken,
   cliOutput,
   promptForBrowserPermission,
-} from '../utils/cli-utility.js';
+} from '../utils/terminal.js';
 import { log, logError } from '../utils/logger.js';
 import { keychain } from '../utils/keychain.js';
 import { DEFAULT_SCOPES } from '../utils/scopes.js';

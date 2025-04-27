@@ -6,7 +6,7 @@ import { loadConfig, validateConfig } from './utils/config.js';
 import { HANDLERS, TOOLS } from './tools/index.js';
 import { log, logInfo } from './utils/logger.js';
 import { formatDomain } from './utils/http-utility.js';
-import { maskTenantName } from './utils/cli-utility.js';
+import { maskTenantName } from './utils/terminal.js';
 import { getAvailableTools } from './utils/tools.js';
 import type { RunOptions } from './commands/run.js';
 import { packageVersion } from './utils/package.js';
