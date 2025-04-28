@@ -30,45 +30,41 @@ export function formatDomain(domain: string): string {
 
 // Helper function to create success response
 export function createSuccessResponse(result: object | Array<any>): HandlerResponse {
-  // Format the response content
-  let content: Array<{ type: string; [key: string]: any }>;
-
   // Check if result is an array and has more than one item
   if (Array.isArray(result) && result.length > 1) {
-    content = result.map((item) => {
+    const mutiContent = result.map((item) => {
       return {
         type: 'text',
         text: JSON.stringify(item, null, 2),
       };
     });
+    return {
+      content: mutiContent,
+      isError: false,
+    };
   } else {
-    content = [
-      {
-        type: 'text',
-        text: JSON.stringify(result, null, 2),
-      },
-    ];
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(result, null, 2),
+        },
+      ],
+      isError: false,
+    };
   }
-
-  // Return a standard response
-  return {
-    content,
-    isError: false,
-  };
 }
 
 // Helper function to create error response
 export function createErrorResponse(errorString: string): HandlerResponse {
-  const content = [
-    {
-      type: 'text',
-      text: errorString,
-    },
-  ];
-
   // Return a standard response
   return {
-    content,
+    content: [
+      {
+        type: 'text',
+        text: errorString,
+      },
+    ],
     isError: true,
   };
 }

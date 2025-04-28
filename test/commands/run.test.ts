@@ -83,9 +83,11 @@ describe('Run Module', () => {
 
     await run(options);
 
-    expect(startServer).toHaveBeenCalledWith(expect.objectContaining({
-      tools: ['auth0_list_applications', 'auth0_get_application']
-    }));
+    expect(startServer).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tools: ['auth0_list_applications', 'auth0_get_application'],
+      })
+    );
     expect(logInfo).toHaveBeenCalledWith(
       'Starting server with tools matching the following pattern(s): auth0_list_applications, auth0_get_application'
     );
