@@ -16,6 +16,20 @@ export interface RunOptions {
 
 /**
  * Validates authorization preconditions before starting the server
+ * 
+ * This function provides user-friendly validation with detailed CLI output
+ * and actionable guidance for resolving authentication issues. It forms the
+ * first layer of the MCP server's validation architecture:
+ *
+ * 1. Initial validation (here): Provides rich user feedback during startup
+ * 2. Server startup validation: Secondary checkpoint in `server.ts`
+ * 3. Continuous validation: During tool calls via the `validateConfig()` function
+ *
+ * Each layer serves a distinct purpose, creating a balance between security
+ * and developer experience. This function focuses on DX with detailed,
+ * human-readable feedback, while later validation layers provide ongoing
+ * security with more technical checks.
+ * 
  * @returns {Promise<boolean>} True if authorization is valid, false otherwise
  */
 const validateAuthorization = async (): Promise<boolean> => {

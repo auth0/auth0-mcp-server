@@ -207,6 +207,26 @@ export async function refreshAccessToken(selectedScopes?: string[]): Promise<str
   }
 }
 
+/**
+ * Determines if the current access token is expired or will expire soon.
+ * 
+ * This security check is crucial for maintaining continuous authenticated access 
+ * to Auth0 APIs. It includes a configurable buffer time to proactively detect 
+ * tokens that will expire soon, preventing potential disruptions during operations
+ * that might span multiple API calls. This proactive approach allows the system to
+ * initiate refresh flows before actual expiration occurs.
+ * 
+ * The function considers a token expired in the following cases:
+ * - No expiration time is found in the keychain via `keychain.getTokenExpiresAt()`
+ * - Current time + buffer exceeds the token's expiration time
+ * - Error occurs during expiration check (fails secure)
+ * 
+ * This function is used both by `validateAuthorization()` in `run.ts` for user-friendly
+ * startup validation and by `validateConfig()` for continuous runtime validation.
+ * 
+ * @param {number} bufferSeconds - Seconds before actual expiration to consider token expired (default: 300s/5min)
+ * @returns {Promise<boolean>} True if token is expired or will expire within the buffer period
+ */
 export async function isTokenExpired(bufferSeconds = 300): Promise<boolean> {
   try {
     const expiresAt = await keychain.getTokenExpiresAt();
@@ -229,6 +249,22 @@ export async function isTokenExpired(bufferSeconds = 300): Promise<boolean> {
   }
 }
 
+/**
+ * Retrieves a valid access token for Auth0 API operations.
+ * 
+ * This function serves as the main entry point for credential retrieval,
+ * ensuring that only valid, non-expired tokens are provided to API operations.
+ * It implements a critical security checkpoint that prevents operations from
+ * proceeding with invalid authentication, which could lead to API failures
+ * or unpredictable behavior.
+ * 
+ * The function performs these key security checks:
+ * 1. Verifies token expiration status using isTokenExpired
+ * 2. Provides clear guidance to users when re-authentication is needed
+ * 3. Handles errors gracefully with a fail-secure approach
+ * 
+ * @returns {Promise<string|null>} A valid access token, or null if no valid token is available
+ */
 export async function getValidAccessToken(): Promise<string | null> {
   try {
     const expired = await isTokenExpired();

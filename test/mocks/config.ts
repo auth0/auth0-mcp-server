@@ -11,4 +11,4 @@ export const mockConfig = {
 export const mockLoadConfig = vi.fn().mockResolvedValue(mockConfig);
 
 // Mock function to validate configuration
-export const mockValidateConfig = vi.fn().mockReturnValue(true);
+export const mockValidateConfig = vi.fn().mockResolvedValue(true);
