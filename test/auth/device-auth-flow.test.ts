@@ -6,7 +6,7 @@ import { KEYCHAIN_SERVICE_NAME, KeychainItem } from '../../src/utils/constants';
 // Mock dependencies
 vi.mock('keytar');
 vi.mock('open');
-vi.mock('../../src/utils/cli-utility', () => ({
+vi.mock('../../src/utils/terminal', () => ({
   startSpinner: vi.fn(),
   stopSpinner: vi.fn(),
   getTenantFromToken: vi.fn().mockReturnValue('test-tenant.auth0.com'),
@@ -147,7 +147,12 @@ describe('Device Auth Flow', () => {
         KeychainItem.REFRESH_TOKEN,
         'new-refresh-token'
       );
-      expect(keytar.setPassword).toHaveBeenCalledTimes(4); // Token, domain, refresh token, and expires_at
+      expect(keytar.setPassword).toHaveBeenCalledWith(
+        KEYCHAIN_SERVICE_NAME,
+        KeychainItem.TOKEN_EXPIRES_AT,
+        expect.any(String)
+      );
+      expect(keytar.setPassword).toHaveBeenCalledTimes(4); // Token, domain, refresh token, expires_at
     });
 
     it('should handle error response from token endpoint', async () => {

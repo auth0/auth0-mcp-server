@@ -17,10 +17,17 @@
 
 [MCP (Model Context Protocol)](https://modelcontextprotocol.io/introduction) is an open protocol introduced by Anthropic that standardizes how large language models communicate with external tools, resources or remote services.
 
-**⚠ Beta Feature Notice:**
-This feature is currently in Beta. Please use with caution when calling tools, as functionality may be unstable or subject to change.
+> [!CAUTION]
+> **Beta Software Notice: This software is currently in beta and is provided AS IS without any warranties.**
+>
+> - Features, APIs, and functionality may change at any time without notice
+> - Not recommended for production use or critical workloads
+> - Support during the beta period is limited
+> - Issues and feedback can be reported through the [GitHub issue tracker](https://github.com/auth0/auth0-mcp-server/issues)
+>
+> By using this beta software, you acknowledge and accept these conditions.
 
-The Auth0 MCP Server integrates with LLMs and AI agents, allowing you to perform various Auth0 management operations using natural language. For instance, you could simply ask Claude to perform Auth0 management operations:
+The Auth0 MCP Server integrates with LLMs and AI agents, allowing you to perform various Auth0 management operations using natural language. For instance, you could simply ask Claude Desktop to perform Auth0 management operations:
 
 - > Create a new Auth0 app and get the domain and client ID
 - > Create and deploy a new Auth0 action to generate a JWT token
@@ -44,7 +51,7 @@ The Auth0 MCP Server integrates with LLMs and AI agents, allowing you to perform
 
 ### Install the Auth0 MCP Server
 
-Install Auth0 MCP Server and configure it to work with your preferred MCP client. The `--tools` parameter specifies which tools should be available (defaults to `*` if not provided).
+Install Auth0 MCP Server and configure it to work with your preferred MCP Client. The `--tools` parameter specifies which tools should be available (defaults to `*` if not provided).
 
 **Claude Desktop with all tools**
 
@@ -86,7 +93,7 @@ npx @auth0/auth0-mcp-server init --client cursor --tools 'auth0_list_application
 
 To use Auth0 MCP Server with any other MCP Client, you can manually add this configuration to the client and restart for changes to take effect:
 
-```bash
+```json
 {
   "mcpServers": {
     "auth0": {
@@ -108,14 +115,14 @@ You can add `--tools '<pattern>'` to the args array to control which tools are a
 Your browser will automatically open to initiate the OAuth 2.0 device authorization flow. Log into your Auth0 account and grant the requested permissions.
 
 > [!NOTE]
-> Credentials are securely stored in your system's keychain. You can optionally verify storage through your keychain management tool. Checkout [Authentication](#-authentication) for more info.
+> Credentials are securely stored in your system's keychain. You can optionally verify storage through your keychain management tool. Check out [Authentication](#-authentication) for more info.
 
 ### Verify your integration
 
-Restart your MCP Client(Claude, Windsurf, Cursor, etc...) and ask it to help you manage your Auth0 tenant
+Restart your MCP Client (Claude Desktop, Windsurf, Cursor, etc.) and ask it to help you manage your Auth0 tenant
 
 <div align="left">
-  <img src="https://cdn.auth0.com/website/mcp/assets/help-image-01.png" alt="Claude installed Help Image" width="300">
+  <img src="https://cdn.auth0.com/website/mcp/assets/help-image-01.png" alt="Claude Desktop help screen showing successful integration" width="300">
 </div>
 
 ## 🛠️ Supported Tools
@@ -224,7 +231,7 @@ The Auth0 MCP Server implements the Model Context Protocol, allowing Claude to:
 
 The server handles authentication, request validation, and secure communication with the Auth0 Management API.
 
-<div align="centre">
+<div align="center">
   <img src="https://cdn.auth0.com/website/mcp/assets/auth0-mcp-server-hld.png" alt="Auth0 MCP Server HLD" width="800">
 </div>
 
@@ -277,7 +284,7 @@ This ensures your authentication tokens are properly removed from the system key
 
 The server uses OAuth 2.0 device authorization flow for secure authentication with Auth0. Your credentials are stored securely in your system's keychain and are never exposed in plain text.
 
-<div align="centre">
+<div align="center">
   <img src="https://cdn.auth0.com/website/mcp/assets/mcp-server-auth.png" alt="Authentication Sequence Diagram" width="800">
 </div>
 
@@ -351,7 +358,7 @@ To use Auth0 MCP Server with any other MCP Client, you can add this configuratio
    - Ensure you have the correct permissions in your Auth0 tenant
    - Try re-initializing with `npx @auth0/auth0-mcp-server init`
 
-2. **Claude Can't Connect to the Server**
+2. **Claude Desktop Can't Connect to the Server**
 
    - Restart Claude Desktop after installation
    - Check that the server is running with `ps aux | grep auth0-mcp`
@@ -417,7 +424,7 @@ npm run build
 # Initiate device auth flow
 npx . init
 
-# Configure your MCP client(Claude Desktop) with MCP server path
+# Configure your MCP Client (e.g. Claude Desktop) with MCP server path
 npm run setup
 ```
 

@@ -3,7 +3,7 @@ import { findAndUpdateWindsurfConfig } from '../clients/windsurf.js';
 import { findAndUpdateCursorConfig } from '../clients/cursor.js';
 import { log, logError } from '../utils/logger.js';
 import { requestAuthorization } from '../auth/device-auth-flow.js';
-import { promptForScopeSelection } from '../utils/cli-utility.js';
+import { promptForScopeSelection } from '../utils/terminal.js';
 import { getAllScopes } from '../utils/scopes.js';
 import { Glob } from '../utils/glob.js';
 import chalk from 'chalk';

@@ -3,7 +3,7 @@ import * as path from 'path';
 import * as os from 'os';
 import chalk from 'chalk';
 import { log } from '../utils/logger.js';
-import { cliOutput } from '../utils/cli-utility.js';
+import { cliOutput } from '../utils/terminal.js';
 import type { ClientOptions } from '../utils/types.js';
 
 interface CursorMCPServer {
