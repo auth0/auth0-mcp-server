@@ -5,6 +5,7 @@ import { cliOutput } from '../utils/terminal.js';
 import { packageName } from '../utils/package.js';
 import type { ClientOptions } from '../utils/types.js';
 import type { ServerConfig, ClientConfig, ClientManager, ClientType } from './types.js';
+import { MCP_SERVER_NAME } from '../utils/constants.js';
 
 /**
  * Abstract base class providing common functionality for all supported MCP client managers.
@@ -51,7 +52,7 @@ export abstract class BaseClientManager implements ClientManager {
     const mcpServers = config.mcpServers || {};
     const serverConfig = this.createServerConfig(options);
 
-    mcpServers['auth0'] = serverConfig;
+    mcpServers[MCP_SERVER_NAME] = serverConfig;
     config.mcpServers = mcpServers;
 
     this.writeConfig(configPath, config);
