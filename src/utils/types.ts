@@ -25,14 +25,12 @@ export interface Tool {
 export interface HandlerRequest {
   token: string;
   parameters: Record<string, any>;
-  authHeader?: string;
 }
 
 export interface HandlerConfig {
   domain: string | undefined;
 }
 
-// Standard response interface
 export interface HandlerResponse {
   content: Array<{
     type: string;
@@ -45,31 +43,6 @@ export interface HandlerResponse {
 export interface ClientOptions {
   tools: string[];
   readOnly?: boolean;
-}
-
-// Streaming response interface compatible with MCP SDK
-export interface StreamingResponse {
-  write: (chunk: any) => void;
-  end: () => void;
-}
-
-// Request handler extras including streaming response, matching MCP SDK types
-export interface RequestHandlerExtra {
-  streaming?: StreamingResponse;
-  [key: string]: unknown;
-}
-
-// Define transport interfaces
-export interface ServerTransport {
-  onRequest: (callback: (request: any, response?: StreamingResponse) => Promise<void>) => void;
-  close?: () => Promise<void>;
-}
-
-// Define HTTP streaming options
-export interface HttpServerOptions {
-  port?: number;
-  host?: string;
-  authToken?: string;
 }
 
 // Auth0 response interfaces
