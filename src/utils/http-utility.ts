@@ -57,7 +57,6 @@ export function createSuccessResponse(result: object | Array<any>): HandlerRespo
 
 // Helper function to create error response
 export function createErrorResponse(errorString: string): HandlerResponse {
-  // Return a standard response
   return {
     content: [
       {
