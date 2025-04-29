@@ -12,7 +12,7 @@ vi.mock('../src/utils/package.js', () => ({
 }));
 vi.mock('../src/utils/config.js', () => ({
   loadConfig: vi.fn().mockImplementation(() => mockLoadConfig()),
-  validateConfig: vi.fn().mockImplementation((config) => mockValidateConfig(config)),
+  validateConfig: vi.fn().mockImplementation(async (config) => mockValidateConfig(config)),
 }));
 vi.mock('../src/utils/logger.js', () => ({
   log: vi.fn(),
@@ -62,7 +62,7 @@ describe('Server', () => {
     mockSetRequestHandler.mockClear();
     mockConnect.mockClear();
     mockClose.mockClear();
-    mockValidateConfig.mockImplementation((config) => true);
+    mockValidateConfig.mockImplementation(() => Promise.resolve(true));
   });
 
   describe('Initialization', () => {
@@ -98,7 +98,7 @@ describe('Server', () => {
     });
 
     it('should throw an error if config validation fails', async () => {
-      mockValidateConfig.mockReturnValueOnce(false);
+      mockValidateConfig.mockResolvedValueOnce(false);
 
       await expect(startServer()).rejects.toThrow('Invalid Auth0 configuration');
 
@@ -206,9 +206,9 @@ describe('Server', () => {
     it('should reload config if it becomes invalid during a tool call', async () => {
       // First call to validateConfig returns true, second call returns false, third call returns true
       mockValidateConfig
-        .mockReturnValueOnce(true) // Initial validation during server start
-        .mockReturnValueOnce(false) // Validation during tool call
-        .mockReturnValueOnce(true); // Validation after reload
+        .mockResolvedValueOnce(true) // Initial validation during server start
+        .mockResolvedValueOnce(false) // Validation during tool call
+        .mockResolvedValueOnce(true); // Validation after reload
 
       await startServer();
 
@@ -238,7 +238,7 @@ describe('Server', () => {
 
     it('should throw an error if config is still invalid after reload', async () => {
       // First call to validateConfig returns true, subsequent calls return false
-      mockValidateConfig.mockReturnValueOnce(true).mockReturnValue(false);
+      mockValidateConfig.mockResolvedValueOnce(true).mockResolvedValue(false);
 
       await startServer();
 
