@@ -1,20 +1,39 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import init from '../../src/commands/init.js';
 import { requestAuthorization } from '../../src/auth/device-auth-flow';
-import { findAndUpdateClaudeConfig } from '../../src/clients/claude';
-import { findAndUpdateWindsurfConfig } from '../../src/clients/windsurf';
-import { findAndUpdateCursorConfig } from '../../src/clients/cursor';
 import { log, logError } from '../../src/utils/logger';
 import { promptForScopeSelection } from '../../src/utils/terminal.js';
-import { TOOLS } from '../../src/tools/index';
+import type { ClientManager, ClientType } from '../../src/clients/types.js';
 
-// Mock all dependencies
+// Mock all dependencies first
 vi.mock('../../src/auth/device-auth-flow');
-vi.mock('../../src/clients/claude');
-vi.mock('../../src/clients/windsurf');
-vi.mock('../../src/clients/cursor');
 vi.mock('../../src/utils/logger');
 vi.mock('../../src/utils/terminal', () => import('../../test/mocks/terminal'));
+
+// Mock the client modules
+vi.mock('../../src/clients/index.js', () => {
+  const mockClaudeManager = {
+    getConfigPath: vi.fn(),
+    configure: vi.fn().mockResolvedValue(undefined),
+  };
+
+  const mockCursorManager = {
+    getConfigPath: vi.fn(),
+    configure: vi.fn().mockResolvedValue(undefined),
+  };
+
+  const mockWindsurfManager = {
+    getConfigPath: vi.fn(),
+    configure: vi.fn().mockResolvedValue(undefined),
+  };
+
+  return {
+    clients: {
+      claude: mockClaudeManager,
+      cursor: mockCursorManager,
+      windsurf: mockWindsurfManager,
+    },
+  };
+});
 
 // Mock the scope utilities
 vi.mock('../../src/utils/scopes', () => ({
@@ -29,24 +48,27 @@ vi.mock('../../src/utils/scopes', () => ({
   DEFAULT_SCOPES: [],
 }));
 
+// Import dependencies after mocking
+import { clients } from '../../src/clients/index.js';
+
+// Import init after mocking dependencies
+import init from '../../src/commands/init.js';
+
 describe('Init Module', () => {
   // Type the mocks for better intellisense and type checking
   const mockedRequestAuth = vi.mocked(requestAuthorization);
-  const mockedClaudeConfig = vi.mocked(findAndUpdateClaudeConfig);
-  const mockedWindsurfConfig = vi.mocked(findAndUpdateWindsurfConfig);
-  const mockedCursorConfig = vi.mocked(findAndUpdateCursorConfig);
+  const mockedClaudeConfigure = vi.mocked(clients.claude.configure);
+  const mockedWindsurfConfigure = vi.mocked(clients.windsurf.configure);
+  const mockedCursorConfigure = vi.mocked(clients.cursor.configure);
   const mockedLog = vi.mocked(log);
-  const mockedLogError = vi.mocked(logError);
   const mockedPromptForScopeSelection = vi.mocked(promptForScopeSelection);
 
   beforeEach(() => {
+    // Arrange
     vi.resetAllMocks();
 
     // Set default mock return values
     mockedRequestAuth.mockResolvedValue(undefined);
-    mockedClaudeConfig.mockResolvedValue(undefined);
-    mockedWindsurfConfig.mockResolvedValue(undefined);
-    mockedCursorConfig.mockResolvedValue(undefined);
     mockedPromptForScopeSelection.mockResolvedValue([]);
   });
 
@@ -56,7 +78,7 @@ describe('Init Module', () => {
 
     // Assert
     expect(mockedLog).toHaveBeenCalledWith('Initializing Auth0 MCP server...');
-    expect(mockedClaudeConfig).toHaveBeenCalledWith(expect.objectContaining({ tools: [] }));
+    expect(mockedClaudeConfigure).toHaveBeenCalledWith(expect.objectContaining({ tools: [] }));
   });
 
   it('should initialize server with default client (Claude) when tools parameter is provided', async () => {
@@ -67,7 +89,7 @@ describe('Init Module', () => {
     expect(mockedLog).toHaveBeenCalledWith('Initializing Auth0 MCP server...');
     expect(mockedPromptForScopeSelection).toHaveBeenCalled();
     expect(mockedRequestAuth).toHaveBeenCalled();
-    expect(mockedClaudeConfig).toHaveBeenCalled();
+    expect(mockedClaudeConfigure).toHaveBeenCalled();
   });
 
   it('should handle authorization errors', async () => {
@@ -83,13 +105,13 @@ describe('Init Module', () => {
     // Assert
     expect(mockedLog).toHaveBeenCalledWith('Initializing Auth0 MCP server...');
     expect(mockedRequestAuth).toHaveBeenCalled();
-    expect(mockedClaudeConfig).not.toHaveBeenCalled();
+    expect(mockedClaudeConfigure).not.toHaveBeenCalled();
   });
 
   it('should handle client config update errors', async () => {
     // Arrange
     const mockError = new Error('Claude config update failed');
-    mockedClaudeConfig.mockRejectedValue(mockError);
+    mockedClaudeConfigure.mockRejectedValue(mockError);
 
     // Act
     await init({ client: 'claude', tools: ['*'] }).catch(() => {
@@ -99,7 +121,7 @@ describe('Init Module', () => {
     // Assert
     expect(mockedLog).toHaveBeenCalledWith('Initializing Auth0 MCP server...');
     expect(mockedRequestAuth).toHaveBeenCalled();
-    expect(mockedClaudeConfig).toHaveBeenCalled();
+    expect(mockedClaudeConfigure).toHaveBeenCalled();
   });
 
   it('should pass tool options to client config when specified', async () => {
@@ -113,23 +135,27 @@ describe('Init Module', () => {
     expect(mockedLog).toHaveBeenCalledWith(
       'Configuring server with selected tools: auth0_list_*, auth0_get_*'
     );
-    expect(mockedClaudeConfig).toHaveBeenCalledWith({ tools });
+    expect(mockedClaudeConfigure).toHaveBeenCalledWith({ tools });
   });
 
   describe('Client selection', () => {
     it.each([
-      ['windsurf', mockedWindsurfConfig],
-      ['cursor', mockedCursorConfig],
-    ])('should initialize %s client when specified', async (clientName, configMock) => {
+      ['windsurf', mockedWindsurfConfigure],
+      ['cursor', mockedCursorConfigure],
+    ])('should initialize %s client when specified', async (clientType, configMock) => {
       // Act
-      await init({ client: clientName as any, tools: ['*'] });
+      await init({ client: clientType as ClientType, tools: ['*'] });
 
       // Assert
       expect(configMock).toHaveBeenCalled();
-      expect(mockedClaudeConfig).not.toHaveBeenCalled();
+      expect(mockedClaudeConfigure).not.toHaveBeenCalled();
 
       // Verify other client configs weren't called
-      const allClientMocks = [mockedClaudeConfig, mockedWindsurfConfig, mockedCursorConfig];
+      const allClientMocks = [
+        mockedClaudeConfigure,
+        mockedWindsurfConfigure,
+        mockedCursorConfigure,
+      ];
       const otherMocks = allClientMocks.filter((mock) => mock !== configMock);
       otherMocks.forEach((mock) => {
         expect(mock).not.toHaveBeenCalled();
@@ -144,7 +170,7 @@ describe('Init Module', () => {
       await init({ client: 'windsurf', tools });
 
       // Assert
-      expect(mockedWindsurfConfig).toHaveBeenCalledWith({ tools });
+      expect(mockedWindsurfConfigure).toHaveBeenCalledWith({ tools });
     });
   });
 

@@ -1,84 +1,41 @@
-import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import chalk from 'chalk';
-import { log } from '../utils/logger.js';
-import { cliOutput } from '../utils/terminal.js';
-import type { ClientOptions } from '../utils/types.js';
+import { BaseClientManager } from './base.js';
+import { getPlatformPath, ensureDir } from './utils.js';
 
-interface WindsurfMCPServer {
-  args: string[];
-  capabilities?: string[];
-  command: string;
-  env?: Record<string, string>;
-}
-
-interface WindsurfConfig {
-  mcpServers: Record<string, WindsurfMCPServer>;
-}
-
-export const findAndUpdateWindsurfConfig = async (options: ClientOptions) => {
-  const resolvedConfigPath = await getWindsurfConfigPath();
-  await updateWindsurfConfig(resolvedConfigPath, options);
-  cliOutput(
-    `\n${chalk.green('✓')} Auth0 MCP server configured. ${chalk.yellow('Restart Windsurf')} to apply changes.\n`
-  );
-};
-
-export async function getWindsurfConfigPath(): Promise<string> {
-  let configDir: string;
-
-  switch (process.platform) {
-    case 'darwin': // macOS
-      configDir = path.join(os.homedir(), '.codeium', 'windsurf');
-      break;
-    case 'win32': {
-      // Windows
-      const APPDATA = process.env.APPDATA;
-      if (!APPDATA) {
-        throw new Error('APPDATA environment variable not set');
-      }
-      configDir = path.join(APPDATA, '.codeium', 'windsurf');
-      break;
-    }
-    case 'linux': // Linux
-      configDir = path.join(os.homedir(), '.codeium', 'windsurf');
-      break;
-    default:
-      throw new Error(`Unsupported operating system: ${process.platform}`);
+/**
+ * Client manager implementation for Windsurf.
+ *
+ * Responsible for configuring and managing the MCP server integration
+ * for the Windsurf Editor application.
+ *
+ * @see {@link https://windsurf.com/editor | Windsurf Editor}
+ */
+export class WindsurfClientManager extends BaseClientManager {
+  constructor() {
+    super({
+      clientType: 'windsurf',
+      displayName: 'Windsurf',
+    });
   }
 
-  try {
-    await fs.promises.mkdir(configDir, { recursive: true });
-  } catch (err) {
-    throw new Error(`Failed to create config directory: ${(err as Error).message}`);
+  /**
+   * Returns the path to the Windsurf configuration file.
+   *
+   * Resolves the platform-specific configuration directory,
+   * ensures the directory exists on disk, and constructs the full path
+   * to the MCP configuration file.
+   *
+   * @returns The absolute path to the configuration file.
+   */
+  getConfigPath(): string {
+    const configDir = getPlatformPath({
+      darwin: path.join(os.homedir(), '.codeium', 'windsurf'),
+      win32: path.join('{APPDATA}', '.codeium', 'windsurf'),
+      linux: path.join(os.homedir(), '.codeium', 'windsurf'),
+    });
+
+    ensureDir(configDir);
+    return path.join(configDir, 'mcp_config.json');
   }
-  return path.join(configDir, 'mcp_config.json');
-}
-
-async function updateWindsurfConfig(configPath: string, options: ClientOptions) {
-  let config: WindsurfConfig = { mcpServers: {} };
-  if (fs.existsSync(configPath)) {
-    const configData = fs.readFileSync(configPath, 'utf-8');
-    config = JSON.parse(configData);
-  }
-
-  // Build args array
-  const args = ['-y', '@auth0/auth0-mcp-server', 'run', '--tools', `${options.tools.join(',')}`];
-
-  // Add read-only flag if specified
-  if (options.readOnly) {
-    args.push('--read-only');
-  }
-
-  config.mcpServers['auth0'] = {
-    command: 'npx',
-    args,
-    env: {
-      DEBUG: 'auth0-mcp',
-    },
-  };
-
-  fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
-  log(`Updated Windsurf config file at: ${configPath}`);
 }

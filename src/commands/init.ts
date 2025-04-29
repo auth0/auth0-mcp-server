@@ -1,6 +1,5 @@
-import { findAndUpdateClaudeConfig } from '../clients/claude.js';
-import { findAndUpdateWindsurfConfig } from '../clients/windsurf.js';
-import { findAndUpdateCursorConfig } from '../clients/cursor.js';
+import { clients } from '../clients/index.js';
+import type { ClientType } from '../clients/types.js';
 import { log, logError } from '../utils/logger.js';
 import { requestAuthorization } from '../auth/device-auth-flow.js';
 import { promptForScopeSelection } from '../utils/terminal.js';
@@ -11,42 +10,14 @@ import trackEvent from '../utils/analytics.js';
 import type { ClientOptions } from '../utils/types.js';
 
 /**
- * Supported client types
- */
-export type ClientName = 'claude' | 'windsurf' | 'cursor';
-
-/**
  * Command options for the init command
  */
 export interface InitOptions {
-  client: ClientName;
+  client: ClientType;
   scopes?: string[];
   tools: string[];
   readOnly?: boolean;
 }
-
-interface ClientAction {
-  message: string;
-  action: (options: ClientOptions) => Promise<void>;
-}
-
-/**
- * Maps client names to their config functions and messages
- */
-const CLIENT_CONFIGS: Record<ClientName, ClientAction> = {
-  windsurf: {
-    message: 'Configuring Windsurf as client...',
-    action: findAndUpdateWindsurfConfig,
-  },
-  cursor: {
-    message: 'Configuring Cursor as client...',
-    action: findAndUpdateCursorConfig,
-  },
-  claude: {
-    message: 'Configuring Claude as client default...',
-    action: findAndUpdateClaudeConfig,
-  },
-};
 
 /**
  * Resolves scope patterns to actual scope values
@@ -103,19 +74,26 @@ async function resolveScopes(scopePatterns?: string[]): Promise<string[]> {
 /**
  * Configures the specified client with options
  *
- * @param {ClientName} clientName - Name of the client to configure
+ * @param {ClientType} clientType - Type of the client to configure
  * @param {InitOptions} options - Configuration options
  */
-async function configureClient(clientName: ClientName, options: InitOptions): Promise<void> {
-  const config = CLIENT_CONFIGS[clientName];
-  log(config.message);
+async function configureClient(clientType: ClientType, options: InitOptions): Promise<void> {
+  const manager = clients[clientType];
+
+  if (!manager) {
+    logError(`Invalid client type specified: ${clientType}`);
+    logError(`Available clients are: ${Object.keys(clients).join(', ')}`);
+    process.exit(1);
+  }
+
+  log(`Configuring ${manager.displayName} as client...`);
 
   const clientOptions: ClientOptions = {
     tools: options.tools,
     readOnly: options.readOnly,
   };
 
-  await config.action(clientOptions);
+  await manager.configure(clientOptions);
 }
 
 /**
@@ -127,7 +105,7 @@ async function configureClient(clientName: ClientName, options: InitOptions): Pr
  * 3. Configuring the selected client (Claude, Windsurf, or Cursor)
  *
  * @param {InitOptions} options - Configuration options including:
- *   - client: The target client to configure ('claude', 'windsurf', or 'cursor')
+ *   - client: The target client type to configure ('claude', 'windsurf', or 'cursor')
  *   - scopes: Optional scope patterns for authorization (will prompt if omitted)
  *   - tools: Tool patterns to enable (e.g., ['auth0_list_*'])
  *
