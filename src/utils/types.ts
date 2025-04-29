@@ -1,5 +1,14 @@
 // This file contains common types and interfaces used across the application.
 
+// Define ToolAnnotations interface based on MCP schema 2025-03-26
+export interface ToolAnnotations {
+  destructiveHint?: boolean;
+  idempotentHint?: boolean;
+  openWorldHint?: boolean;
+  readOnlyHint?: boolean;
+  title?: string;
+}
+
 // Define Tool interface
 export interface Tool {
   name: string;
@@ -9,6 +18,7 @@ export interface Tool {
     requiredScopes: string[];
     readOnly?: boolean;
   };
+  annotations?: ToolAnnotations;
 }
 
 // Define Handler interface

@@ -22,6 +22,13 @@ export const FORM_TOOLS: Tool[] = [
       requiredScopes: ['read:forms'],
       readOnly: true,
     },
+    annotations: {
+      title: 'List Auth0 Forms',
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
   },
   {
     name: 'auth0_get_form',
@@ -36,6 +43,13 @@ export const FORM_TOOLS: Tool[] = [
     _meta: {
       requiredScopes: ['read:forms'],
       readOnly: true,
+    },
+    annotations: {
+      title: 'Get Auth0 Form Details',
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
     },
   },
   {
@@ -84,6 +98,13 @@ export const FORM_TOOLS: Tool[] = [
     },
     _meta: {
       requiredScopes: ['create:forms'],
+    },
+    annotations: {
+      title: 'Create Auth0 Form',
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: false,
     },
   },
   {
@@ -136,6 +157,13 @@ export const FORM_TOOLS: Tool[] = [
     },
     _meta: {
       requiredScopes: ['update:forms'],
+    },
+    annotations: {
+      title: 'Update Auth0 Form',
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: true,
+      openWorldHint: false,
     },
   },
 ];
