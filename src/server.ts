@@ -16,28 +16,28 @@ type ServerOptions = RunOptions;
 /**
  * Initializes and starts the Auth0 MCP server to provide AI assistants
  * with secure, controlled access to Auth0 Management API capabilities.
- * 
+ *
  * This server acts as a secure bridge between AI models and Auth0 APIs,
  * enforcing proper authentication, authorization, and validation at every step.
  * The server validates credentials before any operations and continuously
  * monitors token validity during operation to prevent security issues.
- * 
+ *
  * Security architecture:
  * - Initial user-friendly validation occurs in `run.ts` with detailed CLI feedback
  * - Startup validation here provides a secondary checkpoint
  * - Continuous validation during tool calls ensures credentials remain valid
  * - Token expiration checking prevents use of expired credentials
- * 
+ *
  * This multi-layered approach balances security requirements with developer
  * experience by providing appropriate feedback at each stage.
- * 
+ *
  * Key responsibilities include:
  * - Securing access to Auth0 Management API
  * - Validating user credentials and token expiration
  * - Automatically refreshing invalid configurations when possible
  * - Exposing selected tools based on user permissions and preferences
  * - Handling MCP protocol requests through configured transports
- * 
+ *
  * @param {ServerOptions} [options] - Optional configuration for tool filtering and read-only mode
  * @returns {Promise<Server>} The initialized MCP server instance
  * @throws {Error} If configuration validation fails or server setup encounters errors
