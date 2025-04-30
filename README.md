@@ -4,7 +4,8 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
-![NPM Downloads](https://img.shields.io/npm/d18m/%40auth0%2Fauth0-mcp-server?color=orange)
+[![NPM Downloads](https://img.shields.io/npm/dw/%40auth0%2Fauth0-mcp-server)](https://www.npmjs.com/package/@auth0/auth0-mcp-server)
+[![NPM Version](https://img.shields.io/npm/v/@auth0/auth0-mcp-server)](https://www.npmjs.com/package/@auth0/auth0-mcp-server)
 
 </div>
 
@@ -16,10 +17,17 @@
 
 [MCP (Model Context Protocol)](https://modelcontextprotocol.io/introduction) is an open protocol introduced by Anthropic that standardizes how large language models communicate with external tools, resources or remote services.
 
-**⚠ Beta Feature Notice:**
-This feature is currently in Beta. Please use with caution when calling tools, as functionality may be unstable or subject to change.
+> [!CAUTION]
+> **Beta Software Notice: This software is currently in beta and is provided AS IS without any warranties.**
+>
+> - Features, APIs, and functionality may change at any time without notice
+> - Not recommended for production use or critical workloads
+> - Support during the beta period is limited
+> - Issues and feedback can be reported through the [GitHub issue tracker](https://github.com/auth0/auth0-mcp-server/issues)
+>
+> By using this beta software, you acknowledge and accept these conditions.
 
-The Auth0 MCP Server integrates with LLMs and AI agents, allowing you to perform various Auth0 management operations using natural language. For instance, you could simply ask Claude to perform Auth0 management operations:
+The Auth0 MCP Server integrates with LLMs and AI agents, allowing you to perform various Auth0 management operations using natural language. For instance, you could simply ask Claude Desktop to perform Auth0 management operations:
 
 - > Create a new Auth0 app and get the domain and client ID
 - > Create and deploy a new Auth0 action to generate a JWT token
@@ -43,7 +51,7 @@ The Auth0 MCP Server integrates with LLMs and AI agents, allowing you to perform
 
 ### Install the Auth0 MCP Server
 
-Install Auth0 MCP Server and configure it to work with your preferred MCP client. The `--tools` parameter specifies which tools should be available (defaults to `*` if not provided).
+Install Auth0 MCP Server and configure it to work with your preferred MCP Client. The `--tools` parameter specifies which tools should be available (defaults to `*` if not provided).
 
 **Claude Desktop with all tools**
 
@@ -52,6 +60,12 @@ npx @auth0/auth0-mcp-server init
 ```
 
 **Claude Desktop with read-only tools**
+
+```bash
+npx @auth0/auth0-mcp-server init --read-only
+```
+
+You can also explicitly select read-only tools:
 
 ```bash
 npx @auth0/auth0-mcp-server init --tools 'auth0_list_*,auth0_get_*'
@@ -79,7 +93,7 @@ npx @auth0/auth0-mcp-server init --client cursor --tools 'auth0_list_application
 
 To use Auth0 MCP Server with any other MCP Client, you can manually add this configuration to the client and restart for changes to take effect:
 
-```bash
+```json
 {
   "mcpServers": {
     "auth0": {
@@ -96,19 +110,19 @@ To use Auth0 MCP Server with any other MCP Client, you can manually add this con
 
 You can add `--tools '<pattern>'` to the args array to control which tools are available. See [Security Best Practices](#-security-best-practices-for-tool-access) for recommended patterns.
 
-### Authenticate with Auth0
+### Authorize with Auth0
 
 Your browser will automatically open to initiate the OAuth 2.0 device authorization flow. Log into your Auth0 account and grant the requested permissions.
 
 > [!NOTE]
-> Credentials are securely stored in your system's keychain. You can optionally verify storage through your keychain management tool. Checkout [Authentication](#-authentication) for more info.
+> Credentials are securely stored in your system's keychain. You can optionally verify storage through your keychain management tool. Check out [Authentication](#-authentication) for more info.
 
 ### Verify your integration
 
-Restart your MCP Client(Claude, Windsurf, Cursor, etc...) and ask it to help you manage your Auth0 tenant
+Restart your MCP Client (Claude Desktop, Windsurf, Cursor, etc.) and ask it to help you manage your Auth0 tenant
 
 <div align="left">
-  <img src="https://cdn.auth0.com/website/mcp/assets/help-image-01.png" alt="Claude installed Help Image" width="300">
+  <img src="https://cdn.auth0.com/website/mcp/assets/help-image-01.png" alt="Claude Desktop help screen showing successful integration" width="300">
 </div>
 
 ## 🛠️ Supported Tools
@@ -169,14 +183,21 @@ The Auth0 MCP Server provides the following tools for Claude to interact with yo
 
 When configuring the Auth0 MCP Server, it's important to follow security best practices by limiting tool access based on your specific needs. The server provides flexible configuration options that let you control which tools AI assistants can access.
 
-You can easily restrict tool access using the `--tools` flag when starting the server:
+You can easily restrict tool access using the `--tools` and `--read-only` flags when starting the server:
 
 ```bash
 # Enable only read-only operations
+npx @auth0/auth0-mcp-server run --read-only
+
+# Alternative way to enable only read-only operations
 npx @auth0/auth0-mcp-server run --tools 'auth0_list_*,auth0_get_*'
 
 # Limit to just application-related tools
 npx @auth0/auth0-mcp-server run --tools 'auth0_*_application*'
+
+# Limit to read-only application-related tools
+# Note: --read-only takes priority when used with --tools
+npx @auth0/auth0-mcp-server run --tools 'auth0_*_application*' --read-only
 
 # Restrict to only log viewing capabilities
 npx @auth0/auth0-mcp-server run --tools 'auth0_list_logs,auth0_get_log'
@@ -184,6 +205,9 @@ npx @auth0/auth0-mcp-server run --tools 'auth0_list_logs,auth0_get_log'
 # Run the server with all tools enabled
 npx @auth0/auth0-mcp-server run --tools '*'
 ```
+
+> [!IMPORTANT]
+> When both `--read-only` and `--tools` flags are used together, the `--read-only` flag takes priority for security. This means even if your `--tools` pattern matches non-read-only tools, only read-only operations will be available. This ensures you can rely on the `--read-only` flag as a security guardrail.
 
 This approach offers several important benefits:
 
@@ -207,7 +231,7 @@ The Auth0 MCP Server implements the Model Context Protocol, allowing Claude to:
 
 The server handles authentication, request validation, and secure communication with the Auth0 Management API.
 
-<div align="centre">
+<div align="center">
   <img src="https://cdn.auth0.com/website/mcp/assets/auth0-mcp-server-hld.png" alt="Auth0 MCP Server HLD" width="800">
 </div>
 
@@ -235,6 +259,8 @@ This will start the device authorization flow, allowing you to log in to your Au
 > - You've logged out from a previous session
 > - You want to switch to a different tenant
 > - Your token has expired
+>
+> The `run` command will automatically check for token validity before starting the server and will provide helpful error messages if authentication is needed.
 
 ### Session Management
 
@@ -258,7 +284,7 @@ This ensures your authentication tokens are properly removed from the system key
 
 The server uses OAuth 2.0 device authorization flow for secure authentication with Auth0. Your credentials are stored securely in your system's keychain and are never exposed in plain text.
 
-<div align="centre">
+<div align="center">
   <img src="https://cdn.auth0.com/website/mcp/assets/mcp-server-auth.png" alt="Authentication Sequence Diagram" width="800">
 </div>
 
@@ -332,7 +358,7 @@ To use Auth0 MCP Server with any other MCP Client, you can add this configuratio
    - Ensure you have the correct permissions in your Auth0 tenant
    - Try re-initializing with `npx @auth0/auth0-mcp-server init`
 
-2. **Claude Can't Connect to the Server**
+2. **Claude Desktop Can't Connect to the Server**
 
    - Restart Claude Desktop after installation
    - Check that the server is running with `ps aux | grep auth0-mcp`
@@ -340,9 +366,15 @@ To use Auth0 MCP Server with any other MCP Client, you can add this configuratio
 3. **API Errors or Permission Issues**
 
    - Enable debug mode with `export DEBUG=auth0-mcp`
-   - Check your Auth0 token permissions and expiration
+   - Check your Auth0 token status: `npx @auth0/auth0-mcp-server session`
    - Reinitialize with specific scopes: `npx @auth0/auth0-mcp-server init --scopes 'read:*,update:*,create:*'`
    - If a specific operation fails, you may be missing the required scope
+
+4. **Invalid Auth0 Configuration Error**
+
+   - This typically happens when your authorization token is missing or expired
+   - Run `npx @auth0/auth0-mcp-server session` to check your token status
+   - If expired or missing, run `npx @auth0/auth0-mcp-server init` to authenticate
 
 > [!TIP]
 > Most connection issues can be resolved by restarting both the server and Claude Desktop.
@@ -392,10 +424,24 @@ npm run build
 # Initiate device auth flow
 npx . init
 
-# Configure your MCP client(Claude Desktop) with MCP server path
-npm run local-setup
+# Configure your MCP Client (e.g. Claude Desktop) with MCP server path
+npm run setup
+```
 
-# Restart MCP client, in this case claude desktop app
+### Development Scripts
+
+```bash
+# Run directly with TypeScript (no build needed)
+npm run dev
+
+# Run with debug logs enabled
+npm run dev:debug
+
+# Run with MCP inspector for debugging
+npm run dev:inspect
+
+# Run the compiled JavaScript version
+npm run start
 ```
 
 > [!NOTE]

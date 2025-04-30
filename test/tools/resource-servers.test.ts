@@ -108,7 +108,7 @@ describe('Resource Servers Tool Handlers', () => {
       const response = await RESOURCE_SERVER_HANDLERS.auth0_list_resource_servers(request, config);
 
       expect(response.isError).toBe(true);
-      expect(response.content[0].text).toContain('Missing authentication token');
+      expect(response.content[0].text).toContain('Missing authorization token');
     });
 
     it('should handle missing domain', async () => {

@@ -6,15 +6,43 @@ import { loadConfig, validateConfig } from './utils/config.js';
 import { HANDLERS, TOOLS } from './tools/index.js';
 import { log, logInfo } from './utils/logger.js';
 import { formatDomain } from './utils/http-utility.js';
-import { maskTenantName } from './utils/cli-utility.js';
+import { maskTenantName } from './utils/terminal.js';
 import { getAvailableTools } from './utils/tools.js';
 import type { RunOptions } from './commands/run.js';
 import { packageVersion } from './utils/package.js';
 
 type ServerOptions = RunOptions;
 
-// Server implementation
-export async function startServer(options: ServerOptions) {
+/**
+ * Initializes and starts the Auth0 MCP server to provide AI assistants
+ * with secure, controlled access to Auth0 Management API capabilities.
+ *
+ * This server acts as a secure bridge between AI models and Auth0 APIs,
+ * enforcing proper authentication, authorization, and validation at every step.
+ * The server validates credentials before any operations and continuously
+ * monitors token validity during operation to prevent security issues.
+ *
+ * Security architecture:
+ * - Initial user-friendly validation occurs in `run.ts` with detailed CLI feedback
+ * - Startup validation here provides a secondary checkpoint
+ * - Continuous validation during tool calls ensures credentials remain valid
+ * - Token expiration checking prevents use of expired credentials
+ *
+ * This multi-layered approach balances security requirements with developer
+ * experience by providing appropriate feedback at each stage.
+ *
+ * Key responsibilities include:
+ * - Securing access to Auth0 Management API
+ * - Validating user credentials and token expiration
+ * - Automatically refreshing invalid configurations when possible
+ * - Exposing selected tools based on user permissions and preferences
+ * - Handling MCP protocol requests through configured transports
+ *
+ * @param {ServerOptions} [options] - Optional configuration for tool filtering and read-only mode
+ * @returns {Promise<Server>} The initialized MCP server instance
+ * @throws {Error} If configuration validation fails or server setup encounters errors
+ */
+export async function startServer(options?: ServerOptions) {
   try {
     log('Initializing Auth0 MCP server...');
 
@@ -26,7 +54,7 @@ export async function startServer(options: ServerOptions) {
     // Load configuration
     let config = await loadConfig();
 
-    if (!validateConfig(config)) {
+    if (!(await validateConfig(config))) {
       log('Failed to load valid Auth0 configuration');
       throw new Error('Invalid Auth0 configuration');
     }
@@ -34,7 +62,7 @@ export async function startServer(options: ServerOptions) {
     log(`Successfully loaded configuration for tenant: ${maskTenantName(config.tenantName)}`);
 
     // Get available tools based on options if provided
-    const availableTools = getAvailableTools(TOOLS, options?.tools);
+    const availableTools = getAvailableTools(TOOLS, options?.tools, options?.readOnly);
 
     // Create server instance
     const server = new Server(
@@ -64,11 +92,11 @@ export async function startServer(options: ServerOptions) {
         }
 
         // Check if config is still valid, reload if needed
-        if (!validateConfig(config)) {
+        if (!(await validateConfig(config))) {
           log('Config is invalid, attempting to reload');
           config = await loadConfig();
 
-          if (!validateConfig(config)) {
+          if (!(await validateConfig(config))) {
             throw new Error(
               'Auth0 configuration is invalid or missing. Please check auth0-cli login status.'
             );

@@ -3,16 +3,24 @@ import { log } from './logger.js';
 import { Glob } from './glob.js';
 
 /**
- * Filters the provided tools collection based on specified glob patterns.
+ * Filters the provided tools collection based on specified glob patterns and readOnly flag.
  * This function processes the input patterns against available tools to determine
  * which tools should be returned. It handles special cases like wildcard patterns,
- * empty pattern arrays, and pattern matching errors.
+ * empty pattern arrays, and pattern matching errors. When readOnly is true,
+ * it only returns tools that have _meta.readOnly set to true or tools that follow read-only patterns.
+ *
+ * IMPORTANT: The readOnly flag takes priority over pattern matching for security reasons.
+ * Even if patterns match non-read-only tools, when readOnly=true is specified,
+ * only read-only tools will be returned.
  *
  * @param allTools - Complete collection of available tools to be filtered
  * @param patterns - Optional glob patterns to filter tools by (e.g., 'auth0*', 'jwt-*')
  *                   If omitted or empty, all tools will be returned
  *                   A single '*' pattern will return all tools
- * @returns Array of Tool objects that match the specified patterns
+ * @param readOnly - Optional flag to only return read-only tools
+ *                   When true, only returns tools marked as readOnly
+ *                   Takes priority over pattern matching for security
+ * @returns Array of Tool objects that match the specified criteria
  *          Returns all tools if no patterns provided or on error
  *
  * @example
@@ -20,27 +28,44 @@ import { Glob } from './glob.js';
  * const authTools = getAvailableTools(tools, ['auth*']);
  *
  * @example
- * // Return all tools (either approach works)
- * const allTools1 = getAvailableTools(tools);
- * const allTools2 = getAvailableTools(tools, ['*']);
+ * // Return all read-only tools (regardless of pattern matching)
+ * const readOnlyTools = getAvailableTools(tools, ['*'], true);
  *
  * @example
- * // Return tools matching multiple patterns
- * const selectedTools = getAvailableTools(tools, ['auth*', 'jwt-*']);
- *
- * @see {@link validatePatterns} for pattern validation against available tools
- * @see {@link Glob} for the pattern matching implementation
+ * // Return only read-only tools that match the pattern
+ * // Note: --read-only takes priority, so even if the pattern matches non-read-only tools,
+ * // only the read-only ones will be returned
+ * const readOnlyAuthTools = getAvailableTools(tools, ['auth0_*_application'], true);
  */
-export function getAvailableTools(allTools: Tool[], patterns?: string[]): Tool[] {
-  // Return all tools if no filters specified
-  if (!patterns?.length) {
-    return allTools;
+export function getAvailableTools(
+  allTools: Tool[],
+  patterns?: string[],
+  readOnly?: boolean
+): Tool[] {
+  // Start with all tools
+  let filteredTools = allTools;
+
+  // Apply pattern filtering if patterns are provided
+  if (patterns?.length) {
+    filteredTools = filterToolsByPatterns(filteredTools, patterns);
   }
 
+  // Apply read-only filtering if requested
+  // IMPORTANT: This is applied AFTER pattern filtering, ensuring that
+  // --read-only takes priority over --tools for security
+  // Even if non-read-only tools match the pattern, they will be filtered out here
+  if (readOnly) {
+    filteredTools = filterToolsByReadOnly(filteredTools);
+  }
+
+  return filteredTools;
+}
+
+function filterToolsByPatterns(tools: Tool[], patterns: string[]): Tool[] {
   try {
     // Special case for global wildcard
     if (patterns.length === 1 && patterns[0] === '*') {
-      return allTools;
+      return tools; // Keep all tools, no pattern filtering needed
     }
 
     // Compile glob patterns once for performance
@@ -51,15 +76,13 @@ export function getAvailableTools(allTools: Tool[], patterns?: string[]): Tool[]
     const matchesByPattern = new Map<string, number>();
 
     // For each tool, check if it matches any pattern
-    for (const tool of allTools) {
+    for (const tool of tools) {
       for (const glob of globs) {
         if (glob.matches(tool.name)) {
           enabledToolNames.add(tool.name);
-
           // Count matches per pattern for logging
           const patternString = glob.toString();
           matchesByPattern.set(patternString, (matchesByPattern.get(patternString) || 0) + 1);
-
           // Once we find a match, no need to check other patterns
           break;
         }
@@ -73,18 +96,23 @@ export function getAvailableTools(allTools: Tool[], patterns?: string[]): Tool[]
       }
     }
 
-    // Create the final filtered tool list
-    const availableTools = allTools.filter((tool) => enabledToolNames.has(tool.name));
-    log(`Selected ${availableTools.length} available tools based on patterns`);
-
-    return availableTools;
+    // Create the filtered tool list based on patterns
+    const filteredTools = tools.filter((tool) => enabledToolNames.has(tool.name));
+    log(`Selected ${filteredTools.length} available tools based on patterns`);
+    return filteredTools;
   } catch (error) {
-    // Log error and return all tools as fallback
+    // Log error and use all tools as fallback
     log(
       `Error determining available tools: ${error instanceof Error ? error.message : String(error)}`
     );
-    return allTools;
+    return tools;
   }
+}
+
+function filterToolsByReadOnly(tools: Tool[]): Tool[] {
+  const readOnlyTools = tools.filter((tool) => tool._meta?.readOnly === true);
+  log(`Filtered to ${readOnlyTools.length} read-only tools`);
+  return readOnlyTools;
 }
 
 /**

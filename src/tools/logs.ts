@@ -41,6 +41,14 @@ export const LOG_TOOLS: Tool[] = [
     },
     _meta: {
       requiredScopes: ['read:logs'],
+      readOnly: true,
+    },
+    annotations: {
+      title: 'List Auth0 Logs',
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
     },
   },
   {
@@ -58,6 +66,14 @@ export const LOG_TOOLS: Tool[] = [
     },
     _meta: {
       requiredScopes: ['read:logs'],
+      readOnly: true,
+    },
+    annotations: {
+      title: 'Get Auth0 Log Entry',
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
     },
   },
 ];
@@ -75,7 +91,7 @@ export const LOG_HANDLERS: Record<
       // Check for token
       if (!request.token) {
         log('Warning: Token is empty or undefined');
-        return createErrorResponse('Error: Missing authentication token');
+        return createErrorResponse('Error: Missing authorization token');
       }
 
       // Check if domain is configured
@@ -184,7 +200,7 @@ export const LOG_HANDLERS: Record<
       // Check for token
       if (!request.token) {
         log('Warning: Token is empty or undefined');
-        return createErrorResponse('Error: Missing authentication token');
+        return createErrorResponse('Error: Missing authorization token');
       }
 
       // Check if domain is configured

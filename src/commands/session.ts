@@ -1,6 +1,6 @@
 import chalk from 'chalk';
 import { keychain } from '../utils/keychain.js';
-import { cliOutput } from '../utils/cli-utility.js';
+import { cliOutput } from '../utils/terminal.js';
 import { log } from '../utils/logger.js';
 
 /**

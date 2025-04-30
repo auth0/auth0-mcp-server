@@ -36,6 +36,14 @@ export const RESOURCE_SERVER_TOOLS: Tool[] = [
     },
     _meta: {
       requiredScopes: ['read:resource_servers'],
+      readOnly: true,
+    },
+    annotations: {
+      title: 'List Auth0 Resource Servers',
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
     },
   },
   {
@@ -50,11 +58,20 @@ export const RESOURCE_SERVER_TOOLS: Tool[] = [
     },
     _meta: {
       requiredScopes: ['read:resource_servers'],
+      readOnly: true,
+    },
+    annotations: {
+      title: 'Get Auth0 Resource Server Details',
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
     },
   },
   {
     name: 'auth0_create_resource_server',
-    description: 'Create a new Auth0 resource server (API)',
+    description:
+      'Create a new Auth0 resource server (API). Use RS256 for the signing_alg unless otherwise specified.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -127,6 +144,13 @@ export const RESOURCE_SERVER_TOOLS: Tool[] = [
     },
     _meta: {
       requiredScopes: ['create:resource_servers'],
+    },
+    annotations: {
+      title: 'Create Auth0 Resource Server',
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: false,
     },
   },
   {
@@ -205,6 +229,13 @@ export const RESOURCE_SERVER_TOOLS: Tool[] = [
     _meta: {
       requiredScopes: ['update:resource_servers'],
     },
+    annotations: {
+      title: 'Update Auth0 Resource Server',
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
   },
 ];
 
@@ -220,7 +251,7 @@ export const RESOURCE_SERVER_HANDLERS: Record<
     try {
       if (!request.token) {
         log('Warning: Token is missing');
-        return createErrorResponse('Error: Missing authentication token');
+        return createErrorResponse('Error: Missing authorization token');
       }
 
       // Check if domain is configured
@@ -364,7 +395,7 @@ export const RESOURCE_SERVER_HANDLERS: Record<
       // Check for token
       if (!request.token) {
         log('Warning: Token is empty or undefined');
-        return createErrorResponse('Error: Missing authentication token');
+        return createErrorResponse('Error: Missing authorization token');
       }
 
       // Check if domain is configured
@@ -451,7 +482,7 @@ export const RESOURCE_SERVER_HANDLERS: Record<
       // Check for token
       if (!request.token) {
         log('Warning: Token is empty or undefined');
-        return createErrorResponse('Error: Missing authentication token');
+        return createErrorResponse('Error: Missing authorization token');
       }
 
       // Check if domain is configured
@@ -564,7 +595,7 @@ export const RESOURCE_SERVER_HANDLERS: Record<
       // Check for token
       if (!request.token) {
         log('Warning: Token is empty or undefined');
-        return createErrorResponse('Error: Missing authentication token');
+        return createErrorResponse('Error: Missing authorization token');
       }
 
       // Check if domain is configured

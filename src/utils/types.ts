@@ -1,5 +1,14 @@
 // This file contains common types and interfaces used across the application.
 
+// Define ToolAnnotations interface based on MCP schema 2025-03-26
+export interface ToolAnnotations {
+  destructiveHint?: boolean;
+  idempotentHint?: boolean;
+  openWorldHint?: boolean;
+  readOnlyHint?: boolean;
+  title?: string;
+}
+
 // Define Tool interface
 export interface Tool {
   name: string;
@@ -7,7 +16,9 @@ export interface Tool {
   inputSchema?: Record<string, any>;
   _meta?: {
     requiredScopes: string[];
+    readOnly?: boolean;
   };
+  annotations?: ToolAnnotations;
 }
 
 // Define Handler interface
@@ -31,6 +42,7 @@ export interface HandlerResponse {
 // Client Options interface
 export interface ClientOptions {
   tools: string[];
+  readOnly?: boolean;
 }
 
 // Auth0 response interfaces

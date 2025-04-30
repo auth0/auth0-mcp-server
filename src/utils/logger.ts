@@ -20,7 +20,7 @@ export const logInfo = (...args: any[]) => {
 };
 
 export const logError = (msg: string, error: any = undefined) => {
-  const formattedMsg = `[ERROR:auth0-mcp] ${msg}\n`;
+  const formattedMsg = `[ERROR:auth0-mcp] ${msg}`;
   if (error) {
     console.error(formattedMsg, error);
   } else {
@@ -28,12 +28,3 @@ export const logError = (msg: string, error: any = undefined) => {
   }
   return true;
 };
-
-/*
-export function log(...args: any[]) {
-  if (process.env.DEBUG == "auth0-mcp") {
-    const msg = `[DEBUG:auth0-mcp-server] ${args.join(' ')}\n`
-    process.stderr.write(msg)
-  }
-}
-*/
