@@ -221,6 +221,24 @@ This approach offers several important benefits:
 
 For most use cases, start with the minimum set of tools needed and add more only when required. This follows the principle of least privilege - a fundamental security best practice.
 
+### 🧪 Security Scanning
+
+We recommend regularly scanning this server, and any other MCP-compatible servers you deploy, with community tools built to surface protocol-level risks and misconfigurations.
+
+These scanners help identify issues across key vulnerability classes including: server implementation bugs, tool definition and lifecycle risks, interaction and data flow weaknesses, and configuration or environment gaps.
+
+Useful tools include:
+
+- **[mcpscan.ai](https://mcpscan.ai)**  
+  Web-based scanner that inspects live MCP endpoints for exposed tools, schema enforcement gaps, and other issues.
+
+- **[mcp-scan](https://github.com/invariantlabs-ai/mcp-scan)**  
+  CLI tool that simulates attack paths and evaluates server behavior from a client perspective.
+
+These tools are not a substitute for a full audit, but they offer meaningful guardrails and early warnings. We suggest including them in your regular security review process.
+
+If you discover a vulnerability, please follow our [responsible disclosure process](https://auth0.com/whitehat).
+
 ## 🕸️ Architecture
 
 The Auth0 MCP Server implements the Model Context Protocol, allowing Claude to:
