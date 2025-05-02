@@ -6,6 +6,7 @@
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
 [![NPM Downloads](https://img.shields.io/npm/dw/%40auth0%2Fauth0-mcp-server)](https://www.npmjs.com/package/@auth0/auth0-mcp-server)
 [![NPM Version](https://img.shields.io/npm/v/@auth0/auth0-mcp-server)](https://www.npmjs.com/package/@auth0/auth0-mcp-server)
+[<img src="https://devin.ai/assets/deepwiki-badge.png" alt="Ask questions about auth0-mcp-server on DeepWiki" height="20"/>](https://deepwiki.com/auth0/auth0-mcp-server)
 
 </div>
 
