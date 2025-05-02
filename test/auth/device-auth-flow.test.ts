@@ -201,6 +201,79 @@ describe('Device Auth Flow', () => {
     });
   });
 
+  describe('revokeRefreshToken', () => {
+    // Since we can't easily test the actual implementation due to mocking challenges,
+    // we'll just test that the function exists and can be called
+    it('should be a function', () => {
+      expect(typeof deviceAuthFlow.revokeRefreshToken).toBe('function');
+    });
+
+    it('should return true if refresh token is not present', async () => {
+      vi.mocked(keytar.getPassword).mockResolvedValue(null);
+
+      const result = await deviceAuthFlow.revokeRefreshToken();
+
+      expect(result).toBe(true);
+      expect(keytar.getPassword).toHaveBeenCalledWith(
+        KEYCHAIN_SERVICE_NAME,
+        KeychainItem.REFRESH_TOKEN
+      );
+    });
+
+    it('should return false if return 400', async () => {
+      vi.mocked(keytar.getPassword).mockResolvedValue('mock-rt');
+
+      // Mock fetch response with error
+      mockFetch.mockResolvedValue(
+        mockFetchResponse(400, {
+          error: 'bad request',
+        })
+      );
+
+      const result = await deviceAuthFlow.revokeRefreshToken();
+
+      expect(result).toBe(false);
+      expect(keytar.getPassword).toHaveBeenCalledWith(
+        KEYCHAIN_SERVICE_NAME,
+        KeychainItem.REFRESH_TOKEN
+      );
+    });
+
+    it('should return false if return 401', async () => {
+      vi.mocked(keytar.getPassword).mockResolvedValue('mock-rt');
+
+      // Mock fetch response with error
+      mockFetch.mockResolvedValue(
+        mockFetchResponse(401, {
+          error: 'unauthorized',
+        })
+      );
+
+      const result = await deviceAuthFlow.revokeRefreshToken();
+
+      expect(result).toBe(false);
+      expect(keytar.getPassword).toHaveBeenCalledWith(
+        KEYCHAIN_SERVICE_NAME,
+        KeychainItem.REFRESH_TOKEN
+      );
+    });
+
+    it('should return true if status is 200', async () => {
+      vi.mocked(keytar.getPassword).mockResolvedValue('mock-rt');
+
+      // Mock fetch response with error
+      mockFetch.mockResolvedValue(mockFetchResponse(200, {}));
+
+      const result = await deviceAuthFlow.revokeRefreshToken();
+
+      expect(result).toBe(true);
+      expect(keytar.getPassword).toHaveBeenCalledWith(
+        KEYCHAIN_SERVICE_NAME,
+        KeychainItem.REFRESH_TOKEN
+      );
+    });
+  });
+
   // Simple test to verify no Auth0 values are set to environment variables
   describe('Environment Variables', () => {
     it('should not set any Auth0 values in environment variables', async () => {

@@ -208,6 +208,45 @@ export async function refreshAccessToken(selectedScopes?: string[]): Promise<str
 }
 
 /**
+ * Revokes the refresh token that is previously set within keychain when offline_access is requested.
+ * Returns true if the call is successful or if the refresh token does not exist.
+ * @returns {Promise<boolean>}
+ */
+export async function revokeRefreshToken(): Promise<boolean> {
+  try {
+    log('Attempting to revoke refresh token');
+
+    const refreshToken = await keychain.getRefreshToken();
+    if (!refreshToken) {
+      log('No refresh token found in keychain');
+      return true;
+    }
+    const config = getConfig();
+    const response = await fetch(`https://${config.tenant}/oauth/revoke`, {
+      method: 'POST',
+      body: new URLSearchParams({
+        client_id: config.clientId,
+        token: refreshToken,
+      }),
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+    });
+
+    if (response.status === 200) {
+      log('Refresh token successfully revoked');
+      return true;
+    } else {
+      log('Error calling revoke API: ', response.statusText);
+      return false;
+    }
+  } catch (error) {
+    log('Error revoking refresh token:', error);
+    return false;
+  }
+}
+
+/**
  * Determines if the current access token is expired or will expire soon.
  *
  * This security check is crucial for maintaining continuous authenticated access
