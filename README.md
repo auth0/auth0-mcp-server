@@ -276,13 +276,13 @@ This will start the device authorization flow, allowing you to log in to your Au
 > This feature is planned for a future release:
 >
 > ```bash
-> npx @auth0/auth0-mcp-server init --auth0-domain <auth0domain> --auth0-client-id <auth0-client-id> --auth0-client-secret <auth0-client-secret>
+> npx @auth0/auth0-mcp-server init --auth0-domain <auth0-domain> --auth0-client-id <auth0-client-id> --auth0-client-secret <auth0-client-secret>
 > ```
 
 For **Private Cloud** users, client credentials authentication should be used. However, this feature is not currently implemented in the Auth0 MCP Server. This is a planned enhancement. Private Cloud users should watch for future releases that will include:
 
 ```bash
-npx @auth0/auth0-mcp-server init --auth0-domain <auth0domain> --auth0-client-id <auth0-client-id> --auth0-client-secret <auth0-client-secret>
+npx @auth0/auth0-mcp-server init --auth0-domain <auth0-domain> --auth0-client-id <auth0-client-id> --auth0-client-secret <auth0-client-secret>
 ```
 
 > [!IMPORTANT]
