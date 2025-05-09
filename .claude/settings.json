@@ -1,0 +1,53 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run *)"
+    ],
+    "automaticApproval": {
+      "enabled": true,
+      "safeCommands": [
+        "ls",
+        "cat",
+        "echo",
+        "head",
+        "tail",
+        "find",
+        "grep",
+        "gh pr list",
+        "git status",
+        "git log"
+      ]
+    }
+  },
+  "paths": {
+    "excludedDirectories": [
+      "node_modules/"
+    ],
+    "excludedPatterns": [
+      "**/*.env",
+      "**/*.key",
+      "**/*.pem",
+      "**/*.secret",
+      "**/password*",
+      "**/credentials*"
+    ]
+  },
+  "security": {
+    "blockedCommands": [
+      "sudo",
+      "su",
+      "ssh-keygen",
+      "curl -o",
+      "wget -O",
+      "rm -rf /",
+      ":(){ :|:& };:"
+    ],
+    "sensitiveDataPatterns": [
+      "password",
+      "api[-_]?key",
+      "auth[-_]?token",
+      "secret",
+      "credential"
+    ]
+  }
+}
