@@ -289,7 +289,7 @@ This will start the device authorization flow, allowing you to log in to your Au
 >
 > The `run` command will automatically check for token validity before starting the server and will provide helpful error messages if authentication is needed.
 
-> [!NOTE:]
+> [!NOTE]
 > Using the MCP Server will consume Management API rate limits according to the subscription plan. Refer to the [Rate Limit Policy](https://auth0.com/docs/troubleshoot/customer-support/operational-policies/rate-limit-policy) for more information.
 
 ### Session Management
