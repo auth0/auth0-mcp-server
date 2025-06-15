@@ -134,6 +134,24 @@ export const RESOURCE_SERVER_TOOLS: Tool[] = [
         authorization_details: {
           type: 'array',
           description: 'Authorization details for the resource server.',
+          items: {
+            type: 'object',
+            properties: {
+              type: { type: 'string' },
+              locations: {
+                type: 'array',
+                items: { type: 'string' },
+              },
+              actions: {
+                type: 'array',
+                items: { type: 'string' },
+              },
+              datatypes: {
+                type: 'array',
+                items: { type: 'string' },
+              },
+            },
+          },
         },
         proof_of_possession: {
           type: 'object',
@@ -218,6 +236,24 @@ export const RESOURCE_SERVER_TOOLS: Tool[] = [
         authorization_details: {
           type: 'array',
           description: 'Authorization details for the resource server.',
+          items: {
+            type: 'object',
+            properties: {
+              type: { type: 'string' },
+              locations: {
+                type: 'array',
+                items: { type: 'string' },
+              },
+              actions: {
+                type: 'array',
+                items: { type: 'string' },
+              },
+              datatypes: {
+                type: 'array',
+                items: { type: 'string' },
+              },
+            },
+          },
         },
         proof_of_possession: {
           type: 'object',
