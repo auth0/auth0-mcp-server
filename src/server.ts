@@ -54,7 +54,7 @@ export async function startServer(options?: ServerOptions) {
     // Load configuration
     let config = await loadConfig();
 
-    if (!(await validateConfig(config))) {
+    if (!config || !(await validateConfig(config))) {
       log('Failed to load valid Auth0 configuration');
       throw new Error('Invalid Auth0 configuration');
     }
@@ -92,11 +92,11 @@ export async function startServer(options?: ServerOptions) {
         }
 
         // Check if config is still valid, reload if needed
-        if (!(await validateConfig(config))) {
+        if (!config || !(await validateConfig(config))) {
           log('Config is invalid, attempting to reload');
           config = await loadConfig();
 
-          if (!(await validateConfig(config))) {
+          if (!config || !(await validateConfig(config))) {
             throw new Error(
               'Auth0 configuration is invalid or missing. Please check auth0-cli login status.'
             );
