@@ -4,12 +4,14 @@ import type { HandlerConfig, HandlerRequest, HandlerResponse, Tool } from '../ut
 import { FORM_HANDLERS, FORM_TOOLS } from './forms.js';
 import { LOG_HANDLERS, LOG_TOOLS } from './logs.js';
 import { RESOURCE_SERVER_HANDLERS, RESOURCE_SERVER_TOOLS } from './resource-servers.js';
+import { CONNECTION_HANDLERS, CONNECTION_TOOLS } from './connections.js';
 import trackEvent from '../utils/analytics.js';
 
 // Combine all tools into a single array
 export const TOOLS: Tool[] = [
   ...APPLICATION_TOOLS,
   ...RESOURCE_SERVER_TOOLS,
+  ...CONNECTION_TOOLS,
   ...ACTION_TOOLS,
   ...LOG_TOOLS,
   ...FORM_TOOLS,
@@ -19,6 +21,7 @@ export const TOOLS: Tool[] = [
 const allHandlers = {
   ...APPLICATION_HANDLERS,
   ...RESOURCE_SERVER_HANDLERS,
+  ...CONNECTION_HANDLERS,
   ...ACTION_HANDLERS,
   ...LOG_HANDLERS,
   ...FORM_HANDLERS,
