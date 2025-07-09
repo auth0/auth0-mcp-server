@@ -10,10 +10,10 @@ export interface ToolAnnotations {
 }
 
 // Define Tool interface
-export interface Tool {
+export interface Tool<T = Record<string, any>> {
   name: string;
   description: string;
-  inputSchema?: Record<string, any>;
+  inputSchema?: T;
   _meta?: {
     requiredScopes: string[];
     readOnly?: boolean;
@@ -22,9 +22,9 @@ export interface Tool {
 }
 
 // Define Handler interface
-export interface HandlerRequest {
+export interface HandlerRequest<T = Record<string, any>> {
   token: string;
-  parameters: Record<string, any>;
+  parameters: T;
 }
 
 export interface HandlerConfig {
