@@ -82,7 +82,7 @@ npx @auth0/auth0-mcp-server init --client windsurf
 
 Step 1:
 
-[![Install MCP Server](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/install-mcp?name=auth0&config=JTdCJTIyY29tbWFuZCUyMiUzQSUyMm5weCUyMC15JTIwJTQwYXV0aDAlMkZhdXRoMC1tY3Atc2VydmVyJTIwcnVuJTIyJTJDJTIyY2FwYWJpbGl0aWVzJTIyJTNBJTVCJTIydG9vbHMlMjIlNUQlMkMlMjJlbnYlMjIlM0ElN0IlMjJERUJVRyUyMiUzQSUyMmF1dGgwLW1jcCUyMiU3RCU3RA%3D%3D)
+[![Install MCP Server](https://cursor.com/deeplink/mcp-install-dark.svg)](cursor://anysphere.cursor-deeplink/mcp/install?name=auth0&config=eyJjb21tYW5kIjoibnB4IC15IEBhdXRoMC9hdXRoMC1tY3Atc2VydmVyIHJ1biIsImNhcGFiaWxpdGllcyI6WyJ0b29scyJdLCJlbnYiOnsiREVCVUciOiJhdXRoMC1tY3AifX0%3D)
 
 Step 2:
 ```bash
