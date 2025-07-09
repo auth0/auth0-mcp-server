@@ -276,6 +276,14 @@ npx @auth0/auth0-mcp-server init
 
 This will start the device authorization flow, allowing you to log in to your Auth0 account and select the tenant you want to use.
 
+> [!NOTE]
+> Authenticating using device authorization flow is not supported for **private cloud** tenants.
+> Private Cloud users should authenticate with client credentials.
+>
+> ```bash
+> npx @auth0/auth0-mcp-server init --auth0-domain <auth0-domain> --auth0-client-id <auth0-client-id> --auth0-client-secret <auth0-client-secret>
+> ```
+
 > [!IMPORTANT]
 > The `init` command needs to be run whenever:
 >
@@ -285,6 +293,9 @@ This will start the device authorization flow, allowing you to log in to your Au
 > - Your token has expired
 >
 > The `run` command will automatically check for token validity before starting the server and will provide helpful error messages if authentication is needed.
+
+> [!NOTE]
+> Using the MCP Server will consume Management API rate limits according to the subscription plan. Refer to the [Rate Limit Policy](https://auth0.com/docs/troubleshoot/customer-support/operational-policies/rate-limit-policy) for more information.
 
 ### Session Management
 
