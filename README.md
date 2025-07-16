@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/auth0-auth0-mcp-server-badge.png)](https://mseep.ai/app/auth0-auth0-mcp-server)
+
 ![MCP server for Auth0](https://cdn.auth0.com/website/mcp/assets/mcp-banner-light.png)
 
 <div align="center">
