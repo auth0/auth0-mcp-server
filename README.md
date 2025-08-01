@@ -280,6 +280,7 @@ This will start the device authorization flow, allowing you to log in to your Au
 > [!NOTE]
 > Authenticating using device authorization flow is not supported for **private cloud** tenants.
 > Private Cloud users should authenticate with [client credentials](https://auth0.com/docs/get-started/authentication-and-authorization-flow/client-credentials-flow).
+>
 > ```bash
 > npx @auth0/auth0-mcp-server init --auth0-domain <auth0-domain> --auth0-client-id <auth0-client-id> --auth0-client-secret <auth0-client-secret>
 > ```
@@ -408,24 +409,20 @@ To use Auth0 MCP Server with any other MCP Client, you can add this configuratio
 ### 🚨 Common Issues
 
 1. **Authentication Failures**
-
    - Ensure you have the correct permissions in your Auth0 tenant
    - Try re-initializing with `npx @auth0/auth0-mcp-server init`
 
 2. **Claude Desktop Can't Connect to the Server**
-
    - Restart Claude Desktop after installation
    - Check that the server is running with `ps aux | grep auth0-mcp`
 
 3. **API Errors or Permission Issues**
-
    - Enable debug mode with `export DEBUG=auth0-mcp`
    - Check your Auth0 token status: `npx @auth0/auth0-mcp-server session`
    - Reinitialize with specific scopes: `npx @auth0/auth0-mcp-server init --scopes 'read:*,update:*,create:*'`
    - If a specific operation fails, you may be missing the required scope
 
 4. **Invalid Auth0 Configuration Error**
-
    - This typically happens when your authorization token is missing or expired
    - Run `npx @auth0/auth0-mcp-server session` to check your token status
    - If expired or missing, run `npx @auth0/auth0-mcp-server init` to authenticate

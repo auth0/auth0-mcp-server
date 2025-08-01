@@ -1,5 +1,5 @@
 import chalk from 'chalk';
-import { cliOutput, getTenantFromToken } from '../utils/terminal.js';
+import { cliOutput } from '../utils/terminal.js';
 import { log, logError } from '../utils/logger.js';
 import { keychain } from '../utils/keychain.js';
 

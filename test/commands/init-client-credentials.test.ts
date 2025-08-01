@@ -80,7 +80,6 @@ describe('init command with client credentials', () => {
       auth0Domain: options.auth0Domain,
       auth0ClientId: options.auth0ClientId,
       auth0ClientSecret: options.auth0ClientSecret,
-      scopes: options.scopes,
     });
 
     // Verify device flow was not used

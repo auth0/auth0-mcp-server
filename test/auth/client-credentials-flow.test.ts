@@ -84,7 +84,7 @@ describe('client-credentials-flow', () => {
       expect(requestBody.get('client_id')).toBe(testConfig.auth0ClientId);
       expect(requestBody.get('client_secret')).toBe(testConfig.auth0ClientSecret);
       expect(requestBody.get('grant_type')).toBe('client_credentials');
-      expect(requestBody.get('scope')).toBe(testConfig.scopes.join(' '));
+      expect(requestBody.get('scope')).toBeNull();
       expect(requestBody.get('audience')).toBe(`https://${testConfig.auth0Domain}/api/v2/`);
 
       // Verify the tokens were stored correctly
