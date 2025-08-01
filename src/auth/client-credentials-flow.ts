@@ -39,11 +39,6 @@ export async function requestClientCredentialsAuthorization(
     const audience = config.audience || `https://${config.auth0Domain}/api/v2/`;
     body.audience = audience;
 
-    // Add scopes if provided
-    if (config.scopes && config.scopes.length > 0) {
-      body.scope = config.scopes.join(' ');
-    }
-
     // Make the token request
     const response = await fetch(`https://${config.auth0Domain}/oauth/token`, {
       method: 'POST',

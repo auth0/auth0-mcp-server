@@ -158,21 +158,32 @@ const init = async (options: InitOptions): Promise<void> => {
     return;
   }
 
-  // Handle scope resolution
-  const selectedScopes = await resolveScopes(options.scopes);
-
   if (hasClientCredentials) {
     // Client credentials flow for Private Cloud
     log('Using client credentials flow for authentication');
+
+    if (!auth0Domain || !auth0ClientId || !auth0ClientSecret) {
+      logError(
+        'Error: When using client credentials authentication, all three parameters are required:'
+      );
+      logError(
+        '--auth0-domain <auth0domain> --auth0-client-id <auth0-client-id> --auth0-client-secret <auth0-client-secret>'
+      );
+      process.exit(1);
+      return;
+    }
+
     await requestClientCredentialsAuthorization({
-      auth0Domain: auth0Domain as string,
-      auth0ClientId: auth0ClientId as string,
-      auth0ClientSecret: auth0ClientSecret as string,
-      scopes: selectedScopes,
+      auth0Domain: auth0Domain,
+      auth0ClientId: auth0ClientId,
+      auth0ClientSecret: auth0ClientSecret,
     });
   } else {
     // Device authorization flow for public cloud
     log('Using device authorization flow for authentication');
+
+    // Handle scope resolution
+    const selectedScopes = await resolveScopes(options.scopes);
 
     await requestAuthorization(selectedScopes);
   }

@@ -85,6 +85,7 @@ Step 1:
 [![Install MCP Server](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/install-mcp?name=auth0&config=JTdCJTIyY29tbWFuZCUyMiUzQSUyMm5weCUyMC15JTIwJTQwYXV0aDAlMkZhdXRoMC1tY3Atc2VydmVyJTIwcnVuJTIyJTJDJTIyY2FwYWJpbGl0aWVzJTIyJTNBJTVCJTIydG9vbHMlMjIlNUQlMkMlMjJlbnYlMjIlM0ElN0IlMjJERUJVRyUyMiUzQSUyMmF1dGgwLW1jcCUyMiU3RCU3RA%3D%3D)
 
 Step 2:
+
 ```bash
 npx @auth0/auth0-mcp-server init --client cursor
 ```
@@ -278,13 +279,31 @@ This will start the device authorization flow, allowing you to log in to your Au
 
 > [!NOTE]
 > Authenticating using device authorization flow is not supported for **private cloud** tenants.
-> Private Cloud users should authenticate with client credentials.
->
+> Private Cloud users should authenticate with [client credentials](https://auth0.com/docs/get-started/authentication-and-authorization-flow/client-credentials-flow).
 > ```bash
 > npx @auth0/auth0-mcp-server init --auth0-domain <auth0-domain> --auth0-client-id <auth0-client-id> --auth0-client-secret <auth0-client-secret>
 > ```
 
 > [!IMPORTANT]
+>
+> <details>
+> <summary>Keep limited scope for client credentials M2M application:</summary>Supported scopes:
+> - read:clients
+> - create:clients
+> - update:clients
+> - read:resource_servers
+> - create:resource_servers
+> - update:resource_servers
+> - read:actions
+> - create:actions
+> - update:actions
+> - read:logs
+> - read:forms
+> - create:forms
+> - update:forms
+> </details>
+> </p>
+>
 > The `init` command needs to be run whenever:
 >
 > - You're setting up the MCP Server for the first time
