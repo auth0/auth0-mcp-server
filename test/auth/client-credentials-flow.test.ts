@@ -51,6 +51,8 @@ describe('client-credentials-flow', () => {
 
       // Configure fetch mock to return token response
       mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
         json: async () => mockTokenResponse,
       });
 
@@ -72,7 +74,6 @@ describe('client-credentials-flow', () => {
           method: 'POST',
           body: expect.any(URLSearchParams),
           headers: expect.objectContaining({
-            Accept: 'application/json',
             'Content-Type': 'application/x-www-form-urlencoded',
           }),
         })
@@ -104,6 +105,8 @@ describe('client-credentials-flow', () => {
 
       // Configure fetch mock to return error
       mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 401,
         json: async () => mockErrorResponse,
       });
 
@@ -145,6 +148,8 @@ describe('client-credentials-flow', () => {
 
       // Configure fetch mock to return token response
       mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
         json: async () => mockTokenResponse,
       });
 

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ManagementClient } from 'auth0';
-import { getManagementClient } from '../../src/utils/management-client';
+import { getManagementClient } from '../../src/utils/auth0-client';
 import * as packageModule from '../../src/utils/package';
 
 // Mock dependencies
@@ -55,7 +55,7 @@ describe('Management Client', () => {
 
       // Assert
       const callArgs = vi.mocked(ManagementClient).mock.calls[0][0];
-      const userAgent = callArgs.headers['User-agent'];
+      const userAgent = callArgs.headers?.['User-agent'];
 
       // Format should be: "auth0-mcp-server/[version] (node.js/[node-version])"
       expect(userAgent).toBe(`auth0-mcp-server/1.2.3 (node.js/18.12.1)`);
@@ -79,7 +79,7 @@ describe('Management Client', () => {
 
       // Assert
       const callArgs = vi.mocked(ManagementClient).mock.calls[0][0];
-      const userAgent = callArgs.headers['User-agent'];
+      const userAgent = callArgs.headers?.['User-agent'];
 
       // Should NOT contain "v" prefix in Node version
       expect(userAgent).toContain('node.js/20.0.0');
@@ -101,7 +101,7 @@ describe('Management Client', () => {
 
       // Assert
       const callArgs = vi.mocked(ManagementClient).mock.calls[0][0];
-      const userAgent = callArgs.headers['User-agent'];
+      const userAgent = callArgs.headers?.['User-agent'];
       expect(userAgent).toContain(`auth0-mcp-server/${testVersion}`);
 
       // Cleanup

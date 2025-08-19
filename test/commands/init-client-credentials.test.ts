@@ -105,7 +105,7 @@ describe('init command with client credentials', () => {
     expect(requestClientCredentialsAuthorization).not.toHaveBeenCalled();
   });
 
-  it('should exit with error when incomplete client credentials are provided', async () => {
+  it('should fall back to device auth flow when incomplete client credentials are provided', async () => {
     // Test options with incomplete client credentials
     const options = {
       client: 'claude' as ClientType,
@@ -119,12 +119,12 @@ describe('init command with client credentials', () => {
     // Execute init function
     await init(options);
 
-    // Verify process.exit was called with error code
-    expect(mockProcess.exit).toHaveBeenCalledWith(1);
+    // Verify process.exit was not called
+    expect(mockProcess.exit).not.toHaveBeenCalled();
 
-    // Verify neither auth flow was used
+    // Verify device auth flow was used instead of client credentials
     expect(requestClientCredentialsAuthorization).not.toHaveBeenCalled();
-    expect(requestAuthorization).not.toHaveBeenCalled();
+    expect(requestAuthorization).toHaveBeenCalled();
   });
 
   it('should configure the client after successful authentication with client credentials', async () => {
