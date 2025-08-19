@@ -2,6 +2,7 @@ import chalk from 'chalk';
 import { cliOutput } from '../utils/terminal.js';
 import { log, logError } from '../utils/logger.js';
 import { keychain } from '../utils/keychain.js';
+import { getAuthenticationClient } from '../utils/auth0-client.js';
 
 /**
  * Interface for client credentials configuration
@@ -29,33 +30,24 @@ export async function requestClientCredentialsAuthorization(
   log('Initiating client credentials flow authentication...');
 
   try {
-    const body: Record<string, string> = {
-      client_id: config.auth0ClientId,
-      client_secret: config.auth0ClientSecret,
-      grant_type: 'client_credentials',
-    };
+    // Auth client
+    const authClient = await getAuthenticationClient(
+      config.auth0Domain,
+      config.auth0ClientId,
+      config.auth0ClientSecret
+    );
 
     // Set audience if provided, otherwise use a default based on the domain
     const audience = config.audience || `https://${config.auth0Domain}/api/v2/`;
-    body.audience = audience;
 
     // Make the token request
-    const response = await fetch(`https://${config.auth0Domain}/oauth/token`, {
-      method: 'POST',
-      body: new URLSearchParams(body),
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
+    const {
+      data: { access_token, expires_in },
+    } = await authClient.oauth.clientCredentialsGrant({
+      audience,
     });
 
-    const tokenSet = await response.json();
-
-    if (tokenSet.error) {
-      logError('Authentication error:', tokenSet.error_description || tokenSet.error);
-      cliOutput(`\n${chalk.red('✗')} Client credentials authentication failed.\n`);
-      process.exit(1);
-    }
+    const tokenSet = { access_token, expires_in };
 
     // Store the token information
     await storeTokenInfo(tokenSet, config.auth0Domain);

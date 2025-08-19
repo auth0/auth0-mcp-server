@@ -9,7 +9,7 @@ import type {
 import { log } from '../utils/logger.js';
 import { createErrorResponse, createSuccessResponse } from '../utils/http-utility.js';
 import type { Auth0Config } from '../utils/config.js';
-import { getManagementClient } from '../utils/management-client.js';
+import { getManagementClient } from '../utils/auth0-client.js';
 
 // Define all available resource server tools
 export const RESOURCE_SERVER_TOOLS: Tool[] = [

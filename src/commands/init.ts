@@ -140,38 +140,10 @@ const init = async (options: InitOptions): Promise<void> => {
 
   // Check if client credentials parameters are provided for Private Cloud authentication
   const { auth0Domain, auth0ClientId, auth0ClientSecret } = options;
-  const hasClientCredentials = Boolean(auth0Domain && auth0ClientId && auth0ClientSecret);
 
-  // Check if client credentials are partially provided (which is invalid)
-  if (
-    (auth0Domain && (!auth0ClientId || !auth0ClientSecret)) ||
-    (auth0ClientId && (!auth0Domain || !auth0ClientSecret)) ||
-    (auth0ClientSecret && (!auth0Domain || !auth0ClientId))
-  ) {
-    logError(
-      'Error: When using client credentials authentication, all three parameters are required:'
-    );
-    logError(
-      '--auth0-domain <auth0domain> --auth0-client-id <auth0-client-id> --auth0-client-secret <auth0-client-secret>'
-    );
-    process.exit(1);
-    return;
-  }
-
-  if (hasClientCredentials) {
+  if (auth0Domain && auth0ClientId && auth0ClientSecret) {
     // Client credentials flow for Private Cloud
     log('Using client credentials flow for authentication');
-
-    if (!auth0Domain || !auth0ClientId || !auth0ClientSecret) {
-      logError(
-        'Error: When using client credentials authentication, all three parameters are required:'
-      );
-      logError(
-        '--auth0-domain <auth0domain> --auth0-client-id <auth0-client-id> --auth0-client-secret <auth0-client-secret>'
-      );
-      process.exit(1);
-      return;
-    }
 
     await requestClientCredentialsAuthorization({
       auth0Domain: auth0Domain,
