@@ -279,7 +279,7 @@ This will start the device authorization flow, allowing you to log in to your Au
 
 > [!NOTE]
 > Authenticating using device authorization flow is not supported for **private cloud** tenants.
-> Private Cloud users should authenticate with [client credentials](https://auth0.com/docs/get-started/authentication-and-authorization-flow/client-credentials-flow).
+> Private Cloud users should authenticate with [client credentials](https://auth0.com/docs/get-started/authentication-and-authorization-flow/client-credentials-flow).Keep the token lifetime as minimal as possible to reduce security risks. [See more](https://auth0.com/docs/secure/tokens/access-tokens/update-access-token-lifetime)
 >
 > ```bash
 > npx @auth0/auth0-mcp-server init --auth0-domain <auth0-domain> --auth0-client-id <auth0-client-id> --auth0-client-secret <auth0-client-secret>
