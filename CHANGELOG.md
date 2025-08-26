@@ -1,5 +1,22 @@
 # Change Log
 
+## [v0.1.0-beta.3](https://github.com/auth0/auth0-mcp-server/tree/v0.1.0-beta.3) (2025-08-26)
+[Full Changelog](https://github.com/auth0/auth0-mcp-server/compare/v0.1.0-beta.2...v0.1.0-beta.3)
+
+**Added**
+- Add to Cursor button [\#50](https://github.com/auth0/auth0-mcp-server/pull/50) ([brth31](https://github.com/brth31))
+- docs: add DeepWiki badge to README.md [\#39](https://github.com/auth0/auth0-mcp-server/pull/39) ([btiernay](https://github.com/btiernay))
+- docs: add security scanning section to README [\#40](https://github.com/auth0/auth0-mcp-server/pull/40) ([btiernay](https://github.com/btiernay))
+- feat: update to 2025-03-26 schema and add support for annotations [\#26](https://github.com/auth0/auth0-mcp-server/pull/26) ([dennishenry](https://github.com/dennishenry))
+
+**Fixed**
+- fix: add item type definition for authorization_details in resource server tools [\#60](https://github.com/auth0/auth0-mcp-server/pull/60) ([gyaneshgouraw-okta](https://github.com/gyaneshgouraw-okta))
+
+**Security**
+- chore: validate token expiration to prevent using expired credent… [\#36](https://github.com/auth0/auth0-mcp-server/pull/36) ([btiernay](https://github.com/btiernay))
+- feat: improve auth token validation for run command [\#29](https://github.com/auth0/auth0-mcp-server/pull/29) ([btiernay](https://github.com/btiernay))
+- feat: add read-only CLI flag to restrict tool access [\#22](https://github.com/auth0/auth0-mcp-server/pull/22) ([btiernay](https://github.com/btiernay))
+
 ## [v0.1.0-beta.2](https://github.com/auth0/auth0-mcp-server/tree/v0.1.0-beta.2) (2025-04-24)
 
 [Full Changelog](https://github.com/auth0/auth0-mcp-server/compare/v0.1.0-beta.1...v0.1.0-beta.2)
