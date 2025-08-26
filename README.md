@@ -18,8 +18,7 @@
 
 [MCP (Model Context Protocol)](https://modelcontextprotocol.io/introduction) is an open protocol introduced by Anthropic that standardizes how large language models communicate with external tools, resources or remote services.
 
-> [!CAUTION]
-> **Beta Software Notice: This software is currently in beta and is provided AS IS without any warranties.**
+> [!CAUTION] > **Beta Software Notice: This software is currently in beta and is provided AS IS without any warranties.**
 >
 > - Features, APIs, and functionality may change at any time without notice
 > - Not recommended for production use or critical workloads
@@ -85,6 +84,7 @@ Step 1:
 [![Install MCP Server](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/install-mcp?name=auth0&config=JTdCJTIyY29tbWFuZCUyMiUzQSUyMm5weCUyMC15JTIwJTQwYXV0aDAlMkZhdXRoMC1tY3Atc2VydmVyJTIwcnVuJTIyJTJDJTIyY2FwYWJpbGl0aWVzJTIyJTNBJTVCJTIydG9vbHMlMjIlNUQlMkMlMjJlbnYlMjIlM0ElN0IlMjJERUJVRyUyMiUzQSUyMmF1dGgwLW1jcCUyMiU3RCU3RA%3D%3D)
 
 Step 2:
+
 ```bash
 npx @auth0/auth0-mcp-server init --client cursor
 ```

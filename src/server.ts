@@ -54,7 +54,13 @@ export async function startServer(options?: ServerOptions) {
     // Load configuration
     let config = await loadConfig();
 
-    if (!config || !(await validateConfig(config))) {
+    // DEBUG-YI
+    // if (!config || !(await validateConfig(config))) {
+    //   log('Failed to load valid Auth0 configuration');
+    //   throw new Error('Invalid Auth0 configuration');
+    // }
+
+    if (!config) {
       log('Failed to load valid Auth0 configuration');
       throw new Error('Invalid Auth0 configuration');
     }
