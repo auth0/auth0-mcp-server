@@ -134,6 +134,9 @@ export const RESOURCE_SERVER_TOOLS: Tool[] = [
         authorization_details: {
           type: 'array',
           description: 'Authorization details for the resource server.',
+          items: {
+            type: 'object'
+          },
         },
         proof_of_possession: {
           type: 'object',
@@ -218,6 +221,9 @@ export const RESOURCE_SERVER_TOOLS: Tool[] = [
         authorization_details: {
           type: 'array',
           description: 'Authorization details for the resource server.',
+          items: {
+            type: 'object'
+          },
         },
         proof_of_possession: {
           type: 'object',
