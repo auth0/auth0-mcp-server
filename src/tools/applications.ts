@@ -2,7 +2,7 @@ import type { HandlerConfig, HandlerRequest, HandlerResponse, Tool } from '../ut
 import { log } from '../utils/logger.js';
 import { createErrorResponse, createSuccessResponse } from '../utils/http-utility.js';
 import type { Auth0Config } from '../utils/config.js';
-import { getManagementClient } from '../utils/management-client.js';
+import { getManagementClient } from '../utils/auth0-client.js';
 import type {
   ClientCreateTokenEndpointAuthMethodEnum,
   ClientCreateAppTypeEnum,

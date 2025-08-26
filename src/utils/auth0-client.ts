@@ -1,4 +1,4 @@
-import { ManagementClient } from 'auth0';
+import { AuthenticationClient, AuthenticationClientOptions, ManagementClient } from 'auth0';
 import { Auth0Config } from './config.js';
 import { packageVersion } from './package.js';
 
@@ -45,5 +45,28 @@ export const getManagementClient = async (config: Auth0Config): Promise<Manageme
     headers: {
       'User-agent': getUserAgent(),
     },
+  });
+};
+
+/**
+ * Creates and configures an Auth0 Authentication API client.
+ *
+ * @param {string} domain - The Auth0 domain (e.g., 'your-tenant.auth0.com')
+ * @param {string} [clientId] - Optional client ID for authentication operations
+ * @param {string} [clientSecret] - Optional client secret for server-to-server operations
+ * @returns {Promise<AuthenticationClient>} Configured Auth0 Authentication API client
+ */
+export const getAuthenticationClient = async (
+  domain: string,
+  clientId: string,
+  clientSecret: string
+): Promise<AuthenticationClient> => {
+  return new AuthenticationClient({
+    domain,
+    headers: {
+      'User-agent': getUserAgent(),
+    },
+    clientId,
+    clientSecret,
   });
 };
