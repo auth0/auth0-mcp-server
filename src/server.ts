@@ -59,6 +59,11 @@ export async function startServer(options?: ServerOptions) {
       throw new Error('Invalid Auth0 configuration');
     }
 
+    if (!config) {
+      log('Configuration is null after validation');
+      throw new Error('Configuration is null');
+    }
+
     log(`Successfully loaded configuration for tenant: ${maskTenantName(config.tenantName)}`);
 
     // Get available tools based on options if provided
@@ -102,7 +107,15 @@ export async function startServer(options?: ServerOptions) {
             );
           }
 
+          if (!config) {
+            throw new Error('Configuration is null after reload');
+          }
+
           log('Successfully reloaded configuration');
+        }
+
+        if (!config) {
+          throw new Error('Configuration is null');
         }
 
         // Add auth token to request
