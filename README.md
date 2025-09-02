@@ -288,23 +288,25 @@ This will start the device authorization flow, allowing you to log in to your Au
 > [!IMPORTANT]
 >
 > <details>
-> <summary>Keep limited scope for client credentials M2M application:</summary>Supported scopes:
-> - read:clients
-> - create:clients
-> - update:clients
-> - read:resource_servers
-> - create:resource_servers
-> - update:resource_servers
-> - read:actions
-> - create:actions
-> - update:actions
-> - read:logs
-> - read:forms
-> - create:forms
-> - update:forms
-> </details>
-> </p>
+> <summary>Keep limited scope for client credentials M2M application:</summary>
 >
+> Supported scopes:
+>
+> - `read:clients`
+> - `create:clients`
+> - `update:clients`
+> - `read:resource_servers`
+> - `create:resource_servers`
+> - `update:resource_servers`
+> - `read:actions`
+> - `create:actions`
+> - `update:actions`
+> - `read:logs`
+> - `read:forms`
+> - `create:forms`
+> - `update:forms`
+>
+> </details>
 > The `init` command needs to be run whenever:
 >
 > - You're setting up the MCP Server for the first time
