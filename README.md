@@ -85,8 +85,48 @@ Step 1:
 [![Install MCP Server](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/install-mcp?name=auth0&config=JTdCJTIyY29tbWFuZCUyMiUzQSUyMm5weCUyMC15JTIwJTQwYXV0aDAlMkZhdXRoMC1tY3Atc2VydmVyJTIwcnVuJTIyJTJDJTIyY2FwYWJpbGl0aWVzJTIyJTNBJTVCJTIydG9vbHMlMjIlNUQlMkMlMjJlbnYlMjIlM0ElN0IlMjJERUJVRyUyMiUzQSUyMmF1dGgwLW1jcCUyMiU3RCU3RA%3D%3D)
 
 Step 2:
+
 ```bash
 npx @auth0/auth0-mcp-server init --client cursor
+```
+
+**VS Code**
+
+Step 1:
+
+```bash
+npx @auth0/auth0-mcp-server init
+```
+
+Step 2:
+
+[![Install MCP Server](https://img.shields.io/badge/Install%20MCP%20Server-VS%20Code-007ACC?style=for-the-badge&logo=visualstudiocode)](vscode:mcp/install?%7B%22name%22%3A%22auth0%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22%40auth0%2Fauth0-mcp-server%22%2C%22run%22%5D%2C%22env%22%3A%7B%22DEBUG%22%3A%22auth0-mcp%22%7D%7D)
+
+Manually configure the MCP Server in your VS Code environment.
+
+```
+{
+    "servers": {
+        "auth0": {
+            "command": "npx",
+            "args": [
+                "-y",
+                "@auth0/auth0-mcp-server",
+                "run"
+            ],
+            "env": {
+                "DEBUG": "auth0-mcp"
+            }
+        }
+    }
+}
+
+```
+
+Step 3:
+
+```
+Install and use auth0 MCP on VS Code
 ```
 
 **With limited tools access**
@@ -378,24 +418,20 @@ To use Auth0 MCP Server with any other MCP Client, you can add this configuratio
 ### 🚨 Common Issues
 
 1. **Authentication Failures**
-
    - Ensure you have the correct permissions in your Auth0 tenant
    - Try re-initializing with `npx @auth0/auth0-mcp-server init`
 
 2. **Claude Desktop Can't Connect to the Server**
-
    - Restart Claude Desktop after installation
    - Check that the server is running with `ps aux | grep auth0-mcp`
 
 3. **API Errors or Permission Issues**
-
    - Enable debug mode with `export DEBUG=auth0-mcp`
    - Check your Auth0 token status: `npx @auth0/auth0-mcp-server session`
    - Reinitialize with specific scopes: `npx @auth0/auth0-mcp-server init --scopes 'read:*,update:*,create:*'`
    - If a specific operation fails, you may be missing the required scope
 
 4. **Invalid Auth0 Configuration Error**
-
    - This typically happens when your authorization token is missing or expired
    - Run `npx @auth0/auth0-mcp-server session` to check your token status
    - If expired or missing, run `npx @auth0/auth0-mcp-server init` to authenticate
