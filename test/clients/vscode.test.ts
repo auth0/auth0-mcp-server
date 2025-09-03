@@ -79,15 +79,15 @@ describe('VSCodeClientManager', () => {
         linux: '/home/user/.config/Code/User',
       });
       expect(ensureDir).toHaveBeenCalledWith('/home/user/.config/Code/User');
-      expect(path.join).toHaveBeenCalledWith('/home/user/.config/Code/User', 'settings.json');
-      expect(configPath).toBe('/home/user/.config/Code/User/settings.json');
+      expect(path.join).toHaveBeenCalledWith('/home/user/.config/Code/User', 'mcp.json');
+      expect(configPath).toBe('/home/user/.config/Code/User/mcp.json');
     });
   });
 
   describe('getConfigPath - Workspace scope', () => {
     it('should return workspace config path when workspace scope is selected', async () => {
       const workspaceFolder = '/path/to/workspace';
-      
+
       // Mock workspace folder exists
       vi.mocked(fs.existsSync).mockImplementation((path) => {
         return path === workspaceFolder;
@@ -106,13 +106,13 @@ describe('VSCodeClientManager', () => {
 
       expect(path.join).toHaveBeenCalledWith(workspaceFolder, '.vscode');
       expect(ensureDir).toHaveBeenCalledWith('/path/to/workspace/.vscode');
-      expect(path.join).toHaveBeenCalledWith('/path/to/workspace/.vscode', 'settings.json');
-      expect(configPath).toBe('/path/to/workspace/.vscode/settings.json');
+      expect(path.join).toHaveBeenCalledWith('/path/to/workspace/.vscode', 'mcp.json');
+      expect(configPath).toBe('/path/to/workspace/.vscode/mcp.json');
     });
 
     it('should throw error when workspace folder does not exist', async () => {
       const workspaceFolder = '/nonexistent/workspace';
-      
+
       // Mock workspace folder doesn't exist
       vi.mocked(fs.existsSync).mockImplementation((path) => {
         return path !== workspaceFolder;
@@ -143,7 +143,7 @@ describe('VSCodeClientManager', () => {
       const configPath = vscodeManager.getConfigPath();
 
       // Should fall back to global config
-      expect(configPath).toBe('/home/user/.config/Code/User/settings.json');
+      expect(configPath).toBe('/home/user/.config/Code/User/mcp.json');
     });
   });
 
@@ -183,7 +183,7 @@ describe('VSCodeClientManager', () => {
 
     it('should use scope from options without prompting', async () => {
       const workspaceFolder = '/provided/workspace';
-      
+
       await vscodeManager.configure({
         ...testOptions,
         scope: 'workspace',
@@ -203,8 +203,8 @@ describe('VSCodeClientManager', () => {
     });
   });
 
-  describe('configure - VS Code settings.json format', () => {
-    it('should create new mcp.servers section when it does not exist', async () => {
+  describe('configure - VS Code mcp.json format', () => {
+    it('should create new servers section when it does not exist', async () => {
       const existingConfig = {
         'editor.fontSize': 14,
         'files.autoSave': 'onWindowChange',
@@ -221,11 +221,11 @@ describe('VSCodeClientManager', () => {
       await vscodeManager.configure(testOptions);
 
       expect(fs.writeFileSync).toHaveBeenCalledWith(
-        '/home/user/.config/Code/User/settings.json',
+        '/home/user/.config/Code/User/mcp.json',
         JSON.stringify(
           {
             ...existingConfig,
-            'mcp.servers': {
+            servers: {
               auth0: {
                 command: 'npx',
                 args: ['-y', '@auth0/auth0-mcp-server', 'run', '--tools', 'applications'],
@@ -241,9 +241,9 @@ describe('VSCodeClientManager', () => {
       );
     });
 
-    it('should preserve existing mcp.servers configuration', async () => {
+    it('should preserve existing servers configuration', async () => {
       const existingConfig = {
-        'mcp.servers': {
+        servers: {
           'other-server': {
             command: 'other-command',
             args: ['other-args'],
@@ -261,10 +261,10 @@ describe('VSCodeClientManager', () => {
       const writeCall = vi.mocked(fs.writeFileSync).mock.calls[0];
       const writtenConfig = JSON.parse(writeCall[1] as string);
 
-      expect(writtenConfig['mcp.servers']).toHaveProperty('other-server');
-      expect(writtenConfig['mcp.servers']).toHaveProperty('auth0');
-      expect(writtenConfig['mcp.servers']['other-server']).toEqual(
-        existingConfig['mcp.servers']['other-server']
+      expect(writtenConfig['servers']).toHaveProperty('other-server');
+      expect(writtenConfig['servers']).toHaveProperty('auth0');
+      expect(writtenConfig['servers']['other-server']).toEqual(
+        existingConfig['servers']['other-server']
       );
     });
 
@@ -281,13 +281,13 @@ describe('VSCodeClientManager', () => {
       const writeCall = vi.mocked(fs.writeFileSync).mock.calls[0];
       const writtenConfig = JSON.parse(writeCall[1] as string);
 
-      expect(writtenConfig['mcp.servers'].auth0.args).toEqual([
+      expect(writtenConfig['servers'].auth0.args).toEqual([
         '-y',
         '@auth0/auth0-mcp-server',
         'run',
         '--tools',
         'applications,resource-servers',
-        '--read-only'
+        '--read-only',
       ]);
     });
 
@@ -301,7 +301,7 @@ describe('VSCodeClientManager', () => {
 
       expect(fs.writeFileSync).toHaveBeenCalledWith(
         expect.any(String),
-        expect.stringContaining('"mcp.servers"')
+        expect.stringContaining('"servers"')
       );
     });
 
@@ -316,7 +316,7 @@ describe('VSCodeClientManager', () => {
       // Should still write a valid config
       expect(fs.writeFileSync).toHaveBeenCalledWith(
         expect.any(String),
-        expect.stringContaining('"mcp.servers"')
+        expect.stringContaining('"servers"')
       );
     });
   });
@@ -340,7 +340,7 @@ describe('VSCodeClientManager', () => {
       // Reset mocks for workspace test
       vi.clearAllMocks();
       const workspaceFolder = '/path/to/workspace';
-      
+
       // Test workspace scope
       await vscodeManager.configure({
         tools: ['applications'],
@@ -391,10 +391,10 @@ describe('VSCodeClientManager', () => {
       const writeCall = vi.mocked(fs.writeFileSync).mock.calls[0];
       const writtenConfig = JSON.parse(writeCall[1] as string);
 
-      expect(writtenConfig).toHaveProperty('mcp.servers');
-      expect(writtenConfig['mcp.servers']).toHaveProperty('auth0');
-      
-      const serverConfig = writtenConfig['mcp.servers'].auth0;
+      expect(writtenConfig).toHaveProperty('servers');
+      expect(writtenConfig['servers']).toHaveProperty('auth0');
+
+      const serverConfig = writtenConfig['servers'].auth0;
       expect(serverConfig).toHaveProperty('command');
       expect(serverConfig).toHaveProperty('args');
       expect(serverConfig).toHaveProperty('env');

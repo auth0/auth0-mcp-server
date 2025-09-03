@@ -104,6 +104,7 @@ npx @auth0/auth0-mcp-server init --client vscode
 ```
 
 You can configure VS Code for either global or workspace scope:
+
 - **Global**: Available in all VS Code instances
 - **Workspace**: Available only in a specific project/repository
 

@@ -60,7 +60,7 @@ export class VSCodeClientManager extends BaseClientManager {
 
       const vscodeDir = path.join(this.selectedWorkspaceFolder, '.vscode');
       ensureDir(vscodeDir);
-      return path.join(vscodeDir, 'settings.json');
+      return path.join(vscodeDir, 'mcp.json');
     }
 
     return this.getGlobalConfigPath();
@@ -79,7 +79,7 @@ export class VSCodeClientManager extends BaseClientManager {
     });
 
     ensureDir(configDir);
-    return path.join(configDir, 'settings.json');
+    return path.join(configDir, 'mcp.json');
   }
 
   /**
@@ -141,11 +141,11 @@ export class VSCodeClientManager extends BaseClientManager {
     const serverConfig = this.createServerConfig(options);
 
     // VS Code uses a different configuration structure for MCP
-    if (!config['mcp.servers']) {
-      config['mcp.servers'] = {};
+    if (!config['servers']) {
+      config['servers'] = {};
     }
 
-    config['mcp.servers']['auth0'] = serverConfig;
+    config['servers']['auth0'] = serverConfig;
 
     this.writeVSCodeConfig(configPath, config);
 
