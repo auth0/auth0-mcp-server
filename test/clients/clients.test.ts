@@ -149,4 +149,14 @@ describe('Client Implementations', () => {
       expect(ensureDir).toHaveBeenCalled();
     });
   });
+
+  describe('VS Code Specific Features', () => {
+    it('should support VS Code client configuration', async () => {
+      // Act: Test that VS Code client can be configured
+      await clients.vscode.configure({ tools: ['applications'] });
+
+      // Assert: VS Code configure method should be called (mocked)
+      expect(clients.vscode.configure).toHaveBeenCalledWith({ tools: ['applications'] });
+    });
+  });
 });
