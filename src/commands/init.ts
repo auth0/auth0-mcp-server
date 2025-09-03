@@ -2,6 +2,7 @@ import { clients } from '../clients/index.js';
 import type { ClientType } from '../clients/types.js';
 import { log, logError } from '../utils/logger.js';
 import { requestAuthorization } from '../auth/device-auth-flow.js';
+import { requestClientCredentialsAuthorization } from '../auth/client-credentials-flow.js';
 import { promptForScopeSelection } from '../utils/terminal.js';
 import { getAllScopes } from '../utils/scopes.js';
 import { Glob } from '../utils/glob.js';
@@ -17,6 +18,9 @@ export interface InitOptions {
   scopes?: string[];
   tools: string[];
   readOnly?: boolean;
+  auth0Domain?: string;
+  auth0ClientId?: string;
+  auth0ClientSecret?: string;
 }
 
 /**
@@ -134,9 +138,27 @@ const init = async (options: InitOptions): Promise<void> => {
 
   trackEvent.trackInit(options.client);
 
-  // Handle scope resolution
-  const selectedScopes = await resolveScopes(options.scopes);
-  await requestAuthorization(selectedScopes);
+  // Check if client credentials parameters are provided for Private Cloud authentication
+  const { auth0Domain, auth0ClientId, auth0ClientSecret } = options;
+
+  if (auth0Domain && auth0ClientId && auth0ClientSecret) {
+    // Client credentials flow for Private Cloud
+    log('Using client credentials flow for authentication');
+
+    await requestClientCredentialsAuthorization({
+      auth0Domain: auth0Domain,
+      auth0ClientId: auth0ClientId,
+      auth0ClientSecret: auth0ClientSecret,
+    });
+  } else {
+    // Device authorization flow for public cloud
+    log('Using device authorization flow for authentication');
+
+    // Handle scope resolution
+    const selectedScopes = await resolveScopes(options.scopes);
+
+    await requestAuthorization(selectedScopes);
+  }
 
   // Configure the requested client
   await configureClient(options.client, options);

@@ -5,26 +5,22 @@ on:
   workflow_dispatch:
   pull_request:
     branches:
-      - master
+      - main
   push:
     branches:
-      - master
+      - main
 
 permissions:
   contents: read
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   build:
     name: Build and Test
     runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        node-version: ['18.17', '20.3', 'latest']
 
     steps:
       - name: Checkout code
@@ -33,13 +29,16 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node-version }}
-          cache: 'npm'
-          registry-url: 'https://registry.npmjs.org'
+          cache: "npm"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Install system dependencies
+        shell: bash
+        run: sudo apt-get update && sudo apt-get install -y libsecret-1-dev
 
       - name: Install dependencies
         shell: bash
-        run: npm ci --include=dev
+        run: npm ci
 
       - name: ESLint
         shell: bash
@@ -49,10 +48,6 @@ jobs:
         shell: bash
         run: npm run build
 
-      # - name: Tests Unit
-      #   shell: bash
-      #   run: npm test
-
-      - name: Tests Integration
+      - name: Tests Unit
         shell: bash
-        run: npm run test:ci
+        run: npm test

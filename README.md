@@ -85,6 +85,7 @@ Step 1:
 [![Install MCP Server](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/install-mcp?name=auth0&config=JTdCJTIyY29tbWFuZCUyMiUzQSUyMm5weCUyMC15JTIwJTQwYXV0aDAlMkZhdXRoMC1tY3Atc2VydmVyJTIwcnVuJTIyJTJDJTIyY2FwYWJpbGl0aWVzJTIyJTNBJTVCJTIydG9vbHMlMjIlNUQlMkMlMjJlbnYlMjIlM0ElN0IlMjJERUJVRyUyMiUzQSUyMmF1dGgwLW1jcCUyMiU3RCU3RA%3D%3D)
 
 Step 2:
+
 ```bash
 npx @auth0/auth0-mcp-server init --client cursor
 ```
@@ -276,7 +277,36 @@ npx @auth0/auth0-mcp-server init
 
 This will start the device authorization flow, allowing you to log in to your Auth0 account and select the tenant you want to use.
 
+> [!NOTE]
+> Authenticating using device authorization flow is not supported for **private cloud** tenants.
+> Private Cloud users should authenticate with [client credentials](https://auth0.com/docs/get-started/authentication-and-authorization-flow/client-credentials-flow).Keep the token lifetime as minimal as possible to reduce security risks. [See more](https://auth0.com/docs/secure/tokens/access-tokens/update-access-token-lifetime)
+>
+> ```bash
+> npx @auth0/auth0-mcp-server init --auth0-domain <auth0-domain> --auth0-client-id <auth0-client-id> --auth0-client-secret <auth0-client-secret>
+> ```
+
 > [!IMPORTANT]
+>
+> <details>
+> <summary>Keep limited scope for client credentials M2M application:</summary>
+>
+> Supported scopes:
+>
+> - `read:clients`
+> - `create:clients`
+> - `update:clients`
+> - `read:resource_servers`
+> - `create:resource_servers`
+> - `update:resource_servers`
+> - `read:actions`
+> - `create:actions`
+> - `update:actions`
+> - `read:logs`
+> - `read:forms`
+> - `create:forms`
+> - `update:forms`
+>
+> </details>
 > The `init` command needs to be run whenever:
 >
 > - You're setting up the MCP Server for the first time
@@ -285,6 +315,9 @@ This will start the device authorization flow, allowing you to log in to your Au
 > - Your token has expired
 >
 > The `run` command will automatically check for token validity before starting the server and will provide helpful error messages if authentication is needed.
+
+> [!NOTE]
+> Using the MCP Server will consume Management API rate limits according to the subscription plan. Refer to the [Rate Limit Policy](https://auth0.com/docs/troubleshoot/customer-support/operational-policies/rate-limit-policy) for more information.
 
 ### Session Management
 
@@ -378,24 +411,20 @@ To use Auth0 MCP Server with any other MCP Client, you can add this configuratio
 ### 🚨 Common Issues
 
 1. **Authentication Failures**
-
    - Ensure you have the correct permissions in your Auth0 tenant
    - Try re-initializing with `npx @auth0/auth0-mcp-server init`
 
 2. **Claude Desktop Can't Connect to the Server**
-
    - Restart Claude Desktop after installation
    - Check that the server is running with `ps aux | grep auth0-mcp`
 
 3. **API Errors or Permission Issues**
-
    - Enable debug mode with `export DEBUG=auth0-mcp`
    - Check your Auth0 token status: `npx @auth0/auth0-mcp-server session`
    - Reinitialize with specific scopes: `npx @auth0/auth0-mcp-server init --scopes 'read:*,update:*,create:*'`
    - If a specific operation fails, you may be missing the required scope
 
 4. **Invalid Auth0 Configuration Error**
-
    - This typically happens when your authorization token is missing or expired
    - Run `npx @auth0/auth0-mcp-server session` to check your token status
    - If expired or missing, run `npx @auth0/auth0-mcp-server init` to authenticate

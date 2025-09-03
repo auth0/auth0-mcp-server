@@ -68,6 +68,7 @@ Examples:
   npx ${packageName} init --read-only --client claude
   npx ${packageName} init --tools 'auth0_*_applications' --client windsurf
   npx ${packageName} init --tools 'auth0_list_*,auth0_get_*' --client cursor
+  npx ${packageName} init --auth0-domain <auth0-domain> --auth0-client-id <auth0-client-id> --auth0-client-secret <auth0-client-secret>
   npx ${packageName} run
   npx ${packageName} run --read-only
   npx ${packageName} session
@@ -81,6 +82,18 @@ program
   .command('init')
   .description('Initialize the server (authenticate and configure)')
   .option('--client <client>', 'Configure specific client (claude, windsurf, or cursor)', 'claude')
+  .option(
+    '--auth0-domain <auth0 domain>',
+    'Auth0 domain (required for Private Cloud authentication)'
+  )
+  .option(
+    '--auth0-client-id <auth0 ClientId>',
+    'Client ID (required for Private Cloud authentication)'
+  )
+  .option(
+    '--auth0-client-secret <auth0 Client Secret>',
+    'Client secret (required for Private Cloud authentication)'
+  )
   .option('--scopes <scopes>', 'Comma-separated list of Auth0 API scopes', (text) =>
     text
       .split(',')
