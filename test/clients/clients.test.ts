@@ -75,6 +75,9 @@ describe('Client Implementations', () => {
 
       expect(clients.windsurf).toHaveProperty('getConfigPath');
       expect(clients.windsurf).toHaveProperty('configure');
+
+      expect(clients.vscode).toHaveProperty('getConfigPath');
+      expect(clients.vscode).toHaveProperty('configure');
     });
 
     it('should initialize with correct client types and display names', () => {
@@ -87,6 +90,9 @@ describe('Client Implementations', () => {
 
       expect(clients.windsurf).toHaveProperty('clientType', 'windsurf');
       expect(clients.windsurf).toHaveProperty('displayName', 'Windsurf');
+
+      expect(clients.vscode).toHaveProperty('clientType', 'vscode');
+      expect(clients.vscode).toHaveProperty('displayName', 'VS Code');
     });
   });
 
@@ -125,6 +131,19 @@ describe('Client Implementations', () => {
       expect(getPlatformPath).toHaveBeenCalledWith(
         expect.objectContaining({
           darwin: expect.stringContaining('.codeium/windsurf'),
+        })
+      );
+      expect(ensureDir).toHaveBeenCalled();
+    });
+
+    it('should resolve correct config path for VS Code on macOS', () => {
+      // Act
+      clients.vscode.getConfigPath();
+
+      // Assert
+      expect(getPlatformPath).toHaveBeenCalledWith(
+        expect.objectContaining({
+          darwin: expect.stringContaining('Library/Application Support/Code/User'),
         })
       );
       expect(ensureDir).toHaveBeenCalled();
