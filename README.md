@@ -91,49 +91,28 @@ Step 2:
 npx @auth0/auth0-mcp-server init --client cursor
 ```
 
-**VS Code**
-
-Step 1:
-
-```bash
-npx @auth0/auth0-mcp-server init
-```
-
-Step 2:
-
-[![Install MCP Server](https://img.shields.io/badge/Install%20MCP%20Server-VS%20Code-007ACC?style=for-the-badge&logo=visualstudiocode)](vscode:mcp/install?%7B%22name%22%3A%22auth0%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22%40auth0%2Fauth0-mcp-server%22%2C%22run%22%5D%2C%22env%22%3A%7B%22DEBUG%22%3A%22auth0-mcp%22%7D%7D)
-
-Manually configure the MCP Server in your VS Code environment.
-
-```
-{
-    "servers": {
-        "auth0": {
-            "command": "npx",
-            "args": [
-                "-y",
-                "@auth0/auth0-mcp-server",
-                "run"
-            ],
-            "env": {
-                "DEBUG": "auth0-mcp"
-            }
-        }
-    }
-}
-
-```
-
-Step 3:
-
-```
-Install and use auth0 MCP on VS Code
-```
-
-**With limited tools access**
+**Cursor with limited tools access**
 
 ```bash
 npx @auth0/auth0-mcp-server init --client cursor --tools 'auth0_list_applications,auth0_get_application'
+```
+
+**VS Code**
+
+```bash
+npx @auth0/auth0-mcp-server init --client vscode
+```
+
+You can configure VS Code for either global or workspace scope:
+- **Global**: Available in all VS Code instances
+- **Workspace**: Available only in a specific project/repository
+
+The command will prompt you to choose your preferred scope and automatically configure the appropriate `mcp.json` file.
+
+**VS Code with limited tools access**
+
+```bash
+npx @auth0/auth0-mcp-server init --client vscode --tools 'auth0_list_*,auth0_get_*' --read-only
 ```
 
 **Other MCP Clients**
