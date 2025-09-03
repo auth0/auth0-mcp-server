@@ -1,5 +1,15 @@
 # Change Log
 
+## [v0.1.0-beta.4](https://github.com/auth0/auth0-mcp-server/tree/v0.1.0-beta.4) (2025-09-03)
+[Full Changelog](https://github.com/auth0/auth0-mcp-server/compare/v0.1.0-beta.3...v0.1.0-beta.4)
+
+**Added**
+- Cursor button [\#51](https://github.com/auth0/auth0-mcp-server/pull/51) ([brth31](https://github.com/brth31))
+- feat: authentication flow for Private Cloud [\#55](https://github.com/auth0/auth0-mcp-server/pull/55) ([kushalshit27](https://github.com/kushalshit27))
+
+**Fixed**
+- fix: vs-code validate tool error for resource_serve [\#46](https://github.com/auth0/auth0-mcp-server/pull/46) ([kushalshit27](https://github.com/kushalshit27))
+
 ## [v0.1.0-beta.3](https://github.com/auth0/auth0-mcp-server/tree/v0.1.0-beta.3) (2025-08-26)
 [Full Changelog](https://github.com/auth0/auth0-mcp-server/compare/v0.1.0-beta.2...v0.1.0-beta.3)
 
