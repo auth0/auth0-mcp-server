@@ -81,7 +81,11 @@ Examples:
 program
   .command('init')
   .description('Initialize the server (authenticate and configure)')
-  .option('--client <client>', 'Configure specific client (claude, windsurf, or cursor)', 'claude')
+  .option(
+    '--client <client>',
+    'Configure specific client (claude, windsurf, cursor, or vscode)',
+    'claude'
+  )
   .option(
     '--auth0-domain <auth0 domain>',
     'Auth0 domain (required for Private Cloud authentication)'
