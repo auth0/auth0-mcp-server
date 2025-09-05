@@ -1,5 +1,11 @@
 # Change Log
 
+## [v0.1.0-beta.6](https://github.com/auth0/auth0-mcp-server/tree/v0.1.0-beta.6) (2025-09-05)
+[Full Changelog](https://github.com/auth0/auth0-mcp-server/compare/v0.1.0-beta.5...v0.1.0-beta.6)
+
+**Fixed**
+- Fix npm publish tag logic for beta versions [\#65](https://github.com/auth0/auth0-mcp-server/pull/65) ([gyaneshgouraw-okta](https://github.com/gyaneshgouraw-okta))
+
 ## [v0.1.0-beta.5](https://github.com/auth0/auth0-mcp-server/tree/v0.1.0-beta.5) (2025-09-05)
 [Full Changelog](https://github.com/auth0/auth0-mcp-server/compare/v0.1.0-beta.4...v0.1.0-beta.5)
 
