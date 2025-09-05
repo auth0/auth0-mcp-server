@@ -132,14 +132,19 @@ export const RESOURCE_SERVER_TOOLS: Tool[] = [
           description: 'Policy for obtaining consent.',
         },
         authorization_details: {
-          type: ['array', 'null'],
-          description: 'Authorization details for the resource server.',
-          items: [
+          anyOf: [
             {
-              type: 'object',
-              description: 'The valid authorization_detail definition',
+              type: 'array',
+              items: {
+                type: 'object',
+                description: 'The valid authorization_detail definition',
+              },
+            },
+            {
+              type: 'null',
             },
           ],
+          description: 'Authorization details for the resource server.',
         },
         proof_of_possession: {
           type: 'object',
@@ -222,14 +227,19 @@ export const RESOURCE_SERVER_TOOLS: Tool[] = [
           description: 'Policy for obtaining consent.',
         },
         authorization_details: {
-          type: ['array', 'null'],
-          description: 'Authorization details for the resource server.',
-          items: [
+          anyOf: [
             {
-              type: 'object',
-              description: 'The valid authorization_detail definition',
+              type: 'array',
+              items: {
+                type: 'object',
+                description: 'The valid authorization_detail definition',
+              },
+            },
+            {
+              type: 'null',
             },
           ],
+          description: 'Authorization details for the resource server.',
         },
         proof_of_possession: {
           type: 'object',
