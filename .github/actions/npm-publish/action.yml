@@ -40,7 +40,7 @@ runs:
       working-directory: ${{ inputs.release-directory }}
       run: |
         if [[ "${VERSION}" == *"beta"* ]]; then
-          TAG="beta"
+          TAG="latest"
         elif [[ "${VERSION}" == *"alpha"* ]]; then
           TAG="alpha"
         else
