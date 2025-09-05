@@ -106,7 +106,7 @@ async function configureClient(clientType: ClientType, options: InitOptions): Pr
  * This function orchestrates the complete initialization process by:
  * 1. Resolving and validating requested scopes
  * 2. Obtaining authorization through the device flow
- * 3. Configuring the selected client (Claude, Windsurf, or Cursor)
+ * 3. Configuring the selected client (Claude, Windsurf, Cursor, or VS Code)
  *
  * @param {InitOptions} options - Configuration options including:
  *   - client: The target client type to configure ('claude', 'windsurf', or 'cursor')

@@ -1,7 +1,129 @@
 import chalk from 'chalk';
 import { jwtDecode } from 'jwt-decode';
 import readline from 'readline';
+import * as fs from 'fs';
+import * as path from 'path';
 import { getAllScopes } from './scopes.js';
+
+/**
+ * Generic function to prompt user for a choice from a list of options
+ */
+export async function promptForChoice<T extends string>(
+  question: string,
+  choices: Array<{ label: string; value: T }>,
+  defaultChoice?: T
+): Promise<T> {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+
+  return new Promise<T>((resolve) => {
+    console.log(chalk.cyan(`\n${question}`));
+    choices.forEach((choice, index) => {
+      console.log(`${index + 1}. ${choice.label}`);
+    });
+
+    rl.question(chalk.yellow(`Enter your choice (1-${choices.length}): `), (answer) => {
+      rl.close();
+
+      const choice = answer.trim();
+      const choiceIndex = parseInt(choice, 10) - 1;
+
+      if (choiceIndex >= 0 && choiceIndex < choices.length) {
+        resolve(choices[choiceIndex].value);
+      } else {
+        // Try to match by label (case insensitive)
+        const matchedChoice = choices.find(
+          (c) =>
+            c.value.toLowerCase() === choice.toLowerCase() ||
+            c.label.toLowerCase().includes(choice.toLowerCase())
+        );
+
+        if (matchedChoice) {
+          resolve(matchedChoice.value);
+        } else if (defaultChoice) {
+          console.log(chalk.yellow(`Invalid choice, defaulting to ${defaultChoice}.`));
+          resolve(defaultChoice);
+        } else {
+          console.log(chalk.yellow(`Invalid choice, defaulting to first option.`));
+          resolve(choices[0].value);
+        }
+      }
+    });
+  });
+}
+
+/**
+ * Generic function to prompt user for a file/directory path with validation
+ */
+export async function promptForPath(
+  question: string,
+  options: {
+    required?: boolean;
+    mustExist?: boolean;
+    mustBeDirectory?: boolean;
+    mustBeFile?: boolean;
+  } = {}
+): Promise<string> {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+
+  return new Promise<string>((resolve) => {
+    const askForPath = () => {
+      rl.question(chalk.yellow(question), (input) => {
+        const trimmedInput = input.trim();
+
+        if (options.required && !trimmedInput) {
+          console.log(chalk.red('Path is required'));
+          askForPath();
+          return;
+        }
+
+        if (!trimmedInput) {
+          rl.close();
+          resolve('');
+          return;
+        }
+
+        const resolvedPath = path.resolve(trimmedInput);
+
+        if (options.mustExist && !fs.existsSync(resolvedPath)) {
+          console.log(chalk.red(`Path does not exist: ${resolvedPath}`));
+          askForPath();
+          return;
+        }
+
+        if (
+          options.mustBeDirectory &&
+          fs.existsSync(resolvedPath) &&
+          !fs.statSync(resolvedPath).isDirectory()
+        ) {
+          console.log(chalk.red(`Path is not a directory: ${resolvedPath}`));
+          askForPath();
+          return;
+        }
+
+        if (
+          options.mustBeFile &&
+          fs.existsSync(resolvedPath) &&
+          !fs.statSync(resolvedPath).isFile()
+        ) {
+          console.log(chalk.red(`Path is not a file: ${resolvedPath}`));
+          askForPath();
+          return;
+        }
+
+        rl.close();
+        resolve(resolvedPath);
+      });
+    };
+
+    askForPath();
+  });
+}
 
 /**
  * Interface for JWT token payload
