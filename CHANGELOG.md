@@ -1,5 +1,11 @@
 # Change Log
 
+## [v0.1.0-beta.5](https://github.com/auth0/auth0-mcp-server/tree/v0.1.0-beta.5) (2025-09-05)
+[Full Changelog](https://github.com/auth0/auth0-mcp-server/compare/v0.1.0-beta.4...v0.1.0-beta.5)
+
+**Added**
+- VS Code Improvements [\#63](https://github.com/auth0/auth0-mcp-server/pull/63) ([jtemporal](https://github.com/jtemporal))
+
 ## [v0.1.0-beta.4](https://github.com/auth0/auth0-mcp-server/tree/v0.1.0-beta.4) (2025-09-03)
 [Full Changelog](https://github.com/auth0/auth0-mcp-server/compare/v0.1.0-beta.3...v0.1.0-beta.4)
 
