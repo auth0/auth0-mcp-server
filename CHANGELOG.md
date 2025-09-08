@@ -1,5 +1,11 @@
 # Change Log
 
+## [v0.1.0-beta.7](https://github.com/auth0/auth0-mcp-server/tree/v0.1.0-beta.7) (2025-09-08)
+[Full Changelog](https://github.com/auth0/auth0-mcp-server/compare/v0.1.0-beta.6...v0.1.0-beta.7)
+
+**Fixed**
+- fix: update authorization_details schema to JSON Schema Draft 2020-12 compliance [\#67](https://github.com/auth0/auth0-mcp-server/pull/67) ([gyaneshgouraw-okta](https://github.com/gyaneshgouraw-okta))
+
 ## [v0.1.0-beta.6](https://github.com/auth0/auth0-mcp-server/tree/v0.1.0-beta.6) (2025-09-05)
 [Full Changelog](https://github.com/auth0/auth0-mcp-server/compare/v0.1.0-beta.5...v0.1.0-beta.6)
 
