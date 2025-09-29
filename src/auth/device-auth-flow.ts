@@ -7,7 +7,7 @@ import {
   cliOutput,
   promptForBrowserPermission,
 } from '../utils/terminal.js';
-import { log, logError } from '../utils/logger.js';
+import { log, logError, logInfo } from '../utils/logger.js';
 import { keychain } from '../utils/keychain.js';
 import { DEFAULT_SCOPES } from '../utils/scopes.js';
 
@@ -306,14 +306,19 @@ export async function isTokenExpired(bufferSeconds = 300): Promise<boolean> {
  */
 export async function getValidAccessToken(): Promise<string | null> {
   try {
-    const expired = await isTokenExpired();
+    // const expired = await isTokenExpired();
 
-    if (expired) {
-      log('Token is expired. Please authenticate again using `npx @auth0/auth0-mcp-server init`');
-      return null;
-    }
+    // if (expired) {
+    //   log('Token is expired. Please authenticate again using `npx @auth0/auth0-mcp-server init`');
+    //   return null;
+    // }
 
-    return await keychain.getToken();
+    const maybeUndefined: string | undefined = process.env.AUTH0_ACCESS_TOKEN;
+
+    logInfo('DEGUG-YI:Retrieved access token from environment variable:', maybeUndefined);
+
+    // return await keychain.getToken();
+    return maybeUndefined ?? null;
   } catch (error) {
     log('Error getting valid access token:', error);
     return null;
