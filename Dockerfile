@@ -2,7 +2,6 @@ FROM node:22.12-alpine AS builder
 
 WORKDIR /app
 
-# Copy package.json and package-lock.json first for better layer caching
 COPY package*.json ./
 COPY tsconfig.json ./
 COPY src/ ./src/
