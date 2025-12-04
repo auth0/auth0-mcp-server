@@ -67,3 +67,24 @@ export interface Auth0PaginatedResponse {
   per_page?: number;
   [key: string]: any;
 }
+
+export interface PromptArgument {
+  name: string;
+  description?: string;
+  required?: boolean;
+}
+
+export interface Prompt {
+  name: string;
+  description?: string;
+  arguments?: PromptArgument[];
+}
+
+export interface PromptMessage {
+  role: 'user' | 'assistant';
+  content: {
+    type: 'text' | 'image' | 'resource';
+    text?: string;
+    [key: string]: any;
+  };
+}

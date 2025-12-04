@@ -1,6 +1,12 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+import {
+  CallToolRequestSchema,
+  ListToolsRequestSchema,
+  ListPromptsRequestSchema,
+  GetPromptRequestSchema,
+  SetLevelRequestSchema,
+} from '@modelcontextprotocol/sdk/types.js';
 
 import { loadConfig, validateConfig } from './utils/config.js';
 import { HANDLERS, TOOLS } from './tools/index.js';
@@ -10,6 +16,7 @@ import { maskTenantName } from './utils/terminal.js';
 import { getAvailableTools } from './utils/tools.js';
 import type { RunOptions } from './commands/run.js';
 import { packageVersion } from './utils/package.js';
+import { getPromptContent, PROMPTS } from './prompts/index.js';
 
 type ServerOptions = RunOptions;
 
@@ -67,7 +74,7 @@ export async function startServer(options?: ServerOptions) {
     // Create server instance
     const server = new Server(
       { name: 'auth0', version: packageVersion },
-      { capabilities: { tools: {}, logging: {} } }
+      { capabilities: { tools: {}, prompts: {}, logging: {} } }
     );
 
     // Handle list tools request
@@ -79,6 +86,12 @@ export async function startServer(options?: ServerOptions) {
       const sanitizedTools = availableTools.map(({ _meta, ...rest }) => rest);
 
       return { tools: sanitizedTools };
+    });
+
+    // Handle list prompts request
+    server.setRequestHandler(ListPromptsRequestSchema, async () => {
+      log('Received list prompts request');
+      return { prompts: PROMPTS };
     });
 
     // Handle tool calls
@@ -140,6 +153,39 @@ export async function startServer(options?: ServerOptions) {
       }
     });
 
+    server.setRequestHandler(GetPromptRequestSchema, async (request) => {
+      const promptName = request.params.name;
+      const args = request.params.arguments || {};
+
+      log(`Received get prompt request: ${promptName}`);
+
+      try {
+        const content = getPromptContent(promptName, args);
+
+        return {
+          messages: [
+            {
+              role: 'user',
+              content: {
+                type: 'text',
+                text: content,
+              },
+            },
+          ],
+        };
+      } catch (error) {
+        log(`Error getting prompt: ${error instanceof Error ? error.message : String(error)}`);
+        throw error;
+      }
+    });
+
+    server.setRequestHandler(SetLevelRequestSchema, async (request) => {
+      const level = request.params.level;
+      log(`Logging level set to: ${level}`);
+
+      return {};
+    });
+
     // Connect to transport
     log('Creating stdio transport...');
     const transport = new StdioServerTransport();
@@ -152,13 +198,14 @@ export async function startServer(options?: ServerOptions) {
         new Promise((_, reject) => setTimeout(() => reject(new Error('Connection timeout')), 5000)),
       ]);
 
+      // Commented out in order for inspection tool to work
       // Log server start information
-      const enabledToolsCount = availableTools.length;
-      const totalToolsCount = TOOLS.length;
-      const logMsg = `Auth0 MCP Server version ${packageVersion} running on stdio with ${enabledToolsCount}/${totalToolsCount} tools available`;
-      logInfo(logMsg);
-      log(logMsg);
-      server.sendLoggingMessage({ level: 'info', data: logMsg });
+      // const enabledToolsCount = availableTools.length;
+      // const totalToolsCount = TOOLS.length;
+      // const logMsg = `Auth0 MCP Server version ${packageVersion} running on stdio with ${enabledToolsCount}/${totalToolsCount} tools available`;
+      // logInfo(logMsg);
+      // log(logMsg);
+      // server.sendLoggingMessage({ level: 'info', data: logMsg });
 
       return server;
     } catch (connectError) {

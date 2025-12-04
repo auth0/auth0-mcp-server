@@ -11,9 +11,15 @@ debug.log = (...args) => {
 };
 
 export const logInfo = (...args: any[]) => {
-  if (process.env.DEBUG == 'auth0-mcp') {
+  // commented out for mcp inspector tool to work
+  // if (process.env.DEBUG == 'auth0-mcp') {
+  //   return;
+  // }
+  // Skip INFO logs in MCP mode (when stdin/stdout are being used for protocol)
+  if (process.stdin.isTTY === false || process.stdout.isTTY === false) {
     return;
   }
+
   const msg = `[INFO:auth0-mcp] ${args.join(' ')}\n`;
   process.stderr.write(msg);
   return true;
