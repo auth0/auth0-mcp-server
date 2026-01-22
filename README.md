@@ -82,7 +82,6 @@ npx @auth0/auth0-mcp-server init --client windsurf
 
 Step 1:
 
-
 [![Install MCP Server](https://cursor.com/deeplink/mcp-install-dark.svg)](cursor://anysphere.cursor-deeplink/mcp/install?name=auth0&config=eyJjb21tYW5kIjoibnB4IC15IEBhdXRoMC9hdXRoMC1tY3Atc2VydmVyIHJ1biIsImNhcGFiaWxpdGllcyI6WyJ0b29scyJdLCJlbnYiOnsiREVCVUciOiJhdXRoMC1tY3AifX0%3D)
 
 Step 2:
@@ -160,6 +159,19 @@ The Auth0 MCP Server provides the following tools for Claude to interact with yo
   <img src="https://cdn.auth0.com/website/mcp/assets/help-image-02.png" alt="Supported Tools img" width="400">
   <img src="https://cdn.auth0.com/website/mcp/assets/help-image-03.png" alt="Supported Tools img" width="400">
 </div>
+
+### Onboarding
+
+| Tool               | Description                                                                                      | Usage Examples                                                                                                                                                                                                              |
+| ------------------ | ------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `auth0_onboarding` | Guided onboarding assistant for creating and configuring Auth0 applications with SDK integration | - `Help me onboard my first React app` <br> - `Create a new SPA called "My App" with React for http://localhost:3000` <br> - `Set up Auth0 for my new application` <br> - `I need to integrate Auth0 into my React project` |
+
+The onboarding tool supports both **interactive** and **automated** modes:
+
+- **Interactive Mode**: Call without parameters to get step-by-step guidance
+- **Automated Mode**: Provide all parameters to create and configure the application in one step
+
+Currently supports React framework with full SDK integration guides. More frameworks coming soon!
 
 ### Applications
 

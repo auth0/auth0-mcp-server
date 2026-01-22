@@ -3,8 +3,6 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
-  ListPromptsRequestSchema,
-  GetPromptRequestSchema,
   SetLevelRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 
@@ -16,7 +14,6 @@ import { maskTenantName } from './utils/terminal.js';
 import { getAvailableTools } from './utils/tools.js';
 import type { RunOptions } from './commands/run.js';
 import { packageVersion } from './utils/package.js';
-import { getPromptContent, PROMPTS } from './prompts/index.js';
 
 type ServerOptions = RunOptions;
 
@@ -88,12 +85,6 @@ export async function startServer(options?: ServerOptions) {
       return { tools: sanitizedTools };
     });
 
-    // Handle list prompts request
-    server.setRequestHandler(ListPromptsRequestSchema, async () => {
-      log('Received list prompts request');
-      return { prompts: PROMPTS };
-    });
-
     // Handle tool calls
     server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const toolName = request.params.name;
@@ -150,32 +141,6 @@ export async function startServer(options?: ServerOptions) {
           ],
           isError: true,
         };
-      }
-    });
-
-    server.setRequestHandler(GetPromptRequestSchema, async (request) => {
-      const promptName = request.params.name;
-      const args = request.params.arguments || {};
-
-      log(`Received get prompt request: ${promptName}`);
-
-      try {
-        const content = getPromptContent(promptName, args);
-
-        return {
-          messages: [
-            {
-              role: 'user',
-              content: {
-                type: 'text',
-                text: content,
-              },
-            },
-          ],
-        };
-      } catch (error) {
-        log(`Error getting prompt: ${error instanceof Error ? error.message : String(error)}`);
-        throw error;
       }
     });
 

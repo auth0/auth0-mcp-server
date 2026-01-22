@@ -4,6 +4,7 @@ import type { HandlerConfig, HandlerRequest, HandlerResponse, Tool } from '../ut
 import { FORM_HANDLERS, FORM_TOOLS } from './forms.js';
 import { LOG_HANDLERS, LOG_TOOLS } from './logs.js';
 import { RESOURCE_SERVER_HANDLERS, RESOURCE_SERVER_TOOLS } from './resource-servers.js';
+import { ONBOARDING_HANDLERS, ONBOARDING_TOOLS } from './onboarding.js';
 import trackEvent from '../utils/analytics.js';
 
 // Combine all tools into a single array
@@ -13,6 +14,7 @@ export const TOOLS: Tool[] = [
   ...ACTION_TOOLS,
   ...LOG_TOOLS,
   ...FORM_TOOLS,
+  ...ONBOARDING_TOOLS,
 ];
 
 // Collect all handlers
@@ -22,6 +24,7 @@ const allHandlers = {
   ...ACTION_HANDLERS,
   ...LOG_HANDLERS,
   ...FORM_HANDLERS,
+  ...ONBOARDING_HANDLERS,
 };
 
 /**
