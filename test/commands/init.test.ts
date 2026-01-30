@@ -178,39 +178,45 @@ describe('Init Module', () => {
     it('should use selected scopes from promptForScopeSelection', async () => {
       // Arrange
       const mockSelectedScopes = ['read:clients', 'read:actions'];
+      const mockInteractive = true;
       mockedPromptForScopeSelection.mockResolvedValue(mockSelectedScopes);
 
       // Act
-      await init({ client: 'claude', tools: ['*'] });
+      await init({ client: 'claude', tools: ['*'], interaction: true });
 
       // Assert
       expect(mockedPromptForScopeSelection).toHaveBeenCalled();
-      expect(mockedRequestAuth).toHaveBeenCalledWith(mockSelectedScopes);
+      expect(mockedRequestAuth).toHaveBeenCalledWith(mockSelectedScopes, mockInteractive);
     });
 
     it('should use provided scopes with --scopes flag', async () => {
       // Arrange
       const mockScopes = ['read:clients', 'create:clients'];
+      const mockInteractive = true;
       mockedPromptForScopeSelection.mockResolvedValue(mockScopes);
 
       // Act
-      await init({ client: 'claude', scopes: mockScopes, tools: ['*'] });
+      await init({ client: 'claude', scopes: mockScopes, tools: ['*'], interaction: true });
 
       // Assert
       expect(mockedPromptForScopeSelection).toHaveBeenCalled();
-      expect(mockedRequestAuth).toHaveBeenCalledWith(mockScopes);
+      expect(mockedRequestAuth).toHaveBeenCalledWith(mockScopes, mockInteractive);
     });
 
     it('should handle glob patterns with --scopes flag', async () => {
       // Arrange
       mockedPromptForScopeSelection.mockResolvedValue(['read:clients', 'read:actions']);
+      const mockInteractive = true;
 
       // Act
-      await init({ client: 'claude', scopes: ['read:*'], tools: ['*'] });
+      await init({ client: 'claude', scopes: ['read:*'], tools: ['*'], interaction: true });
 
       // Assert
       expect(mockedPromptForScopeSelection).toHaveBeenCalled();
-      expect(mockedRequestAuth).toHaveBeenCalledWith(['read:clients', 'read:actions']);
+      expect(mockedRequestAuth).toHaveBeenCalledWith(
+        ['read:clients', 'read:actions'],
+        mockInteractive
+      );
     });
   });
 });

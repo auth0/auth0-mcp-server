@@ -1,0 +1,4 @@
+description = "Logout from the Auth0 MCP server."
+prompt = """
+Run this command to logout from the MCP server: !{npx @auth0/auth0-mcp-server logout}, after it has successfully been executed, prompt the user to refresh the MCP servers using the `/mcp refresh` command.
+"""
