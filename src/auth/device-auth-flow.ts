@@ -27,7 +27,7 @@ function getConfig(selectedScopes?: string[]) {
   };
 }
 
-async function requestAuthorization(selectedScopes?: string[]) {
+async function requestAuthorization(selectedScopes?: string[], interaction: boolean = true) {
   const config = getConfig(selectedScopes);
   const body: any = {
     client_id: config.clientId,
@@ -54,7 +54,9 @@ async function requestAuthorization(selectedScopes?: string[]) {
     if (!jsonRes.error) {
       cliOutput(`\nVerify this code on screen: ${chalk.bold.green(jsonRes.user_code)}\n`);
       // Wait for user to press Enter to open browser
-      await promptForBrowserPermission();
+      if (interaction) {
+        await promptForBrowserPermission();
+      }
       openBrowser(jsonRes.verification_uri_complete);
       await exchangeDeviceCodeForToken(jsonRes, selectedScopes);
     } else {

@@ -83,7 +83,7 @@ program
   .description('Initialize the server (authenticate and configure)')
   .option(
     '--client <client>',
-    'Configure specific client (claude, windsurf, cursor, or vscode)',
+    'Configure specific client (claude, windsurf, cursor, vscode or gemini)',
     'claude'
   )
   .option(
@@ -111,6 +111,15 @@ program
     ['*']
   )
   .option('--read-only', 'Only expose read-only tools (list and get operations)', false)
+  .option(
+    '--interaction',
+    'Prompt the user for any interaction, and open the browser to authenticate automatically',
+    true
+  )
+  .option(
+    '--no-interaction',
+    "Don't prompt the user for any interaction, and open the browser to authenticate automatically"
+  )
   .action(init);
 
 // Run command

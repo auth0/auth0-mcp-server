@@ -1,0 +1,15 @@
+{
+  "name": "auth0-gemini-cli-extension",
+  "version": "1.0.0",
+  "contextFileName": "./GEMINI.md",
+  "mcpServers": {
+    "auth0": {
+      "command": "npx",
+      "args": ["-y", "@auth0/auth0-mcp-server", "run", "--tools", "auth0_*"],
+      "env": {
+        "DEBUG": "auth0-mcp"
+      },
+      "capabilities": ["tools"]
+    }
+  }
+}

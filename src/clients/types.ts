@@ -5,7 +5,7 @@ import type { ClientOptions } from '../utils/types.js';
  *
  * Represents the set of known MCP client applications supported by this project.
  */
-export type ClientType = 'claude' | 'cursor' | 'windsurf' | 'vscode';
+export type ClientType = 'claude' | 'cursor' | 'windsurf' | 'vscode' | 'gemini';
 
 /**
  * MCP server configuration object used in client configuration files.

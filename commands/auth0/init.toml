@@ -1,0 +1,7 @@
+description = "Initialize the MCP server, and authenticate. This will open a new browser window where you can login, and choose which tenant to connect to."
+prompt = """
+You are going to initialize the local Auth0 MCP server using the following command: !{npx @auth0/auth0-mcp-server init --client gemini --tools "*" --scopes "*" --no-interaction}.
+This will open a browser window where the user can authenticate and select the Auth0 tenant they want to connect to.
+
+After the command has successfully been executed, prompt the user to refresh the MCP servers using the `/mcp refresh` command.
+"""
