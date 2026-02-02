@@ -5,9 +5,11 @@ import * as packageModule from '../../src/utils/package';
 
 // Mock dependencies
 vi.mock('auth0', () => ({
-  ManagementClient: vi.fn().mockImplementation(() => ({
-    // Mock implementation as needed
-  })),
+  ManagementClient: vi.fn(function() {
+    return {
+      // Mock implementation as needed
+    };
+  }),
 }));
 
 vi.mock('../../src/utils/package', () => ({

@@ -2,31 +2,39 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // Arrange: Mock client classes
 vi.mock('../../src/clients/claude.js', () => ({
-  ClaudeClientManager: vi.fn().mockImplementation(() => ({
-    getConfigPath: vi.fn(),
-    configure: vi.fn(),
-  })),
+  ClaudeClientManager: vi.fn(function() {
+    return {
+      getConfigPath: vi.fn(),
+      configure: vi.fn(),
+    };
+  }),
 }));
 
 vi.mock('../../src/clients/cursor.js', () => ({
-  CursorClientManager: vi.fn().mockImplementation(() => ({
-    getConfigPath: vi.fn(),
-    configure: vi.fn(),
-  })),
+  CursorClientManager: vi.fn(function() {
+    return {
+      getConfigPath: vi.fn(),
+      configure: vi.fn(),
+    };
+  }),
 }));
 
 vi.mock('../../src/clients/windsurf.js', () => ({
-  WindsurfClientManager: vi.fn().mockImplementation(() => ({
-    getConfigPath: vi.fn(),
-    configure: vi.fn(),
-  })),
+  WindsurfClientManager: vi.fn(function() {
+    return {
+      getConfigPath: vi.fn(),
+      configure: vi.fn(),
+    };
+  }),
 }));
 
 vi.mock('../../src/clients/vscode.js', () => ({
-  VSCodeClientManager: vi.fn().mockImplementation(() => ({
-    getConfigPath: vi.fn(),
-    configure: vi.fn(),
-  })),
+  VSCodeClientManager: vi.fn(function() {
+    return {
+      getConfigPath: vi.fn(),
+      configure: vi.fn(),
+    };
+  }),
 }));
 
 // Act: Import the module under test after mocking dependencies
