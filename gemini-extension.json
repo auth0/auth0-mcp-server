@@ -1,5 +1,6 @@
 {
-  "name": "auth0-gemini-cli-extension",
+  "name": "Auth0",
+  "description": "Manage your Auth0 tenants, apps and APIs.",
   "version": "1.0.0",
   "contextFileName": "./GEMINI.md",
   "mcpServers": {
