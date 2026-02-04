@@ -5,7 +5,7 @@ import {
   refreshAccessToken,
   getValidAccessToken,
 } from '../auth/device-auth-flow.js';
-import { log } from './logger.js';
+import { log, logError, logInfo } from '../utils/logger.js';
 
 // Ensure HOME is set
 if (!process.env.HOME) {
@@ -58,7 +58,10 @@ export interface Auth0Config {
  */
 export async function loadConfig(): Promise<Auth0Config | null> {
   const token = await getValidAccessToken();
-  const domain = await keychain.getDomain();
+  // const domain = await keychain.getDomain();
+  const domain = process.env.AUTH0_DOMAIN;
+
+  logInfo('DEGUG-YI:Retrieved domain from environment variable:', domain);
 
   return {
     token: token || '',

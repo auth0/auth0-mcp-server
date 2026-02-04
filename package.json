@@ -17,6 +17,7 @@
     "prebuild": "npm run format && npm run lint",
     "build": "rm -rf dist && tsc",
     "postbuild": "shx chmod +x dist/*.js",
+    
     "dev": "tsx src/index.ts run",
     "dev:debug": "DEBUG=auth0-mcp tsx src/index.ts run",
     "dev:inspect": "npx @modelcontextprotocol/inspector tsx src/index.ts run",
