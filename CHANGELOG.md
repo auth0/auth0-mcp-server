@@ -1,5 +1,11 @@
 # Change Log
 
+## [v0.1.0-beta.8](https://github.com/auth0/auth0-mcp-server/tree/v0.1.0-beta.8) (2026-02-04)
+[Full Changelog](https://github.com/auth0/auth0-mcp-server/compare/v0.1.0-beta.7...v0.1.0-beta.8)
+
+**Added**
+- Add Gemmini CLI support [\#73](https://github.com/auth0/auth0-mcp-server/pull/73) ([Sambego](https://github.com/Sambego))
+
 ## [v0.1.0-beta.7](https://github.com/auth0/auth0-mcp-server/tree/v0.1.0-beta.7) (2025-09-08)
 [Full Changelog](https://github.com/auth0/auth0-mcp-server/compare/v0.1.0-beta.6...v0.1.0-beta.7)
 
