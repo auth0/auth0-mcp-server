@@ -37,7 +37,21 @@ const mockServer = {
 };
 
 vi.mock('@modelcontextprotocol/sdk/server/index.js', () => ({
-  Server: vi.fn().mockImplementation(() => mockServer),
+  Server: vi.fn(function() { return mockServer; }),
+}));
+
+// Mock the StdioServerTransport
+vi.mock('@modelcontextprotocol/sdk/server/stdio.js', () => ({
+  StdioServerTransport: vi.fn(function() {
+    return {
+      start: vi.fn().mockResolvedValue(undefined),
+      close: vi.fn().mockResolvedValue(undefined),
+      send: vi.fn().mockResolvedValue(undefined),
+      onmessage: null,
+      onclose: null,
+      onerror: null,
+    };
+  }),
 }));
 
 // Mock the handlers

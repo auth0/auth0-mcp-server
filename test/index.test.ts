@@ -16,16 +16,18 @@ const mockParseAsync = vi.fn().mockResolvedValue(true);
 // Mock the Command class
 vi.mock('commander', () => {
   return {
-    Command: vi.fn().mockImplementation(() => ({
-      name: mockName,
-      description: mockDescription,
-      version: mockVersion,
-      addHelpText: mockAddHelpText,
-      command: mockCommand,
-      option: mockOption,
-      action: mockAction,
-      parseAsync: mockParseAsync,
-    })),
+    Command: vi.fn(function() {
+      return {
+        name: mockName,
+        description: mockDescription,
+        version: mockVersion,
+        addHelpText: mockAddHelpText,
+        command: mockCommand,
+        option: mockOption,
+        action: mockAction,
+        parseAsync: mockParseAsync,
+      };
+    }),
   };
 });
 
