@@ -1,5 +1,6 @@
 import { ACTION_HANDLERS, ACTION_TOOLS } from './actions.js';
 import { APPLICATION_HANDLERS, APPLICATION_TOOLS } from './applications.js';
+import { APPLICATION_GRANT_HANDLERS, APPLICATION_GRANTS_TOOLS } from './application-grants.js';
 import type { HandlerConfig, HandlerRequest, HandlerResponse, Tool } from '../utils/types.js';
 import { FORM_HANDLERS, FORM_TOOLS } from './forms.js';
 import { LOG_HANDLERS, LOG_TOOLS } from './logs.js';
@@ -13,6 +14,7 @@ export const TOOLS: Tool[] = [
   ...ACTION_TOOLS,
   ...LOG_TOOLS,
   ...FORM_TOOLS,
+  ...APPLICATION_GRANTS_TOOLS,
 ];
 
 // Collect all handlers
@@ -22,6 +24,7 @@ const allHandlers = {
   ...ACTION_HANDLERS,
   ...LOG_HANDLERS,
   ...FORM_HANDLERS,
+  ...APPLICATION_GRANT_HANDLERS,
 };
 
 /**
