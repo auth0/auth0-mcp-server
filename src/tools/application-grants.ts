@@ -42,7 +42,7 @@ export const APPLICATION_GRANTS_TOOLS: Tool[] = [
   },
 ];
 
-export const APPLICATION_GRANT_HANDLERS: Record<
+export const APPLICATION_GRANTS_HANDLERS: Record<
   string,
   (request: HandlerRequest, config: HandlerConfig) => Promise<HandlerResponse>
 > = {

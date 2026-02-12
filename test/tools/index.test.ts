@@ -6,7 +6,7 @@ import { FORM_TOOLS, FORM_HANDLERS } from '../../src/tools/forms';
 import { LOG_TOOLS, LOG_HANDLERS } from '../../src/tools/logs';
 import { RESOURCE_SERVER_TOOLS, RESOURCE_SERVER_HANDLERS } from '../../src/tools/resource-servers';
 import {
-  APPLICATION_GRANT_HANDLERS,
+  APPLICATION_GRANTS_HANDLERS,
   APPLICATION_GRANTS_TOOLS,
 } from '../../src/tools/application-grants';
 
@@ -51,7 +51,7 @@ describe('Tools Index', () => {
       const formHandlerKeys = Object.keys(FORM_HANDLERS);
       const logHandlerKeys = Object.keys(LOG_HANDLERS);
       const resourceServerHandlerKeys = Object.keys(RESOURCE_SERVER_HANDLERS);
-      const applicationGrantsHandlerKey = Object.keys(APPLICATION_GRANT_HANDLERS);
+      const applicationGrantsHandlerKey = Object.keys(APPLICATION_GRANTS_HANDLERS);
 
       // Calculate the expected total number of handlers
       const expectedHandlerCount =

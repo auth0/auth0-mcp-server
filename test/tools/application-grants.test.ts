@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { http, HttpResponse } from 'msw';
-import { APPLICATION_GRANT_HANDLERS } from '../../src/tools/application-grants';
+import { APPLICATION_GRANTS_HANDLERS } from '../../src/tools/application-grants';
 import { mockConfig } from '../mocks/config';
 import { server } from '../setup';
 
@@ -48,7 +48,7 @@ describe('Application Grants Tool Handlers', () => {
 
       const config = { domain };
 
-      const response = await APPLICATION_GRANT_HANDLERS.auth0_create_application_grant(
+      const response = await APPLICATION_GRANTS_HANDLERS.auth0_create_application_grant(
         request,
         config
       );
@@ -78,7 +78,7 @@ describe('Application Grants Tool Handlers', () => {
 
         const config = { domain };
 
-        const response = await APPLICATION_GRANT_HANDLERS.auth0_create_application_grant(
+        const response = await APPLICATION_GRANTS_HANDLERS.auth0_create_application_grant(
           request,
           config
         );
@@ -100,7 +100,7 @@ describe('Application Grants Tool Handlers', () => {
 
       const config = { domain };
 
-      const response = await APPLICATION_GRANT_HANDLERS.auth0_create_application_grant(
+      const response = await APPLICATION_GRANTS_HANDLERS.auth0_create_application_grant(
         request,
         config
       );
@@ -121,7 +121,7 @@ describe('Application Grants Tool Handlers', () => {
 
       const config = { domain };
 
-      const response = await APPLICATION_GRANT_HANDLERS.auth0_create_application_grant(
+      const response = await APPLICATION_GRANTS_HANDLERS.auth0_create_application_grant(
         request as any,
         config
       );
