@@ -8,7 +8,7 @@ export const APPLICATION_GRANTS_TOOLS: Tool[] = [
   {
     name: 'auth0_create_application_grant',
     description:
-      'Create a client grant that authorizes an Auth0 application to access a specific API with defined scopes. Required for machine-to-machine (M2M) communication using the clients credentials flow. Use auth0_get_resource_server to look up available scopes before creating the grant.',
+      'Create a client grant that authorizes an Auth0 application to access a specific API with defined scopes. Required for machine-to-machine (M2M) communication using the client credentials flow. Use auth0_list_resource_servers to discover available APIs (audiences) and auth0_get_resource_server to look up available scopes before creating the grant.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -19,13 +19,13 @@ export const APPLICATION_GRANTS_TOOLS: Tool[] = [
         audience: {
           type: 'string',
           description:
-            'The unique identifier of the API the application is being granted access to.',
+            'The unique identifier (audience) of the API the application is being granted access to. Use auth0_list_resource_servers to find available APIs.',
         },
         scope: {
           type: 'array',
           items: { type: 'string' },
           description:
-            'List of permissions (scopes) granted to the application for the specified API. These should match scopes defined on the resource server. Use auth0_get_resource_server to retrieve the available scopes before selecting.',
+            'List of permissions (scopes) granted to the application for the specified API. Use auth0_get_resource_server to retrieve the available scopes for the API before selecting.',
         },
       },
       required: ['client_id', 'audience', 'scope'],

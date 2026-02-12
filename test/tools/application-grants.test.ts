@@ -88,14 +88,14 @@ describe('Application Grants Tool Handlers', () => {
       }
     );
 
-    it("should handle empty scopes", async () => {
+    it('should handle empty scopes', async () => {
       const request = {
         token,
         parameters: {
           client_id: 'test_client_id_123',
           audience: 'https://api.example.com',
           scope: [],
-        }
+        },
       };
 
       const config = { domain };
