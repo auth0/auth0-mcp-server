@@ -193,6 +193,12 @@ The Auth0 MCP Server provides the following tools for Claude to interact with yo
 | `auth0_create_resource_server` | Create a new Auth0 resource server (API)             | - `Create a new API called 'Inventory API' with read and write scopes` <br> - `Set up a resource server for our customer data API` <br> - `Create an API with the identifier https://orders.example.com"` |
 | `auth0_update_resource_server` | Update an existing Auth0 resource server             | - `Add an 'admin' scope to the 'User API'` <br> - `Update the token lifetime for my 'Payment API' to 1 hour` <br> - `Change the signing algorithm for my API to RS256`                                    |
 
+### Application Grants
+
+| Tool                             | Description                                                                                             | Usage Examples                                                                                                                                                                                                                      |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `auth0_create_application_grant` | Create a client grant that authorizes an Auth0 application to access a specific API with defined scopes | - `Grant my 'Backend Service' application access to the 'User API'` <br> - `Create a client grant for my M2M app to call the payments API` <br> - `Authorize my application to access the inventory API with read and write scopes` |
+
 ### Actions
 
 | Tool                  | Description                               | Usage Examples                                                                                                                                                                            |
