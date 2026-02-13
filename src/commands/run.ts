@@ -82,6 +82,9 @@ const validateAuthorization = async (): Promise<boolean> => {
  * @param {RunOptions} options - Command options
  * @returns {Promise<void>}
  */
+
+logInfo('Starting server');
+
 const run = async (options: RunOptions): Promise<void> => {
   try {
     if (!process.env.HOME) {
@@ -92,11 +95,12 @@ const run = async (options: RunOptions): Promise<void> => {
     trackEvent.trackServerRun();
 
     // Validate authorization before starting server
-    const isAuthorized = await validateAuthorization();
-    if (!isAuthorized) {
-      // Exit with code 1 (standard error code)
-      process.exit(1);
-    }
+    // DEBGU-YI
+    // const isAuthorized = await validateAuthorization();
+    // if (!isAuthorized) {
+    //   // Exit with code 1 (standard error code)
+    //   process.exit(1);
+    // }
 
     if (options.readOnly && options.tools.length === 1 && options.tools[0] === '*') {
       logInfo('Starting server in read-only mode');
