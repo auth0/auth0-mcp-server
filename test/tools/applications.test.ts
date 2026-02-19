@@ -161,6 +161,43 @@ describe('Applications Tool Handlers', () => {
       expect(response.isError).toBe(true);
       expect(response.content[0].text).toContain('not found');
     });
+
+    it('should mask client_secret in get response', async () => {
+      const clientId = 'app-with-secret';
+
+      // Override the handler to return a response with client_secret
+      server.use(
+        http.get(`https://*/api/v2/clients/${clientId}`, () => {
+          return HttpResponse.json({
+            client_id: clientId,
+            name: 'App with Secret',
+            client_secret: 'super_secret_value_67890',
+            app_type: 'regular_web',
+          });
+        })
+      );
+
+      const request = {
+        token,
+        parameters: {
+          client_id: clientId,
+        },
+      };
+
+      const config = { domain };
+
+      const response = await APPLICATION_HANDLERS.auth0_get_application(request, config);
+
+      expect(response.isError).toBe(false);
+
+      const parsedContent = JSON.parse(response.content[0].text);
+      // The client_id might be in the response directly or nested in a data property
+      const appData = parsedContent.data || parsedContent;
+      expect(appData.client_id).toBe(clientId);
+      // Verify client_secret is masked
+      expect(appData.client_secret).toBe('[REDACTED]');
+      expect(appData.client_secret).not.toContain('super_secret_value');
+    });
   });
 
   describe('auth0_create_application', () => {
@@ -211,6 +248,40 @@ describe('Applications Tool Handlers', () => {
 
       expect(response.isError).toBe(true);
       expect(response.content[0].text).toContain('name is required');
+    });
+
+    it('should mask client_secret in create response', async () => {
+      // Override the handler to return a response with client_secret
+      server.use(
+        http.post('https://*/api/v2/clients', async ({ request }) => {
+          const body = (await request.json()) as Record<string, any>;
+          return HttpResponse.json({
+            ...body,
+            client_id: 'new-app-with-secret',
+            client_secret: 'super_secret_value_12345',
+          });
+        })
+      );
+
+      const request = {
+        token,
+        parameters: {
+          name: 'Test App',
+          app_type: 'spa',
+        },
+      };
+
+      const config = { domain };
+
+      const response = await APPLICATION_HANDLERS.auth0_create_application(request, config);
+
+      expect(response.isError).toBe(false);
+
+      const parsedContent = JSON.parse(response.content[0].text);
+      expect(parsedContent.client_id).toBe('new-app-with-secret');
+      // Verify client_secret is masked
+      expect(parsedContent.client_secret).toBe('[REDACTED]');
+      expect(parsedContent.client_secret).not.toContain('super_secret_value');
     });
   });
 

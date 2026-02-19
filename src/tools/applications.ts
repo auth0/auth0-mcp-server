@@ -3,6 +3,8 @@ import { log } from '../utils/logger.js';
 import { createErrorResponse, createSuccessResponse } from '../utils/http-utility.js';
 import type { Auth0Config } from '../utils/config.js';
 import { getManagementClient } from '../utils/auth0-client.js';
+import { writeCredentialsToEnv } from '../utils/credentials-writer.js';
+import { maskSensitiveFields } from '../utils/response-masker.js';
 import type {
   ClientCreateTokenEndpointAuthMethodEnum,
   ClientCreateAppTypeEnum,
@@ -440,7 +442,10 @@ export const APPLICATION_HANDLERS: Record<
           `Successfully retrieved application: ${appData.name || 'Unknown'} (${appData.client_id || clientId})`
         );
 
-        return createSuccessResponse(application);
+        // Mask sensitive fields before returning response
+        const maskedApplication = maskSensitiveFields(application);
+
+        return createSuccessResponse(maskedApplication);
       } catch (sdkError: any) {
         // Handle SDK errors
         log('Auth0 SDK error');
@@ -603,7 +608,38 @@ export const APPLICATION_HANDLERS: Record<
           `Successfully created application: ${appData.name || name} (${appData.client_id || 'new client'})`
         );
 
-        return createSuccessResponse(newApplication);
+        // Write credentials to .env.local if client_secret exists
+        let credentialsInfo;
+        if (appData.client_secret) {
+          try {
+            credentialsInfo = await writeCredentialsToEnv({
+              client_id: appData.client_id,
+              client_secret: appData.client_secret,
+              domain: config.domain,
+              callback_url: appData.callbacks?.[0],
+            });
+            log(
+              `Credentials saved to: ${credentialsInfo.file_path} (${credentialsInfo.file_created ? 'created' : 'appended'})`
+            );
+          } catch (error) {
+            log(`Warning: Could not write credentials to file: ${error}`);
+          }
+        }
+
+        // Mask sensitive fields before returning response
+        const maskedApplication = maskSensitiveFields(newApplication);
+
+        // Add credentials info to response
+        const response: any = { ...maskedApplication };
+        if (credentialsInfo) {
+          response._credentials = {
+            saved_to: credentialsInfo.file_path,
+            env_vars: credentialsInfo.env_var_names,
+            note: 'Credentials saved securely. Use Read tool to access .env.local when needed.',
+          };
+        }
+
+        return createSuccessResponse(response);
       } catch (sdkError: any) {
         // Handle SDK errors
         log('Auth0 SDK error');
@@ -769,7 +805,10 @@ export const APPLICATION_HANDLERS: Record<
           `Successfully updated application: ${appData.name || 'Unknown'} (${appData.client_id || clientId})`
         );
 
-        return createSuccessResponse(updatedApplication);
+        // Mask sensitive fields before returning response
+        const maskedApplication = maskSensitiveFields(updatedApplication);
+
+        return createSuccessResponse(maskedApplication);
       } catch (sdkError: any) {
         // Handle SDK errors
         log('Auth0 SDK error');
