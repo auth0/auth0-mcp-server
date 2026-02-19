@@ -44,7 +44,10 @@ const DEFAULT_REPLACEMENT = '[REDACTED]';
  * @returns A new object/array with sensitive fields masked
  */
 export function maskSensitiveFields(data: any, options?: MaskOptions): any {
-  const fieldsToMask = options?.sensitiveFields || DEFAULT_SENSITIVE_FIELDS;
+  // Merge custom fields with defaults (don't replace)
+  const fieldsToMask = options?.sensitiveFields
+    ? [...DEFAULT_SENSITIVE_FIELDS, ...options.sensitiveFields]
+    : DEFAULT_SENSITIVE_FIELDS;
   const replacement = options?.replacement || DEFAULT_REPLACEMENT;
 
   // Handle primitives

@@ -81,7 +81,7 @@ describe('response-masker', () => {
       expect(masked.client_secret).toBe('***HIDDEN***');
     });
 
-    it('should use custom sensitive fields list', () => {
+    it('should merge custom sensitive fields with defaults', () => {
       const data = {
         client_secret: 'secret',
         custom_sensitive: 'sensitive_value',
@@ -92,9 +92,11 @@ describe('response-masker', () => {
         sensitiveFields: ['custom_sensitive'],
       });
 
-      // client_secret should NOT be masked with custom list
-      expect(masked.client_secret).toBe('secret');
+      // client_secret should STILL be masked (defaults are preserved)
+      expect(masked.client_secret).toBe('[REDACTED]');
+      // custom field should also be masked
       expect(masked.custom_sensitive).toBe('[REDACTED]');
+      // normal field should not be masked
       expect(masked.normal_field).toBe('normal');
     });
 
