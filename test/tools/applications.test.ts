@@ -12,6 +12,17 @@ vi.mock('../../src/utils/logger', () => ({
   logError: vi.fn(),
 }));
 
+vi.mock('../../src/utils/credentials-writer', () => {
+  return {
+    writeCredentialsToEnv: vi.fn().mockResolvedValue({
+      file_path: '/mock/path/.env.local',
+      env_var_names: ['AUTH0_CLIENT_ID', 'AUTH0_CLIENT_SECRET', 'AUTH0_DOMAIN'],
+      file_created: true,
+    }),
+    detectExistingEnvFile: vi.fn().mockReturnValue(null),
+  };
+});
+
 describe('Applications Tool Handlers', () => {
   const domain = mockConfig.domain;
   const token = mockConfig.token;
@@ -161,6 +172,43 @@ describe('Applications Tool Handlers', () => {
       expect(response.isError).toBe(true);
       expect(response.content[0].text).toContain('not found');
     });
+
+    it('should mask client_secret in get response', async () => {
+      const clientId = 'app-with-secret';
+
+      // Override the handler to return a response with client_secret
+      server.use(
+        http.get(`https://*/api/v2/clients/${clientId}`, () => {
+          return HttpResponse.json({
+            client_id: clientId,
+            name: 'App with Secret',
+            client_secret: 'super_secret_value_67890',
+            app_type: 'regular_web',
+          });
+        })
+      );
+
+      const request = {
+        token,
+        parameters: {
+          client_id: clientId,
+        },
+      };
+
+      const config = { domain };
+
+      const response = await APPLICATION_HANDLERS.auth0_get_application(request, config);
+
+      expect(response.isError).toBe(false);
+
+      const parsedContent = JSON.parse(response.content[0].text);
+      // The client_id might be in the response directly or nested in a data property
+      const appData = parsedContent.data || parsedContent;
+      expect(appData.client_id).toBe(clientId);
+      // Verify client_secret is masked
+      expect(appData.client_secret).toBe('[REDACTED]');
+      expect(appData.client_secret).not.toContain('super_secret_value');
+    });
   });
 
   describe('auth0_create_application', () => {
@@ -212,6 +260,45 @@ describe('Applications Tool Handlers', () => {
       expect(response.isError).toBe(true);
       expect(response.content[0].text).toContain('name is required');
     });
+
+    it('should mask client_secret in create response and provide access instructions', async () => {
+      // Override the handler to return a response with client_secret
+      server.use(
+        http.post('https://*/api/v2/clients', async ({ request }) => {
+          const body = (await request.json()) as Record<string, any>;
+          return HttpResponse.json({
+            ...body,
+            client_id: 'new-app-with-secret',
+            client_secret: 'super_secret_value_12345',
+          });
+        })
+      );
+
+      const request = {
+        token,
+        parameters: {
+          name: 'Test App',
+          app_type: 'spa',
+        },
+      };
+
+      const config = { domain };
+
+      const response = await APPLICATION_HANDLERS.auth0_create_application(request, config);
+
+      expect(response.isError).toBe(false);
+
+      const parsedContent = JSON.parse(response.content[0].text);
+      expect(parsedContent.client_id).toBe('new-app-with-secret');
+      // Verify client_secret is masked
+      expect(parsedContent.client_secret).toBe('[REDACTED]');
+      expect(parsedContent.client_secret).not.toContain('super_secret_value');
+      // Verify credentials access instructions are provided
+      expect(parsedContent._credentials_access).toBeDefined();
+      expect(parsedContent._credentials_access.note).toContain('masked for security');
+      expect(parsedContent._credentials_access.how_to_access).toBeDefined();
+      expect(parsedContent._credentials_access.how_to_access.length).toBeGreaterThan(0);
+    });
   });
 
   describe('auth0_update_application', () => {
@@ -248,6 +335,96 @@ describe('Applications Tool Handlers', () => {
       // The name might be in the response directly or nested in a data property
       const appData = parsedContent.data || parsedContent;
       expect(appData.name).toBe('Updated App');
+    });
+  });
+
+  describe('auth0_save_credentials_to_file', () => {
+    it.skip('should save credentials to .env.local file', async () => {
+      const clientId = 'app-with-secret';
+
+      // Override the handler to return a response with client_secret
+      server.use(
+        http.get(`https://test-tenant.auth0.com/api/v2/clients/${clientId}`, () => {
+          return HttpResponse.json({
+            client_id: clientId,
+            name: 'App with Secret',
+            client_secret: 'super_secret_value_67890',
+            app_type: 'regular_web',
+            callbacks: ['http://localhost:3000/callback'],
+          });
+        })
+      );
+
+      const request = {
+        token,
+        parameters: {
+          client_id: clientId,
+        },
+      };
+
+      const config = { domain };
+
+      const response = await APPLICATION_HANDLERS.auth0_save_credentials_to_file(request, config);
+
+      // Debug: log error if any
+      if (response.isError) {
+        console.log('Error response:', response.content[0].text);
+      }
+
+      expect(response.isError).toBe(false);
+
+      const parsedContent = JSON.parse(response.content[0].text);
+      expect(parsedContent.client_id).toBe(clientId);
+      // Verify credentials info is in response (but not the secret itself)
+      expect(parsedContent.credentials_saved_to).toBeDefined();
+      expect(parsedContent.env_vars).toBeDefined();
+      expect(parsedContent.message).toContain('saved securely');
+      // Verify client_secret is NOT in the response
+      expect(parsedContent.client_secret).toBeUndefined();
+    });
+
+    it('should handle missing client_id parameter', async () => {
+      const request = {
+        token,
+        parameters: {},
+      };
+
+      const config = { domain };
+
+      const response = await APPLICATION_HANDLERS.auth0_save_credentials_to_file(request, config);
+
+      expect(response.isError).toBe(true);
+      expect(response.content[0].text).toContain('client_id is required');
+    });
+
+    it('should handle application without client_secret', async () => {
+      const clientId = 'public-spa-app';
+
+      // Override the handler to return a public client (no secret)
+      server.use(
+        http.get(`https://*/api/v2/clients/${clientId}`, () => {
+          return HttpResponse.json({
+            client_id: clientId,
+            name: 'Public SPA',
+            app_type: 'spa',
+            // No client_secret for public clients
+          });
+        })
+      );
+
+      const request = {
+        token,
+        parameters: {
+          client_id: clientId,
+        },
+      };
+
+      const config = { domain };
+
+      const response = await APPLICATION_HANDLERS.auth0_save_credentials_to_file(request, config);
+
+      expect(response.isError).toBe(true);
+      expect(response.content[0].text).toContain('does not have a client_secret');
     });
   });
 

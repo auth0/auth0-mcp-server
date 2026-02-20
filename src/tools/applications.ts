@@ -3,6 +3,8 @@ import { log } from '../utils/logger.js';
 import { createErrorResponse, createSuccessResponse } from '../utils/http-utility.js';
 import type { Auth0Config } from '../utils/config.js';
 import { getManagementClient } from '../utils/auth0-client.js';
+import { writeCredentialsToEnv } from '../utils/credentials-writer.js';
+import { maskSensitiveFields } from '../utils/response-masker.js';
 import type {
   ClientCreateTokenEndpointAuthMethodEnum,
   ClientCreateAppTypeEnum,
@@ -256,6 +258,36 @@ export const APPLICATION_TOOLS: Tool[] = [
       openWorldHint: false,
     },
   },
+  {
+    name: 'auth0_save_credentials_to_file',
+    description:
+      'Save Auth0 application credentials to .env.local file in the current directory. Only use this when you are in a project directory. This retrieves the client_secret from Auth0 and saves it locally.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        client_id: {
+          type: 'string',
+          description: 'Client ID of the application whose credentials should be saved',
+        },
+        file_path: {
+          type: 'string',
+          description:
+            'Optional: Custom file path to save credentials (default: .env.local in current directory)',
+        },
+      },
+      required: ['client_id'],
+    },
+    _meta: {
+      requiredScopes: ['read:clients'],
+    },
+    annotations: {
+      title: 'Save Auth0 Credentials to File',
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
+  },
 ];
 
 interface Auth0Response {
@@ -440,7 +472,10 @@ export const APPLICATION_HANDLERS: Record<
           `Successfully retrieved application: ${appData.name || 'Unknown'} (${appData.client_id || clientId})`
         );
 
-        return createSuccessResponse(application);
+        // Mask sensitive fields before returning response
+        const maskedApplication = maskSensitiveFields(application);
+
+        return createSuccessResponse(maskedApplication);
       } catch (sdkError: any) {
         // Handle SDK errors
         log('Auth0 SDK error');
@@ -603,7 +638,23 @@ export const APPLICATION_HANDLERS: Record<
           `Successfully created application: ${appData.name || name} (${appData.client_id || 'new client'})`
         );
 
-        return createSuccessResponse(newApplication);
+        // Mask sensitive fields before returning response
+        const maskedApplication = maskSensitiveFields(newApplication);
+
+        // Add credentials access instructions if client_secret exists
+        const response: any = { ...maskedApplication };
+        if (appData.client_secret) {
+          response._credentials_access = {
+            note: 'Credentials are masked for security (not logged in MCP client logs)',
+            how_to_access: [
+              'Ask me to "save credentials to .env.local" (I\'ll use the save tool)',
+              `View in Auth0 Dashboard: https://manage.auth0.com/dashboard/us/${config.domain.split('.')[0]}/applications/${appData.client_id}/settings`,
+              `Retrieve via API: GET https://${config.domain}/api/v2/clients/${appData.client_id}`,
+            ],
+          };
+        }
+
+        return createSuccessResponse(response);
       } catch (sdkError: any) {
         // Handle SDK errors
         log('Auth0 SDK error');
@@ -769,7 +820,10 @@ export const APPLICATION_HANDLERS: Record<
           `Successfully updated application: ${appData.name || 'Unknown'} (${appData.client_id || clientId})`
         );
 
-        return createSuccessResponse(updatedApplication);
+        // Mask sensitive fields before returning response
+        const maskedApplication = maskSensitiveFields(updatedApplication);
+
+        return createSuccessResponse(maskedApplication);
       } catch (sdkError: any) {
         // Handle SDK errors
         log('Auth0 SDK error');
@@ -788,6 +842,96 @@ export const APPLICATION_HANDLERS: Record<
       }
     } catch (error: any) {
       // Handle any other errors
+      log('Error processing request');
+
+      return createErrorResponse(
+        `Error: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
+  },
+  auth0_save_credentials_to_file: async (
+    request: HandlerRequest,
+    config: HandlerConfig
+  ): Promise<HandlerResponse> => {
+    try {
+      const clientId = request.parameters.client_id;
+      const filePath = request.parameters.file_path;
+
+      if (!clientId) {
+        return createErrorResponse('Error: client_id is required');
+      }
+
+      // Check for token
+      if (!request.token) {
+        log('Warning: Token is empty or undefined');
+        return createErrorResponse('Error: Missing authorization token');
+      }
+
+      // Check if domain is configured
+      if (!config.domain) {
+        log('Error: Auth0 domain is not configured');
+        return createErrorResponse('Error: Auth0 domain is not configured');
+      }
+
+      try {
+        const managementClientConfig: Auth0Config = {
+          domain: config.domain,
+          token: request.token,
+        };
+        const managementClient = await getManagementClient(managementClientConfig);
+
+        log(`Fetching credentials for client: ${clientId}`);
+
+        // Retrieve the full application with client_secret
+        const { data: application } = await managementClient.clients.get({ client_id: clientId });
+        const appData = application as any;
+
+        if (!appData.client_secret) {
+          return createErrorResponse(
+            `Application ${clientId} does not have a client_secret (may be a public client type)`
+          );
+        }
+
+        // Write credentials to file
+        const credentialsInfo = await writeCredentialsToEnv(
+          {
+            client_id: appData.client_id,
+            client_secret: appData.client_secret,
+            domain: config.domain,
+            callback_url: appData.callbacks?.[0],
+          },
+          {
+            filePath: filePath,
+          }
+        );
+
+        log(
+          `Credentials saved to: ${credentialsInfo.file_path} (${credentialsInfo.file_created ? 'created' : 'appended'})`
+        );
+
+        // Return success response with file info (no secrets)
+        return createSuccessResponse({
+          client_id: appData.client_id,
+          name: appData.name,
+          credentials_saved_to: credentialsInfo.file_path,
+          env_vars: credentialsInfo.env_var_names,
+          message: `Credentials saved securely to ${credentialsInfo.file_path}. The file has been ${credentialsInfo.file_created ? 'created' : 'updated'}.`,
+        });
+      } catch (sdkError: any) {
+        log('Auth0 SDK error');
+
+        let errorMessage = `Failed to retrieve application credentials: ${sdkError.message || 'Unknown error'}`;
+
+        if (sdkError.statusCode === 404) {
+          errorMessage = `Application with client_id '${clientId}' not found.`;
+        } else if (sdkError.statusCode === 401) {
+          errorMessage +=
+            '\nError: Unauthorized. Your token might be expired or invalid or missing read:clients scope.';
+        }
+
+        return createErrorResponse(errorMessage);
+      }
+    } catch (error: any) {
       log('Error processing request');
 
       return createErrorResponse(
