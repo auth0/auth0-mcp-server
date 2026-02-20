@@ -1,0 +1,45 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.auth0/auth0-mcp-server",
+  "title": "Auth0 MCP Server",
+  "description": "Manage Auth0 applications, APIs, actions, logs, and forms using natural language",
+  "version": "0.1.0-beta.1",
+  "repository": {
+    "url": "https://github.com/auth0/auth0-mcp-server",
+    "source": "github"
+  },
+  "websiteUrl": "https://auth0.com/docs/getstarted/ai-tools/model-context-protocol-MCP",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "@auth0/auth0-mcp-server",
+      "version": "0.1.0-beta.1",
+      "runtimeHint": "npx",
+      "runtimeArguments": [
+        {
+          "type": "positional",
+          "value": "-y"
+        }
+      ],
+      "packageArguments": [
+        {
+          "type": "positional",
+          "value": "run"
+        }
+      ],
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "DEBUG",
+          "description": "Enable debug logging for the Auth0 MCP server",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": false,
+          "placeholder": "auth0-mcp"
+        }
+      ]
+    }
+  ]
+}
