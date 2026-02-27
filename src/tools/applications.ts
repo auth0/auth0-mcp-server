@@ -261,7 +261,7 @@ export const APPLICATION_TOOLS: Tool[] = [
   {
     name: 'auth0_save_credentials_to_file',
     description:
-      'Save Auth0 application credentials to .env.local file in the current directory. Only use this when you are in a project directory. This retrieves the client_secret from Auth0 and saves it locally.',
+      'Save Auth0 application credentials to a file. Only use this when you are in a project directory. This retrieves the client_secret from Auth0 and saves it locally. Requires explicit file path to prevent accidental file creation.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -272,10 +272,10 @@ export const APPLICATION_TOOLS: Tool[] = [
         file_path: {
           type: 'string',
           description:
-            'Optional: Custom file path to save credentials (default: .env.local in current directory)',
+            'Required: Full or relative path to save credentials (e.g., ".env.local", "config/.env.development"). User must explicitly specify where to save credentials.',
         },
       },
-      required: ['client_id'],
+      required: ['client_id', 'file_path'],
     },
     _meta: {
       requiredScopes: ['read:clients'],
@@ -647,7 +647,7 @@ export const APPLICATION_HANDLERS: Record<
           response._credentials_access = {
             note: 'Credentials are masked for security (not logged in MCP client logs)',
             how_to_access: [
-              'Ask me to "save credentials to .env.local" (I\'ll use the save tool)',
+              'Ask me to "save credentials to .env.local" (requires explicit file path)',
               `View in Auth0 Dashboard: https://manage.auth0.com/dashboard/us/${config.domain.split('.')[0]}/applications/${appData.client_id}/settings`,
               `Retrieve via API: GET https://${config.domain}/api/v2/clients/${appData.client_id}`,
             ],
@@ -859,6 +859,10 @@ export const APPLICATION_HANDLERS: Record<
 
       if (!clientId) {
         return createErrorResponse('Error: client_id is required');
+      }
+
+      if (!filePath) {
+        return createErrorResponse('Error: file_path is required. Please specify where to save credentials (e.g., ".env.local")');
       }
 
       // Check for token

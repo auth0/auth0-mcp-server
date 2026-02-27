@@ -359,6 +359,7 @@ describe('Applications Tool Handlers', () => {
         token,
         parameters: {
           client_id: clientId,
+          file_path: '.env.local',
         },
       };
 
@@ -386,7 +387,9 @@ describe('Applications Tool Handlers', () => {
     it('should handle missing client_id parameter', async () => {
       const request = {
         token,
-        parameters: {},
+        parameters: {
+          file_path: '.env.local',
+        },
       };
 
       const config = { domain };
@@ -395,6 +398,22 @@ describe('Applications Tool Handlers', () => {
 
       expect(response.isError).toBe(true);
       expect(response.content[0].text).toContain('client_id is required');
+    });
+
+    it('should handle missing file_path parameter', async () => {
+      const request = {
+        token,
+        parameters: {
+          client_id: 'some-client-id',
+        },
+      };
+
+      const config = { domain };
+
+      const response = await APPLICATION_HANDLERS.auth0_save_credentials_to_file(request, config);
+
+      expect(response.isError).toBe(true);
+      expect(response.content[0].text).toContain('file_path is required');
     });
 
     it('should handle application without client_secret', async () => {
@@ -416,6 +435,7 @@ describe('Applications Tool Handlers', () => {
         token,
         parameters: {
           client_id: clientId,
+          file_path: '.env.local',
         },
       };
 
