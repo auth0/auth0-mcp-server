@@ -63,7 +63,7 @@
     "@vitest/ui": "^4.0.18",
     "eslint": "9.39.3",
     "eslint-config-prettier": "^10.1.8",
-    "globals": "^17.3.0",
+    "globals": "^17.4.0",
     "msw": "^2.12.10",
     "prettier": "^3.8.1",
     "shx": "^0.4.0",
