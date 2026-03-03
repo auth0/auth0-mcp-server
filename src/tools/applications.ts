@@ -278,7 +278,7 @@ export const APPLICATION_TOOLS: Tool[] = [
       required: ['client_id', 'file_path'],
     },
     _meta: {
-      requiredScopes: ['read:clients'],
+      requiredScopes: ['read:clients', 'read:client_credentials'],
     },
     annotations: {
       title: 'Save Auth0 Credentials to File',
