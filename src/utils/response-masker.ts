@@ -5,9 +5,7 @@ import { log } from './logger.js';
  */
 export interface MaskOptions {
   sensitiveFields?: string[];
-  replacement?: string;
-  showPartial?: boolean;
-}
+  replacement?: string;}
 
 /**
  * Default sensitive fields that should be masked in responses

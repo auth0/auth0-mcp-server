@@ -339,7 +339,16 @@ describe('Applications Tool Handlers', () => {
   });
 
   describe('auth0_save_credentials_to_file', () => {
-    it.skip('should save credentials to .env.local file', async () => {
+    beforeEach(async () => {
+      const { writeCredentialsToEnv } = await import('../../src/utils/credentials-writer');
+      vi.mocked(writeCredentialsToEnv).mockResolvedValue({
+        file_path: '/mock/path/.env.local',
+        env_var_names: ['AUTH0_CLIENT_ID', 'AUTH0_CLIENT_SECRET', 'AUTH0_DOMAIN'],
+        file_created: true,
+      });
+    });
+
+    it('should save credentials to .env.local file', async () => {
       const clientId = 'app-with-secret';
 
       // Override the handler to return a response with client_secret

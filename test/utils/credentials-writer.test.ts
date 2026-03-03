@@ -1,6 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 import {
   writeCredentialsToEnv,
   detectExistingEnvFile,
@@ -22,12 +25,12 @@ describe('credentials-writer', () => {
   });
 
   afterEach(() => {
+    // Change back to project root before cleaning up
+    process.chdir(path.join(__dirname, '../..'));
     // Clean up test directory
     if (fs.existsSync(testDir)) {
       fs.rmSync(testDir, { recursive: true, force: true });
     }
-    // Change back to project root
-    process.chdir(path.join(__dirname, '../..'));
   });
 
   describe('writeCredentialsToEnv', () => {
