@@ -261,7 +261,7 @@ export const APPLICATION_TOOLS: Tool[] = [
   {
     name: 'auth0_save_credentials_to_file',
     description:
-      'Save Auth0 application credentials to a file. Only use this when you are in a project directory. This retrieves the client_secret from Auth0 and saves it locally. Requires explicit file path to prevent accidental file creation.',
+      'Save Auth0 application credentials to a file. Only use this when you are in a project directory. This retrieves the client_secret from Auth0 and saves it locally. Requires explicit file path to prevent accidental file creation. If the file already exists, credentials are appended (existing content is preserved). Additionally, .gitignore entry is automatically added for the target file.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -272,7 +272,7 @@ export const APPLICATION_TOOLS: Tool[] = [
         file_path: {
           type: 'string',
           description:
-            'Required: Full or relative path to save credentials (e.g., ".env.local", "config/.env.development"). User must explicitly specify where to save credentials.',
+            'Required: Full or relative path to save credentials (e.g., ".env.local", "config/.env.development"). User must explicitly specify where to save credentials. If the file exists, credentials will be appended to it; otherwise a new file will be created with chmod 600 permissions.',
         },
       },
       required: ['client_id', 'file_path'],
@@ -283,8 +283,8 @@ export const APPLICATION_TOOLS: Tool[] = [
     annotations: {
       title: 'Save Auth0 Credentials to File',
       readOnlyHint: false,
-      destructiveHint: false,
-      idempotentHint: true,
+      destructiveHint: true,
+      idempotentHint: false,
       openWorldHint: false,
     },
   },
@@ -647,7 +647,7 @@ export const APPLICATION_HANDLERS: Record<
           response._credentials_access = {
             note: 'Credentials are masked for security (not logged in MCP client logs)',
             how_to_access: [
-              'Ask me to "save credentials to .env.local" (requires explicit file path)',
+              `To save credentials locally, you MUST first ask the user to provide a file path before calling "auth0_save_credentials_to_file" with client_id "${appData.client_id}". Do NOT assume a default path.`,
               `View in Auth0 Dashboard: https://manage.auth0.com/dashboard/us/${config.domain.split('.')[0]}/applications/${appData.client_id}/settings`,
               `Retrieve via API: GET https://${config.domain}/api/v2/clients/${appData.client_id}`,
             ],

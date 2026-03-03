@@ -26,23 +26,30 @@ export interface CredentialsWriteResult {
  * Options for writing credentials
  */
 export interface WriteCredentialsOptions {
+  /** Full or relative path to the env file. Defaults to `.env.local` in the current working directory. */
   filePath?: string;
-  append?: boolean;
+  /** Whether to add the env file to .gitignore. Defaults to true. */
   createGitignore?: boolean;
 }
 
 /**
  * Writes Auth0 credentials to an environment file (default: .env.local)
  *
- * This function:
- * - Writes credentials to .env.local or specified file
- * - Sets restrictive file permissions (chmod 600)
- * - Ensures .gitignore includes the env file
+ * File behavior:
+ * - If the file does NOT exist: creates a new file with the credentials
+ * - If the file DOES exist: appends credentials to the end of the file,
+ *   preserving all existing content. Existing variables are NOT overwritten
+ *   or deduplicated — duplicate entries may result if called multiple times
+ *   for the same application.
+ *
+ * Additional behavior:
+ * - Sets restrictive file permissions (chmod 600 — owner read/write only)
+ * - Ensures .gitignore includes the env file (unless createGitignore is false)
  * - Prevents credentials from appearing in MCP client logs
  *
  * @param credentials - The credentials to write
- * @param options - Optional configuration for file path, append mode, etc.
- * @returns Information about where credentials were written
+ * @param options - Optional configuration for file path, gitignore creation, etc.
+ * @returns Information about where credentials were written, including whether the file was created or appended to
  */
 export async function writeCredentialsToEnv(
   credentials: Credentials,
@@ -96,7 +103,8 @@ export async function writeCredentialsToEnv(
 
   // Ensure .gitignore includes the env file
   if (options?.createGitignore !== false) {
-    ensureGitignore(cwd, path.basename(envFile));
+    const envFileDir = path.dirname(path.resolve(envFile));
+    ensureGitignore(envFileDir, path.basename(envFile));
   }
 
   return {
