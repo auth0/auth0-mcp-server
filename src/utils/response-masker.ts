@@ -14,14 +14,9 @@ const DEFAULT_SENSITIVE_FIELDS = [
   'client_secret',
   'signing_keys',
   'encryption_key',
-  'client_assertion',
   'signing_key',
-  'secret',
   'private_key',
-  'password',
-  'token',
   'refresh_token',
-  'access_token',
 ];
 
 /**
@@ -69,9 +64,9 @@ export function maskSensitiveFields(data: any, options?: MaskOptions): any {
 
     const value = data[key];
 
-    // Check if this field should be masked
+    // Check if this field should be masked (exact match only)
     const shouldMask = fieldsToMask.some((sensitiveField) =>
-      key.toLowerCase().includes(sensitiveField.toLowerCase())
+      key.toLowerCase() === sensitiveField.toLowerCase()
     );
 
     if (shouldMask && value) {
@@ -120,7 +115,7 @@ export function containsSensitiveFields(
     }
 
     const shouldMask = fieldsToCheck.some((sensitiveField) =>
-      key.toLowerCase().includes(sensitiveField.toLowerCase())
+      key.toLowerCase() === sensitiveField.toLowerCase()
     );
 
     if (shouldMask && data[key]) {
@@ -168,7 +163,7 @@ export function getSensitiveFieldNames(
 
       const fullPath = path ? `${path}.${key}` : key;
       const shouldMask = fieldsToCheck.some((sensitiveField) =>
-        key.toLowerCase().includes(sensitiveField.toLowerCase())
+        key.toLowerCase() === sensitiveField.toLowerCase()
       );
 
       if (shouldMask && obj[key]) {

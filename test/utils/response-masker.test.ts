@@ -44,7 +44,7 @@ describe('response-masker', () => {
         client_id: 'abc123',
         jwt_configuration: {
           alg: 'RS256',
-          secret: 'nested_secret',
+          client_secret: 'nested_secret',
         },
       };
 
@@ -52,7 +52,7 @@ describe('response-masker', () => {
 
       expect(masked.client_id).toBe('abc123');
       expect(masked.jwt_configuration.alg).toBe('RS256');
-      expect(masked.jwt_configuration.secret).toBe('[REDACTED]');
+      expect(masked.jwt_configuration.client_secret).toBe('[REDACTED]');
     });
 
     it('should handle arrays of objects', () => {
@@ -124,18 +124,24 @@ describe('response-masker', () => {
       expect(masked.client_secret).toBe('[REDACTED]');
     });
 
-    it('should mask fields with partial name match', () => {
+    it('should only mask fields with exact name match', () => {
       const data = {
         my_client_secret: 'secret1',
         api_token: 'token123',
         refresh_token_value: 'refresh123',
+        client_secret: 'real_secret',
+        refresh_token: 'real_refresh',
       };
 
       const masked = maskSensitiveFields(data);
 
-      expect(masked.my_client_secret).toBe('[REDACTED]');
-      expect(masked.api_token).toBe('[REDACTED]');
-      expect(masked.refresh_token_value).toBe('[REDACTED]');
+      // Partial matches should NOT be masked
+      expect(masked.my_client_secret).toBe('secret1');
+      expect(masked.api_token).toBe('token123');
+      expect(masked.refresh_token_value).toBe('refresh123');
+      // Exact matches should be masked
+      expect(masked.client_secret).toBe('[REDACTED]');
+      expect(masked.refresh_token).toBe('[REDACTED]');
     });
 
     it('should handle case-insensitive matching', () => {
@@ -189,7 +195,7 @@ describe('response-masker', () => {
       const data = {
         client_id: 'abc123',
         config: {
-          secret: 'nested_secret',
+          client_secret: 'nested_secret',
         },
       };
 
@@ -234,13 +240,13 @@ describe('response-masker', () => {
         client_id: 'abc123',
         jwt_configuration: {
           alg: 'RS256',
-          secret: 'nested_secret',
+          client_secret: 'nested_secret',
         },
       };
 
       const fields = getSensitiveFieldNames(data);
 
-      expect(fields).toContain('jwt_configuration.secret');
+      expect(fields).toContain('jwt_configuration.client_secret');
     });
 
     it('should return paths for array items', () => {
