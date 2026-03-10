@@ -1,5 +1,14 @@
 # Change Log
 
+## [v0.1.0-beta.9](https://github.com/auth0/auth0-mcp-server/tree/v0.1.0-beta.9) (2026-03-10)
+[Full Changelog](https://github.com/auth0/auth0-mcp-server/compare/v0.1.0-beta.8...v0.1.0-beta.9)
+
+**Added**
+- feat: add applications grant creation tool [\#91](https://github.com/auth0/auth0-mcp-server/pull/91) ([wdaimee](https://github.com/wdaimee))
+
+**Security**
+- feat: mask sensitive credentials in MCP responses and optionally save to .env [\#94](https://github.com/auth0/auth0-mcp-server/pull/94) ([brth31](https://github.com/brth31))
+
 ## [v0.1.0-beta.8](https://github.com/auth0/auth0-mcp-server/tree/v0.1.0-beta.8) (2026-02-04)
 [Full Changelog](https://github.com/auth0/auth0-mcp-server/compare/v0.1.0-beta.7...v0.1.0-beta.8)
 
