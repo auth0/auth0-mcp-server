@@ -12,3 +12,6 @@ dist/
 coverage/
 .vscode/
 .idea/
+
+# Auth0 credentials
+.env.local
