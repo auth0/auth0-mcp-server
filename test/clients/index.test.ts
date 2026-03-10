@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // Arrange: Mock client classes
 vi.mock('../../src/clients/claude.js', () => ({
-  ClaudeClientManager: vi.fn(function() {
+  ClaudeClientManager: vi.fn(function () {
     return {
       getConfigPath: vi.fn(),
       configure: vi.fn(),
@@ -11,7 +11,7 @@ vi.mock('../../src/clients/claude.js', () => ({
 }));
 
 vi.mock('../../src/clients/cursor.js', () => ({
-  CursorClientManager: vi.fn(function() {
+  CursorClientManager: vi.fn(function () {
     return {
       getConfigPath: vi.fn(),
       configure: vi.fn(),
@@ -20,7 +20,7 @@ vi.mock('../../src/clients/cursor.js', () => ({
 }));
 
 vi.mock('../../src/clients/windsurf.js', () => ({
-  WindsurfClientManager: vi.fn(function() {
+  WindsurfClientManager: vi.fn(function () {
     return {
       getConfigPath: vi.fn(),
       configure: vi.fn(),
@@ -29,7 +29,7 @@ vi.mock('../../src/clients/windsurf.js', () => ({
 }));
 
 vi.mock('../../src/clients/vscode.js', () => ({
-  VSCodeClientManager: vi.fn(function() {
+  VSCodeClientManager: vi.fn(function () {
     return {
       getConfigPath: vi.fn(),
       configure: vi.fn(),
