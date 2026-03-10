@@ -57,6 +57,16 @@ export async function writeCredentialsToEnv(
 ): Promise<CredentialsWriteResult> {
   const cwd = process.cwd();
   const envFile = options?.filePath || path.join(cwd, '.env.local');
+
+  // Path traversal protection: ensure the resolved file path is within the current working directory
+  const resolvedPath = path.resolve(cwd, envFile);
+  if (!resolvedPath.startsWith(cwd + path.sep) && resolvedPath !== cwd) {
+    throw new Error(
+      `Security error: file path "${envFile}" resolves outside the current working directory. ` +
+        `Resolved path: "${resolvedPath}", allowed directory: "${cwd}"`
+    );
+  }
+
   const fileExisted = fs.existsSync(envFile);
 
   // Prepare environment variables

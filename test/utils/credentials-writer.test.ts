@@ -161,6 +161,38 @@ describe('credentials-writer', () => {
       expect(fs.existsSync(customPath)).toBe(true);
     });
 
+    it('should reject file paths that traverse outside the working directory', async () => {
+      const credentials: Credentials = {
+        client_id: 'test_client_id',
+        domain: 'test.auth0.com',
+      };
+
+      await expect(
+        writeCredentialsToEnv(credentials, { filePath: '../../etc/evil-file' })
+      ).rejects.toThrow('Security error: file path');
+
+      await expect(
+        writeCredentialsToEnv(credentials, { filePath: '/tmp/evil-file' })
+      ).rejects.toThrow('Security error: file path');
+    });
+
+    it('should allow file paths within the working directory', async () => {
+      const credentials: Credentials = {
+        client_id: 'test_client_id',
+        domain: 'test.auth0.com',
+      };
+
+      const subDir = path.join(testDir, 'config');
+      fs.mkdirSync(subDir, { recursive: true });
+
+      const result = await writeCredentialsToEnv(credentials, {
+        filePath: path.join(subDir, '.env'),
+      });
+
+      expect(result.file_created).toBe(true);
+      expect(fs.existsSync(path.join(subDir, '.env'))).toBe(true);
+    });
+
     it('should include timestamp in generated content', async () => {
       const credentials: Credentials = {
         client_id: 'test_client_id',
