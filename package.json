@@ -82,5 +82,8 @@
   "homepage": "https://github.com/auth0/auth0-mcp-server#readme",
   "publishConfig": {
     "access": "public"
+  },
+  "overrides": {
+    "hono": "^4.12.4"
   }
 }
