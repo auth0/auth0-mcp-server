@@ -203,10 +203,7 @@ describe('response-masker', () => {
     });
 
     it('should detect sensitive fields in arrays', () => {
-      const data = [
-        { client_id: 'app1' },
-        { client_id: 'app2', client_secret: 'secret' },
-      ];
+      const data = [{ client_id: 'app1' }, { client_id: 'app2', client_secret: 'secret' }];
 
       expect(containsSensitiveFields(data)).toBe(true);
     });
