@@ -862,7 +862,9 @@ export const APPLICATION_HANDLERS: Record<
       }
 
       if (!filePath) {
-        return createErrorResponse('Error: file_path is required. Please specify where to save credentials (e.g., ".env.local")');
+        return createErrorResponse(
+          'Error: file_path is required. Please specify where to save credentials (e.g., ".env.local")'
+        );
       }
 
       // Check for token
