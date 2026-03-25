@@ -60,7 +60,7 @@
     "@types/debug": "^4.1.13",
     "@types/node": "^25.5.0",
     "@vitest/coverage-v8": "^4.1.0",
-    "@vitest/ui": "^4.1.0",
+    "@vitest/ui": "^4.1.1",
     "eslint": "10.0.3",
     "eslint-config-prettier": "^10.1.8",
     "globals": "^17.4.0",
