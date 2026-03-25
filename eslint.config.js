@@ -38,6 +38,8 @@ export default defineConfig([
       'prefer-template': 'warn',
       'no-unneeded-ternary': 'warn',
 
+      'preserve-caught-error': 'warn',
+
       // TypeScript specific
       '@typescript-eslint/explicit-function-return-type': 'off',
       '@typescript-eslint/no-explicit-any': 'off',
