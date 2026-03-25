@@ -64,7 +64,7 @@
     "eslint": "10.0.3",
     "eslint-config-prettier": "^10.1.8",
     "globals": "^17.4.0",
-    "msw": "^2.12.12",
+    "msw": "^2.12.14",
     "prettier": "^3.8.1",
     "shx": "^0.4.0",
     "tsx": "^4.21.0",
