@@ -2,7 +2,7 @@
 
 ## [v0.1.0-beta.10](https://github.com/auth0/auth0-mcp-server/tree/v0.1.0-beta.10) (2026-03-26)
 
-**Changed**
+**Added**
 - feat: add mcpName field [\#125](https://github.com/auth0/auth0-mcp-server/pull/125) ([kushalshit27](https://github.com/kushalshit27))
 
 **Security**
