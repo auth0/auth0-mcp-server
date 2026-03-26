@@ -1,5 +1,14 @@
 # Change Log
 
+## [v0.1.0-beta.10](https://github.com/auth0/auth0-mcp-server/tree/v0.1.0-beta.10) (2026-03-26)
+
+**Added**
+- feat: add mcpName field [\#125](https://github.com/auth0/auth0-mcp-server/pull/125) ([kushalshit27](https://github.com/kushalshit27))
+
+**Security**
+- chore(package): update dependencies [\#126](https://github.com/auth0/auth0-mcp-server/pull/126) ([kushalshit27](https://github.com/kushalshit27))
+- fix(deps): upgrade hono to resolve critical/high severity vulnerabilities  [\#112](https://github.com/auth0/auth0-mcp-server/pull/112) ([arpit-jn](https://github.com/arpit-jn))
+
 ## [v0.1.0-beta.9](https://github.com/auth0/auth0-mcp-server/tree/v0.1.0-beta.9) (2026-03-10)
 [Full Changelog](https://github.com/auth0/auth0-mcp-server/compare/v0.1.0-beta.8...v0.1.0-beta.9)
 
