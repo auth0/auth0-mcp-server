@@ -18,8 +18,7 @@
 
 [MCP (Model Context Protocol)](https://modelcontextprotocol.io/introduction) is an open protocol introduced by Anthropic that standardizes how large language models communicate with external tools, resources or remote services.
 
-> [!CAUTION]
-> **Beta Software Notice: This software is currently in beta and is provided AS IS without any warranties.**
+> [!CAUTION] > **Beta Software Notice: This software is currently in beta and is provided AS IS without any warranties.**
 >
 > - Features, APIs, and functionality may change at any time without notice
 > - Not recommended for production use or critical workloads
