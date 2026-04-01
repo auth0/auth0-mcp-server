@@ -1,0 +1,93 @@
+# Smithery configuration for Auth0 MCP Server
+name: auth0-mcp-server
+displayName: Auth0 MCP Server
+version: 0.1.0-beta.10
+description: |
+  Auth0 Model Context Protocol (MCP) Server - A secure and extendable implementation
+  of an MCP server that provides AI assistants with controlled access to the Auth0
+  Management API through natural language. This enables AI-assisted tenant management
+  while enforcing best practices around security, least-privilege access, and
+  customizable toolsets.
+
+# Repository information
+repository:
+  type: git
+  url: https://github.com/auth0/auth0-mcp-server
+
+# Documentation links
+homepage: https://github.com/auth0/auth0-mcp-server#readme
+documentation: https://auth0.com/docs/get-started/mcp
+
+# Server configuration
+server:
+  # The server communicates via stdio (not HTTP)
+  transport: stdio
+
+  # Command to run the server (executed in the Docker container)
+  command: auth0-mcp
+  args:
+    - run
+
+configSchema:
+  type: object
+  properties:
+    AUTH0_MCP_ANALYTICS:
+      type: string
+      title: Analytics Opt-out
+      description: |
+        Set to "false" to opt-out of anonymized analytics collection.
+        By default, the server collects anonymized usage data to improve the service.
+      enum:
+        - "true"
+        - "false"
+      default: "true"
+
+    DEBUG:
+      type: string
+      title: Debug Mode
+      description: |
+        Enable detailed debug logging by setting to "auth0-mcp".
+        Useful for troubleshooting issues.
+      examples:
+        - auth0-mcp
+
+# Tags for categorization in Smithery
+tags:
+  - auth0
+  - authentication
+  - identity
+  - management-api
+  - mcp
+  - ai-assistant
+  - beta
+
+# Capabilities this server provides
+capabilities:
+  - tools
+
+# Additional metadata
+metadata:
+  author: Auth0
+  license: MIT
+  status: beta
+  node_version: ">=18.0.0"
+
+  # Important notes for users
+  notes: |
+    **Beta Software Notice:** This software is currently in beta and is provided AS IS without any warranties.
+
+    **Setup Instructions:**
+    This server requires authentication with Auth0 before use. Run `npx @auth0/auth0-mcp-server init`
+    to authenticate via OAuth device flow, or use client credentials for private cloud deployments.
+
+    **Security Best Practices:**
+    - Use the minimum required scopes for your use case
+    - Keep token lifetime as minimal as possible
+    - Consider using read-only mode (--read-only flag) for sensitive environments
+    - Credentials are stored securely in your system keychain
+
+    **Available Tools:**
+    Applications, Resource Servers, Actions, Logs, Forms - each with list, get, create,
+    update operations (and deploy/publish for Actions/Forms).
+
+    For detailed documentation, visit: https://auth0.com/docs/get-started/mcp
