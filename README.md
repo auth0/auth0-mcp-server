@@ -18,6 +18,8 @@
 
 [MCP (Model Context Protocol)](https://modelcontextprotocol.io/introduction) is an open protocol introduced by Anthropic that standardizes how large language models communicate with external tools, resources or remote services.
 
+Connect Claude, Cursor, or Windsurf to your Auth0 tenant to create apps, deploy Actions, debug logs, and manage users — all without touching the dashboard.
+
 > [!CAUTION]
 > **Beta Software Notice: This software is currently in beta and is provided AS IS without any warranties.**
 >
