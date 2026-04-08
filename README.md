@@ -18,6 +18,8 @@
 
 [MCP (Model Context Protocol)](https://modelcontextprotocol.io/introduction) is an open protocol introduced by Anthropic that standardizes how large language models communicate with external tools, resources or remote services.
 
+Connect Claude, Cursor, or Windsurf to your Auth0 tenant to create apps, deploy Actions, debug logs, and manage users — all without touching the dashboard.
+
 > [!CAUTION]
 > **Beta Software Notice: This software is currently in beta and is provided AS IS without any warranties.**
 >
@@ -267,6 +269,12 @@ This approach offers several important benefits:
 4. **Simplified Auditing**: With limited tools, it's easier to track which operations were performed through the AI assistant.
 
 For most use cases, start with the minimum set of tools needed and add more only when required. This follows the principle of least privilege - a fundamental security best practice.
+
+#### 🛡️ Credential Protection
+
+The server automatically **redacts sensitive fields** (e.g., `client_secret`, `token` etc.) in relevant MCP tool responses, replacing them with `[REDACTED]`. This prevents secrets from leaking into AI assistant logs or conversation history.
+
+To securely store credentials locally, the `auth0_save_credentials_to_file` tool writes Auth0 credentials as environment variables to a user-specified file (e.g., `.env.local`), and automatically adds it to `.gitignore`. If the file already exists, credentials are appended (preserving existing content); otherwise, a new file is created. This tool can be invoked manually or the AI assistant will automatically prompt you to save credentials after creating an application.
 
 ### 🧪 Security Scanning
 
