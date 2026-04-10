@@ -1,4 +1,5 @@
 import { TOOLS } from '../tools/index.js';
+import type { Tool } from './types.js';
 
 /**
  * Default scopes to be used when no specific scopes are provided.
@@ -18,4 +19,18 @@ export function getAllScopes(): string[] {
 
   // Create unique set from collected scopes
   return [...new Set(allScopes)];
+}
+
+/**
+ * Returns all tools whose required scopes are fully satisfied by the provided scopes.
+ * Tools with no required scopes are always included.
+ *
+ * @param {string[]} scopes - The set of OAuth scopes available to the caller.
+ * @returns {Tool[]} - Tools whose every required scope is present in the provided set.
+ */
+export function getToolsForScopes(scopes: string[]): Tool[] {
+  const scopeSet = new Set(scopes);
+  return TOOLS.filter((tool) =>
+    (tool._meta?.requiredScopes ?? []).every((scope) => scopeSet.has(scope))
+  );
 }
