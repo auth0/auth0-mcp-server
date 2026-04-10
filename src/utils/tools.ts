@@ -1,4 +1,5 @@
-import { Tool } from './types.js';
+import { HANDLERS, TOOLS } from '../tools/index.js';
+import { HandlerConfig, HandlerRequest, HandlerResponse, ServerMode, Tool } from './types.js';
 import { log } from './logger.js';
 import { Glob } from './glob.js';
 
@@ -168,4 +169,42 @@ export function validatePatterns(patterns: string[], availableTools: Tool[]): vo
       throw new Error(`${errorPrefix}: ${pattern}. Accepted tools are: ${toolNames.join(', ')}`);
     }
   }
+}
+
+/**
+ * Returns all tools, or a mode-filtered subset.
+ * In StreamableHttp mode, local-only tools (e.g. auth0_save_credentials_to_file) are excluded.
+ */
+export function getTools(options?: { mode?: ServerMode }): Tool[] {
+  if (options?.mode === ServerMode.StreamableHttp) {
+    return TOOLS.filter((t) => !t._meta?.localOnly);
+  }
+  return TOOLS;
+}
+
+/**
+ * Returns all handlers, or a mode-filtered subset.
+ * In StreamableHttp mode, local-only tool handlers are excluded and each handler is wrapped
+ * to auto-inject the mode into HandlerConfig so handlers can adapt their responses.
+ */
+export function getHandlers(
+  options?: { mode?: ServerMode }
+): Record<string, (request: HandlerRequest, config: HandlerConfig) => Promise<HandlerResponse>> {
+  const mode = options?.mode;
+
+  if (mode === ServerMode.StreamableHttp) {
+    const localOnlyNames = new Set(TOOLS.filter((t) => t._meta?.localOnly).map((t) => t.name));
+    const filtered = Object.fromEntries(
+      Object.entries(HANDLERS).filter(([name]) => !localOnlyNames.has(name))
+    );
+    return Object.fromEntries(
+      Object.entries(filtered).map(([name, handler]) => [
+        name,
+        (request: HandlerRequest, config: HandlerConfig) =>
+          handler(request, { ...config, mode }),
+      ])
+    );
+  }
+
+  return HANDLERS;
 }
