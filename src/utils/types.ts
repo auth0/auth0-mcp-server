@@ -1,5 +1,10 @@
 // This file contains common types and interfaces used across the application.
 
+export enum ServerMode {
+  Stdio = 'stdio',
+  StreamableHttp = 'streamable-http',
+}
+
 // Define ToolAnnotations interface based on MCP schema 2025-03-26
 export interface ToolAnnotations {
   destructiveHint?: boolean;
@@ -17,6 +22,7 @@ export interface Tool {
   _meta?: {
     requiredScopes: string[];
     readOnly?: boolean;
+    localOnly?: boolean;
   };
   annotations?: ToolAnnotations;
 }
@@ -29,6 +35,7 @@ export interface HandlerRequest {
 
 export interface HandlerConfig {
   domain: string | undefined;
+  mode?: ServerMode;
 }
 
 export interface HandlerResponse {

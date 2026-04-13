@@ -1,4 +1,4 @@
-import type { HandlerConfig, HandlerRequest, HandlerResponse, Tool } from '../utils/types.js';
+import { ServerMode, type HandlerConfig, type HandlerRequest, type HandlerResponse, type Tool } from '../utils/types.js';
 import { log } from '../utils/logger.js';
 import { createErrorResponse, createSuccessResponse } from '../utils/http-utility.js';
 import type { Auth0Config } from '../utils/config.js';
@@ -279,6 +279,7 @@ export const APPLICATION_TOOLS: Tool[] = [
     },
     _meta: {
       requiredScopes: ['read:clients', 'read:client_credentials'],
+      localOnly: true,
     },
     annotations: {
       title: 'Save Auth0 Credentials to File',
@@ -644,13 +645,20 @@ export const APPLICATION_HANDLERS: Record<
         // Add credentials access instructions if client_secret exists
         const response: any = { ...maskedApplication };
         if (appData.client_secret) {
+          const howToAccess = [
+            `View in Auth0 Dashboard: https://manage.auth0.com/dashboard/us/${config.domain.split('.')[0]}/applications/${appData.client_id}/settings`,
+            `Retrieve via API: GET https://${config.domain}/api/v2/clients/${appData.client_id}`,
+          ];
+
+          if (config.mode !== ServerMode.StreamableHttp) {
+            howToAccess.unshift(
+              `To save credentials locally, you MUST first ask the user to provide a file path before calling "auth0_save_credentials_to_file" with client_id "${appData.client_id}". Do NOT assume a default path.`
+            );
+          }
+
           response._credentials_access = {
             note: 'Credentials are masked for security (not logged in MCP client logs)',
-            how_to_access: [
-              `To save credentials locally, you MUST first ask the user to provide a file path before calling "auth0_save_credentials_to_file" with client_id "${appData.client_id}". Do NOT assume a default path.`,
-              `View in Auth0 Dashboard: https://manage.auth0.com/dashboard/us/${config.domain.split('.')[0]}/applications/${appData.client_id}/settings`,
-              `Retrieve via API: GET https://${config.domain}/api/v2/clients/${appData.client_id}`,
-            ],
+            how_to_access: howToAccess,
           };
         }
 
