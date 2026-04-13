@@ -1,4 +1,4 @@
-import keytar from 'keytar';
+import keytar from '@github/keytar';
 import { log } from './logger.js';
 
 /**

@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import keytar from 'keytar';
+import keytar from '@github/keytar';
 
 // Mock all dependencies before importing the module
-vi.mock('keytar');
+vi.mock('@github/keytar');
 vi.mock('open', () => ({
   default: vi.fn().mockResolvedValue(undefined),
 }));
