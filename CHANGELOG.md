@@ -1,5 +1,10 @@
 # Change Log
 
+## [v0.1.0-beta.11](https://github.com/auth0/auth0-mcp-server/tree/v0.1.0-beta.11) (2026-04-13)
+
+**Added**
+- feat: support MCP server mode with export tools [\#145](https://github.com/auth0/auth0-mcp-server/pull/145) ([kushalshit27](https://github.com/kushalshit27))
+
 ## [v0.1.0-beta.10](https://github.com/auth0/auth0-mcp-server/tree/v0.1.0-beta.10) (2026-03-26)
 
 **Added**
