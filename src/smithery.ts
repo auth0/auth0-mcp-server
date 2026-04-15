@@ -57,7 +57,7 @@ const PORT = process.env.PORT ?? 8080;
 
 app.use(
   cors({
-    origin: '*',
+    origin: ['https://smithery.ai'],
     exposedHeaders: ['mcp-Session-Id', 'mcp-protocol-version'],
     allowedHeaders: ['Content-Type', 'mcp-session-id'],
   })
