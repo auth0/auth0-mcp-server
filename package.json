@@ -1,10 +1,18 @@
 {
   "name": "@auth0/auth0-mcp-server",
   "mcpName": "com.auth0/mcp",
-  "version": "0.1.0-beta.10",
+  "version": "0.1.0-beta.11",
   "description": "Auth0 Model Context Protocol (MCP) Server (Beta) — A secure and extendable implementation of an MCP server that provides AI assistants with controlled access to the Auth0 Management API through natural language. This project is in beta and not intended for production workloads. It enables AI-assisted tenant management while enforcing best practices around security, least-privilege access, and customizable toolsets.",
   "type": "module",
   "main": "dist/index.js",
+  "types": "./dist/exports.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/exports.d.ts",
+      "import": "./dist/exports.js",
+      "default": "./dist/exports.js"
+    }
+  },
   "bin": {
     "auth0-mcp": "dist/index.js"
   },

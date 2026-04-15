@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { http, HttpResponse } from 'msw';
 import { APPLICATION_HANDLERS } from '../../src/tools/applications';
+import { ServerMode } from '../../src/utils/types';
 import { mockConfig } from '../mocks/config';
 import { mockApplications } from '../mocks/auth0/applications';
 import { server } from '../setup';
@@ -298,6 +299,44 @@ describe('Applications Tool Handlers', () => {
       expect(parsedContent._credentials_access.note).toContain('masked for security');
       expect(parsedContent._credentials_access.how_to_access).toBeDefined();
       expect(parsedContent._credentials_access.how_to_access.length).toBeGreaterThan(0);
+      // In local mode, the file-save instruction must be present
+      const howToAccess = parsedContent._credentials_access.how_to_access as string[];
+      expect(howToAccess.some((s) => s.includes('auth0_save_credentials_to_file'))).toBe(true);
+    });
+
+    it('should omit auth0_save_credentials_to_file instruction in StreamableHttp mode', async () => {
+      server.use(
+        http.post('https://*/api/v2/clients', async ({ request }) => {
+          const body = (await request.json()) as Record<string, any>;
+          return HttpResponse.json({
+            ...body,
+            client_id: 'new-app-hosted',
+            client_secret: 'super_secret_value_hosted',
+          });
+        })
+      );
+
+      const request = {
+        token,
+        parameters: {
+          name: 'Hosted App',
+          app_type: 'spa',
+        },
+      };
+
+      const config = { domain, mode: ServerMode.StreamableHttp };
+
+      const response = await APPLICATION_HANDLERS.auth0_create_application(request, config);
+
+      expect(response.isError).toBe(false);
+
+      const parsedContent = JSON.parse(response.content[0].text);
+      expect(parsedContent._credentials_access).toBeDefined();
+      const howToAccess = parsedContent._credentials_access.how_to_access as string[];
+      // No file-save instruction in hosted mode
+      expect(howToAccess.some((s) => s.includes('auth0_save_credentials_to_file'))).toBe(false);
+      // Dashboard and API instructions still present
+      expect(howToAccess.some((s) => s.includes('Auth0 Dashboard'))).toBe(true);
     });
   });
 
