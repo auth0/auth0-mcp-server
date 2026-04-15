@@ -43,6 +43,12 @@ export interface Auth0Config {
    * Defaults to domain if not explicitly provided.
    */
   tenantName?: string;
+
+  /**
+   * Indicates where credentials were loaded from.
+   * 'env', keychain
+   */
+  source?: 'env' | 'keychain';
 }
 
 /**
@@ -57,6 +63,15 @@ export interface Auth0Config {
  *          or null if retrieval fails
  */
 export async function loadConfig(): Promise<Auth0Config | null> {
+  if (process.env.AUTH0_DOMAIN && process.env.AUTH0_TOKEN) {
+    return {
+      token: process.env.AUTH0_TOKEN,
+      domain: process.env.AUTH0_DOMAIN,
+      tenantName: process.env.AUTH0_DOMAIN,
+      source: 'env',
+    };
+  }
+
   const token = await getValidAccessToken();
   const domain = await keychain.getDomain();
 
@@ -64,6 +79,7 @@ export async function loadConfig(): Promise<Auth0Config | null> {
     token: token || '',
     domain: domain || '',
     tenantName: domain || 'default',
+    source: 'keychain',
   };
 }
 
@@ -105,7 +121,7 @@ export async function validateConfig(config: Auth0Config | null): Promise<boolea
     return false;
   }
 
-  if (await isTokenExpired()) {
+  if (config.source !== 'env' && (await isTokenExpired())) {
     log('Auth0 token is expired');
     return false;
   }

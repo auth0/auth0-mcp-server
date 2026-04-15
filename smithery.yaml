@@ -1,14 +1,16 @@
-runtime: "container"
-build:
-  dockerfile: "Dockerfile"
-  dockerBuildPath: "."
 startCommand:
-  type: "http"
+  type: stdio
   configSchema:
     type: object
     properties:
       domain:
         type: string
         description: "Auth0 tenant domain (e.g. your-tenant.auth0.com)"
+      token:
+        type: string
+        description: "Auth0 Management API token"
     required:
       - domain
+      - token
+  commandFunction: |-
+    (config) => ({ command: 'node', args: ['./dist/smithery.js'], env: { AUTH0_DOMAIN: config.domain, AUTH0_TOKEN: config.token } })
