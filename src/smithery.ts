@@ -4,6 +4,7 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import cors from 'cors';
 import express, { type Request, type Response } from 'express';
+import { jwtDecode } from 'jwt-decode';
 import { z } from 'zod';
 
 import { HANDLERS, TOOLS } from './tools/index.js';
@@ -11,10 +12,29 @@ import { formatDomain } from './utils/http-utility.js';
 import { packageVersion } from './utils/package.js';
 import { getAvailableTools } from './utils/tools.js';
 
-export const configSchema = z.object({
-  domain: z.string().describe('Auth0 tenant domain (e.g. your-tenant.auth0.com)'),
-  token: z.string().describe('Auth0 Management API token'),
-});
+/** Validates the token is a JWT issued by the Auth0 tenant for the Management API. */
+function isValidToken(token: string, domain: string): boolean {
+  try {
+    const { iss, aud } = jwtDecode<{ iss?: string; aud?: string | string[] }>(token);
+    const normalizedDomain = formatDomain(domain);
+    const expectedIss = `https://${normalizedDomain}/`;
+    const expectedAud = `https://${normalizedDomain}/api/v2/`;
+    const audiences = Array.isArray(aud) ? aud : [aud];
+    return iss === expectedIss && audiences.includes(expectedAud);
+  } catch {
+    return false;
+  }
+}
+
+export const configSchema = z
+  .object({
+    domain: z.string().describe('Auth0 tenant domain (e.g. your-tenant.auth0.com)'),
+    token: z.string().describe('Auth0 Management API token'),
+  })
+  .refine(({ token, domain }) => isValidToken(token, domain), {
+    message: 'Token must be a valid Auth0 Management API JWT issued for the specified domain',
+    path: ['token'],
+  });
 
 export default function createServer({ config }: { config: z.infer<typeof configSchema> }) {
   const domain = formatDomain(config.domain);
