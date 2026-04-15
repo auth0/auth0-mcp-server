@@ -3,7 +3,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import cors from 'cors';
-import express, { Request, Response } from 'express';
+import express, { type Request, type Response } from 'express';
 import { z } from 'zod';
 
 import { HANDLERS, TOOLS } from './tools/index.js';
@@ -59,18 +59,26 @@ app.use(
   cors({
     origin: ['https://smithery.ai'],
     exposedHeaders: ['mcp-Session-Id', 'mcp-protocol-version'],
-    allowedHeaders: ['Content-Type', 'mcp-session-id'],
+    allowedHeaders: ['Authorization', 'Content-Type', 'mcp-session-id'],
   })
 );
 app.use(express.json());
 
-function parseConfig(req: Request): Record<string, unknown> {
-  const configParam = req.query.config as string;
-  if (configParam) {
-    return JSON.parse(Buffer.from(configParam, 'base64url').toString()) as Record<string, unknown>;
+function getBearerToken(req: Request): string | undefined {
+  const authorization = req.header('authorization');
+
+  if (!authorization) {
+    return undefined;
   }
-  const domain = (req.query.domain as string);
-  const token = (req.query.token as string);
+
+  const match = authorization.match(/^Bearer\s+(.+)$/i);
+  return match?.[1];
+}
+
+function parseConfig(req: Request): Record<string, unknown> {
+  const token = getBearerToken(req);
+
+  const domain = req.query.domain;
   return { domain, token };
 }
 
