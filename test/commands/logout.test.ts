@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import keytar from 'keytar';
+import keytar from '@github/keytar';
 import {
   ALL_KEYCHAIN_ITEMS,
   keychain,
@@ -9,7 +9,7 @@ import {
 } from '../../src/utils/keychain';
 
 // Mock dependencies
-vi.mock('keytar', () => ({
+vi.mock('@github/keytar', () => ({
   default: {
     setPassword: vi.fn(),
     getPassword: vi.fn(),
