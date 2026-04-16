@@ -10,5 +10,9 @@ startCommand:
       domain:
         type: string
         description: "Auth0 tenant domain (e.g. your-tenant.auth0.com)"
+      token:
+        type: string
+        description: "Auth0 Management API token"
     required:
       - domain
+      - token

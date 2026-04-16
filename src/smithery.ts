@@ -84,22 +84,8 @@ app.use(
 );
 app.use(express.json());
 
-function getBearerToken(req: Request): string | undefined {
-  const authorization = req.header('authorization');
-
-  if (!authorization) {
-    return undefined;
-  }
-
-  const match = authorization.match(/^Bearer\s+(.+)$/i);
-  return match?.[1];
-}
-
 function parseConfig(req: Request): Record<string, unknown> {
-  const token = getBearerToken(req);
-
-  const domain = req.query.domain;
-  return { domain, token };
+  return { domain: req.query.domain, token: req.query.token };
 }
 
 app.all('/mcp', async (req: Request, res: Response) => {
