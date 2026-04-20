@@ -339,107 +339,62 @@ describe('Applications Tool Handlers', () => {
       expect(howToAccess.some((s) => s.includes('Auth0 Dashboard'))).toBe(true);
     });
 
-    it('should default token_endpoint_auth_method to "none" for SPA', async () => {
-      let capturedBody: Record<string, any> = {};
-      server.use(
-        http.post('https://*/api/v2/clients', async ({ request }) => {
-          capturedBody = (await request.json()) as Record<string, any>;
-          return HttpResponse.json({ ...capturedBody, client_id: 'spa-app-id' });
-        })
+    describe('token_endpoint_auth_method defaults', () => {
+      async function createAppAndCaptureBody(parameters: Record<string, any>) {
+        let capturedBody: Record<string, any> | undefined;
+        server.use(
+          http.post('https://*/api/v2/clients', async ({ request }) => {
+            capturedBody = (await request.json()) as Record<string, any>;
+            return HttpResponse.json({ ...capturedBody, client_id: 'test-app-id' });
+          })
+        );
+
+        const response = await APPLICATION_HANDLERS.auth0_create_application(
+          { token, parameters },
+          { domain }
+        );
+
+        expect(capturedBody).toBeDefined();
+        return { response, capturedBody: capturedBody! };
+      }
+
+      it.each([
+        { app_type: 'spa', expected: 'none' },
+        { app_type: 'native', expected: 'none' },
+        { app_type: 'regular_web', expected: 'client_secret_post' },
+        { app_type: 'non_interactive', expected: 'client_secret_post' },
+      ])(
+        'should default to "$expected" for $app_type',
+        async ({ app_type, expected }) => {
+          const { response, capturedBody } = await createAppAndCaptureBody({
+            name: `${app_type} App`,
+            app_type,
+          });
+
+          expect(response.isError).toBe(false);
+          expect(capturedBody.token_endpoint_auth_method).toBe(expected);
+        }
       );
 
-      const request = { token, parameters: { name: 'SPA App', app_type: 'spa' } };
-      const response = await APPLICATION_HANDLERS.auth0_create_application(request, { domain });
-
-      expect(response.isError).toBe(false);
-      expect(capturedBody.token_endpoint_auth_method).toBe('none');
-    });
-
-    it('should default token_endpoint_auth_method to "none" for Native', async () => {
-      let capturedBody: Record<string, any> = {};
-      server.use(
-        http.post('https://*/api/v2/clients', async ({ request }) => {
-          capturedBody = (await request.json()) as Record<string, any>;
-          return HttpResponse.json({ ...capturedBody, client_id: 'native-app-id' });
-        })
-      );
-
-      const request = { token, parameters: { name: 'Native App', app_type: 'native' } };
-      const response = await APPLICATION_HANDLERS.auth0_create_application(request, { domain });
-
-      expect(response.isError).toBe(false);
-      expect(capturedBody.token_endpoint_auth_method).toBe('none');
-    });
-
-    it('should default token_endpoint_auth_method to "client_secret_post" for Regular Web', async () => {
-      let capturedBody: Record<string, any> = {};
-      server.use(
-        http.post('https://*/api/v2/clients', async ({ request }) => {
-          capturedBody = (await request.json()) as Record<string, any>;
-          return HttpResponse.json({ ...capturedBody, client_id: 'web-app-id' });
-        })
-      );
-
-      const request = { token, parameters: { name: 'Web App', app_type: 'regular_web' } };
-      const response = await APPLICATION_HANDLERS.auth0_create_application(request, { domain });
-
-      expect(response.isError).toBe(false);
-      expect(capturedBody.token_endpoint_auth_method).toBe('client_secret_post');
-    });
-
-    it('should default token_endpoint_auth_method to "client_secret_post" for M2M', async () => {
-      let capturedBody: Record<string, any> = {};
-      server.use(
-        http.post('https://*/api/v2/clients', async ({ request }) => {
-          capturedBody = (await request.json()) as Record<string, any>;
-          return HttpResponse.json({ ...capturedBody, client_id: 'm2m-app-id' });
-        })
-      );
-
-      const request = { token, parameters: { name: 'M2M App', app_type: 'non_interactive' } };
-      const response = await APPLICATION_HANDLERS.auth0_create_application(request, { domain });
-
-      expect(response.isError).toBe(false);
-      expect(capturedBody.token_endpoint_auth_method).toBe('client_secret_post');
-    });
-
-    it('should use explicit token_endpoint_auth_method over default', async () => {
-      let capturedBody: Record<string, any> = {};
-      server.use(
-        http.post('https://*/api/v2/clients', async ({ request }) => {
-          capturedBody = (await request.json()) as Record<string, any>;
-          return HttpResponse.json({ ...capturedBody, client_id: 'explicit-app-id' });
-        })
-      );
-
-      const request = {
-        token,
-        parameters: {
+      it('should use explicit token_endpoint_auth_method over default', async () => {
+        const { response, capturedBody } = await createAppAndCaptureBody({
           name: 'Explicit Auth App',
           app_type: 'spa',
           token_endpoint_auth_method: 'client_secret_basic',
-        },
-      };
-      const response = await APPLICATION_HANDLERS.auth0_create_application(request, { domain });
+        });
 
-      expect(response.isError).toBe(false);
-      expect(capturedBody.token_endpoint_auth_method).toBe('client_secret_basic');
-    });
+        expect(response.isError).toBe(false);
+        expect(capturedBody.token_endpoint_auth_method).toBe('client_secret_basic');
+      });
 
-    it('should not set token_endpoint_auth_method when neither app_type nor token_endpoint_auth_method provided', async () => {
-      let capturedBody: Record<string, any> = {};
-      server.use(
-        http.post('https://*/api/v2/clients', async ({ request }) => {
-          capturedBody = (await request.json()) as Record<string, any>;
-          return HttpResponse.json({ ...capturedBody, client_id: 'no-type-app-id' });
-        })
-      );
+      it('should not set token_endpoint_auth_method when app_type is not provided', async () => {
+        const { response, capturedBody } = await createAppAndCaptureBody({
+          name: 'No Type App',
+        });
 
-      const request = { token, parameters: { name: 'No Type App' } };
-      const response = await APPLICATION_HANDLERS.auth0_create_application(request, { domain });
-
-      expect(response.isError).toBe(false);
-      expect(capturedBody.token_endpoint_auth_method).toBeUndefined();
+        expect(response.isError).toBe(false);
+        expect(capturedBody.token_endpoint_auth_method).toBeUndefined();
+      });
     });
   });
 
@@ -478,6 +433,30 @@ describe('Applications Tool Handlers', () => {
       const appData = parsedContent.data || parsedContent;
       expect(appData.name).toBe('Updated App');
     });
+
+    it.each(['spa', 'native', 'regular_web', 'non_interactive'])(
+      'should not auto-set token_endpoint_auth_method when app_type is %s',
+      async (app_type) => {
+        const clientId = mockApplications[0].client_id;
+        let capturedBody: Record<string, any> | undefined;
+        server.use(
+          http.patch(`https://*/api/v2/clients/${clientId}`, async ({ request }) => {
+            capturedBody = (await request.json()) as Record<string, any>;
+            return HttpResponse.json({ ...mockApplications[0], ...capturedBody });
+          })
+        );
+
+        const request = {
+          token,
+          parameters: { client_id: clientId, app_type },
+        };
+        const response = await APPLICATION_HANDLERS.auth0_update_application(request, { domain });
+
+        expect(response.isError).toBe(false);
+        expect(capturedBody).toBeDefined();
+        expect(capturedBody!.token_endpoint_auth_method).toBeUndefined();
+      }
+    );
   });
 
   describe('auth0_save_credentials_to_file', () => {

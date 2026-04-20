@@ -137,7 +137,7 @@ export const APPLICATION_TOOLS: Tool[] = [
         token_endpoint_auth_method: {
           type: 'string',
           description:
-            'Token endpoint authentication method. Defaults based on app_type: "none" for SPA/Native (public clients), "client_secret_post" for Regular Web/M2M (confidential clients).',
+            'Token endpoint authentication method. When creating, defaults based on app_type: "none" for SPA/Native (public clients), "client_secret_post" for Regular Web/M2M (confidential clients).',
           enum: ['none', 'client_secret_post', 'client_secret_basic'],
         },
       },
@@ -587,15 +587,15 @@ export const APPLICATION_HANDLERS: Record<
       if (allowed_clients !== undefined) clientData.allowed_clients = allowed_clients;
       if (allowed_logout_urls !== undefined) clientData.allowed_logout_urls = allowed_logout_urls;
       if (grant_types !== undefined) clientData.grant_types = grant_types;
-      if (token_endpoint_auth_method !== undefined) {
-        clientData.token_endpoint_auth_method =
-          token_endpoint_auth_method as ClientCreateTokenEndpointAuthMethodEnum;
-      } else if (app_type !== undefined) {
-        const isPublicClient = app_type === 'spa' || app_type === 'native';
-        clientData.token_endpoint_auth_method = (
-          isPublicClient ? 'none' : 'client_secret_post'
-        ) as ClientCreateTokenEndpointAuthMethodEnum;
-      }
+      const defaultAuthMethod =
+        app_type === 'spa' || app_type === 'native'
+          ? 'none'
+          : app_type !== undefined
+            ? 'client_secret_post'
+            : undefined;
+      const resolvedAuthMethod = token_endpoint_auth_method ?? defaultAuthMethod;
+      if (resolvedAuthMethod !== undefined)
+        clientData.token_endpoint_auth_method = resolvedAuthMethod as ClientCreateTokenEndpointAuthMethodEnum;
       if (is_first_party !== undefined) clientData.is_first_party = is_first_party;
       if (oidc_conformant !== undefined) clientData.oidc_conformant = oidc_conformant;
       if (jwt_configuration !== undefined) clientData.jwt_configuration = jwt_configuration;
