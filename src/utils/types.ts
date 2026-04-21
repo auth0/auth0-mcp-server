@@ -67,3 +67,12 @@ export interface Auth0PaginatedResponse {
   per_page?: number;
   [key: string]: any;
 }
+
+export type QuickstartAppType = 'spa' | 'webapp' | 'native';
+
+export interface QuickstartSpec {
+  appType: QuickstartAppType;
+  defaultAppOrigin: string;
+  callbackPath: string;
+  logoutPath: string;
+}
