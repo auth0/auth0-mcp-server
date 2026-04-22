@@ -1,4 +1,4 @@
-import { QuickstartSpec, QuickstartAppType } from './types';
+import { QuickstartSpec, QuickstartAppType, DefaultAppOrigin } from './types';
 
 export enum UrlSource {
   Detected = 'detected',
@@ -19,10 +19,17 @@ const APP_TYPE_URL_CONFIGS: Record<QuickstartAppType, Set<string>> = {
   native: new Set(['callback_urls', 'logout_urls']),
 };
 
+export const resolveDefaultOrigin = (defaultAppOrigin: DefaultAppOrigin): string => {
+  const { scheme, domain, port } = defaultAppOrigin;
+  const resolvedPort = port !== undefined ? String(port) : '';
+
+  return new URL(`${scheme}://${domain}${resolvedPort ? `:${resolvedPort}` : ''}`).origin;
+};
+
 export const resolveCallbackUrls = (quickstartSpec: QuickstartSpec, baseUrl?: string) => {
   const resolvedBaseUrl = baseUrl
     ? baseUrl.trim().replace(/\/+$/, '')
-    : quickstartSpec.defaultAppOrigin;
+    : resolveDefaultOrigin(quickstartSpec.defaultAppOrigin);
 
   const urlSource = baseUrl ? UrlSource.Detected : UrlSource.FrameworkDefault;
 

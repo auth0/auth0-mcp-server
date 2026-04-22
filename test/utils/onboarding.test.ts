@@ -1,13 +1,44 @@
 import { describe, it, expect } from 'vitest';
-import { resolveCallbackUrls, UrlSource } from '../../src/utils/onboarding';
-import type { QuickstartSpec } from '../../src/utils/types';
+import { resolveCallbackUrls, resolveDefaultOrigin, UrlSource } from '../../src/utils/onboarding';
+import type { QuickstartSpec, DefaultAppOrigin } from '../../src/utils/types';
 
 const defaultSpec: QuickstartSpec = {
   appType: 'spa',
-  defaultAppOrigin: 'http://localhost:3000',
+  defaultAppOrigin: {
+    scheme: 'http',
+    domain: 'localhost',
+    port: 3000,
+  },
   callbackPath: '/callback',
   logoutPath: '/logout',
 };
+
+describe('resolveDefaultOrigin', () => {
+  it('should resolve domain with port', () => {
+    const origin: DefaultAppOrigin = { scheme: 'http', domain: 'localhost', port: 3000 };
+    expect(resolveDefaultOrigin(origin)).toBe('http://localhost:3000');
+  });
+
+  it('should resolve without port when port is undefined', () => {
+    const origin: DefaultAppOrigin = { scheme: 'https', domain: 'example.com' };
+    expect(resolveDefaultOrigin(origin)).toBe('https://example.com');
+  });
+
+  it('should normalize default port 80 for http', () => {
+    const origin: DefaultAppOrigin = { scheme: 'http', domain: 'localhost', port: 80 };
+    expect(resolveDefaultOrigin(origin)).toBe('http://localhost');
+  });
+
+  it('should normalize default port 443 for https', () => {
+    const origin: DefaultAppOrigin = { scheme: 'https', domain: 'example.com', port: 443 };
+    expect(resolveDefaultOrigin(origin)).toBe('https://example.com');
+  });
+
+  it('should handle non-default ports', () => {
+    const origin: DefaultAppOrigin = { scheme: 'https', domain: 'example.com', port: 8443 };
+    expect(resolveDefaultOrigin(origin)).toBe('https://example.com:8443');
+  });
+});
 
 describe('resolveCallbackUrls', () => {
   describe('with base URL provided', () => {
@@ -39,7 +70,7 @@ describe('resolveCallbackUrls', () => {
   });
 
   describe('with no base URL', () => {
-    it('should use framework default origin', () => {
+    it('should resolve from defaultAppOrigin object', () => {
       const result = resolveCallbackUrls(defaultSpec);
 
       expect(result.base_url).toBe('http://localhost:3000');
@@ -47,6 +78,18 @@ describe('resolveCallbackUrls', () => {
       expect(result.logout_urls).toEqual(['http://localhost:3000/logout']);
       expect(result.web_origins).toEqual(['http://localhost:3000']);
       expect(result.url_source).toBe(UrlSource.FrameworkDefault);
+    });
+
+    it('should handle defaultAppOrigin without port', () => {
+      const spec: QuickstartSpec = {
+        ...defaultSpec,
+        defaultAppOrigin: { scheme: 'https', domain: 'example.com' },
+      };
+
+      const result = resolveCallbackUrls(spec);
+
+      expect(result.base_url).toBe('https://example.com');
+      expect(result.callback_urls).toEqual(['https://example.com/callback']);
     });
   });
 
