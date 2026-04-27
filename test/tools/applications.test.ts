@@ -363,18 +363,15 @@ describe('Applications Tool Handlers', () => {
         { app_type: 'native', expected: 'none' },
         { app_type: 'regular_web', expected: 'client_secret_post' },
         { app_type: 'non_interactive', expected: 'client_secret_post' },
-      ])(
-        'should default to "$expected" for $app_type',
-        async ({ app_type, expected }) => {
-          const { response, capturedBody } = await createAppAndCaptureBody({
-            name: `${app_type} App`,
-            app_type,
-          });
+      ])('should default to "$expected" for $app_type', async ({ app_type, expected }) => {
+        const { response, capturedBody } = await createAppAndCaptureBody({
+          name: `${app_type} App`,
+          app_type,
+        });
 
-          expect(response.isError).toBe(false);
-          expect(capturedBody.token_endpoint_auth_method).toBe(expected);
-        }
-      );
+        expect(response.isError).toBe(false);
+        expect(capturedBody.token_endpoint_auth_method).toBe(expected);
+      });
 
       it('should use explicit token_endpoint_auth_method over default', async () => {
         const { response, capturedBody } = await createAppAndCaptureBody({

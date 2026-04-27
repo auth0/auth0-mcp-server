@@ -1,4 +1,10 @@
-import { ServerMode, type HandlerConfig, type HandlerRequest, type HandlerResponse, type Tool } from '../utils/types.js';
+import {
+  ServerMode,
+  type HandlerConfig,
+  type HandlerRequest,
+  type HandlerResponse,
+  type Tool,
+} from '../utils/types.js';
 import { log } from '../utils/logger.js';
 import { createErrorResponse, createSuccessResponse } from '../utils/http-utility.js';
 import type { Auth0Config } from '../utils/config.js';
@@ -595,7 +601,8 @@ export const APPLICATION_HANDLERS: Record<
             : undefined;
       const resolvedAuthMethod = token_endpoint_auth_method ?? defaultAuthMethod;
       if (resolvedAuthMethod !== undefined)
-        clientData.token_endpoint_auth_method = resolvedAuthMethod as ClientCreateTokenEndpointAuthMethodEnum;
+        clientData.token_endpoint_auth_method =
+          resolvedAuthMethod as ClientCreateTokenEndpointAuthMethodEnum;
       if (is_first_party !== undefined) clientData.is_first_party = is_first_party;
       if (oidc_conformant !== undefined) clientData.oidc_conformant = oidc_conformant;
       if (jwt_configuration !== undefined) clientData.jwt_configuration = jwt_configuration;
