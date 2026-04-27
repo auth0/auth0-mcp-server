@@ -1,0 +1,58 @@
+# Git files
+.git
+.gitignore
+.github
+
+# Dependencies
+node_modules
+
+# Build output
+dist
+
+# Test files
+test
+*.test.ts
+*.test.js
+coverage
+
+# Development files
+.vscode
+.idea
+*.log
+npm-debug.log*
+
+# Documentation
+*.md
+!README.md
+docs
+
+# CI/CD
+.github
+.shiprc
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Other config files
+.prettierrc
+.prettierignore
+.eslintrc*
+tsconfig.json
+
+# MCP client configs
+glama.json
+gemini-extension.json
+commands
+
+# Assets
+assets
+
+# Temporary files
+*.tmp
+*.temp
