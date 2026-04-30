@@ -39,7 +39,7 @@ function getUserAgent(): string {
  */
 export const getManagementClient = async (
   config: Auth0Config,
-  additionalHeaders?: Record<string, string>,
+  additionalHeaders?: Record<string, string>
 ): Promise<ManagementClient> => {
   return new ManagementClient({
     domain: config.domain,

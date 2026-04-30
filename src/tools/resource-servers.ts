@@ -549,7 +549,8 @@ export const RESOURCE_SERVER_HANDLERS: Record<
           resourceServerData.proof_of_possession = proof_of_possession;
 
         // Use the Auth0 SDK to create a resource server
-        const { data: resourceServer } = await managementClient.resourceServers.create(resourceServerData);
+        const { data: resourceServer } =
+          await managementClient.resourceServers.create(resourceServerData);
 
         log(
           `Successfully created resource server: ${(resourceServer as any).name || 'Unknown'} (${(resourceServer as any).id || 'Unknown ID'})`
@@ -657,7 +658,10 @@ export const RESOURCE_SERVER_HANDLERS: Record<
         if (proof_of_possession !== undefined) updateData.proof_of_possession = proof_of_possession;
 
         // Use the Auth0 SDK to update the resource server
-        const { data: resourceServer } = await managementClient.resourceServers.update({ id }, updateData);
+        const { data: resourceServer } = await managementClient.resourceServers.update(
+          { id },
+          updateData
+        );
 
         log(
           `Successfully updated resource server: ${(resourceServer as any).name || 'Unknown'} (${(resourceServer as any).id || id})`
