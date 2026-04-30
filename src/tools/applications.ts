@@ -362,7 +362,7 @@ export const APPLICATION_HANDLERS: Record<
           domain: config.domain,
           token: request.token,
         };
-        const managementClient = await getManagementClient(managementClientConfig);
+        const managementClient = await getManagementClient(managementClientConfig, config.headers);
         // Use the Auth0 SDK to get all clients
         const { data: responseData } = await managementClient.clients.getAll(options);
 
@@ -466,7 +466,7 @@ export const APPLICATION_HANDLERS: Record<
           domain: config.domain,
           token: request.token,
         };
-        const managementClient = await getManagementClient(managementClientConfig);
+        const managementClient = await getManagementClient(managementClientConfig, config.headers);
 
         log(`Fetching client with ID: ${clientId}`);
 
@@ -645,7 +645,7 @@ export const APPLICATION_HANDLERS: Record<
           domain: config.domain,
           token: request.token,
         };
-        const managementClient = await getManagementClient(managementClientConfig);
+        const managementClient = await getManagementClient(managementClientConfig, config.headers);
 
         log(`Creating new application with name: ${name}, type: ${app_type}`);
 
@@ -831,7 +831,7 @@ export const APPLICATION_HANDLERS: Record<
           domain: config.domain,
           token: request.token,
         };
-        const managementClient = await getManagementClient(managementClientConfig);
+        const managementClient = await getManagementClient(managementClientConfig, config.headers);
 
         log(`Updating application with client_id: ${clientId}`);
 
@@ -911,7 +911,7 @@ export const APPLICATION_HANDLERS: Record<
           domain: config.domain,
           token: request.token,
         };
-        const managementClient = await getManagementClient(managementClientConfig);
+        const managementClient = await getManagementClient(managementClientConfig, config.headers);
 
         log(`Fetching credentials for client: ${clientId}`);
 

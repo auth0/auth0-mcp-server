@@ -310,7 +310,7 @@ export const RESOURCE_SERVER_HANDLERS: Record<
           domain: config.domain,
           token: request.token,
         };
-        const managementClient = await getManagementClient(managementClientConfig);
+        const managementClient = await getManagementClient(managementClientConfig, config.headers);
 
         log(`Fetching resource servers with supplied options`);
 
@@ -431,7 +431,7 @@ export const RESOURCE_SERVER_HANDLERS: Record<
           domain: config.domain,
           token: request.token,
         };
-        const managementClient = await getManagementClient(managementClientConfig);
+        const managementClient = await getManagementClient(managementClientConfig, config.headers);
 
         log(`Fetching resource server with ID: ${id}`);
 
@@ -518,7 +518,7 @@ export const RESOURCE_SERVER_HANDLERS: Record<
           domain: config.domain,
           token: request.token,
         };
-        const managementClient = await getManagementClient(managementClientConfig);
+        const managementClient = await getManagementClient(managementClientConfig, config.headers);
 
         log(`Creating resource server with identifier: ${identifier}`);
 
@@ -631,7 +631,7 @@ export const RESOURCE_SERVER_HANDLERS: Record<
           domain: config.domain,
           token: request.token,
         };
-        const managementClient = await getManagementClient(managementClientConfig);
+        const managementClient = await getManagementClient(managementClientConfig, config.headers);
 
         log(`Updating resource server with ID: ${id}`);
 

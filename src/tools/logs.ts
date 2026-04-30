@@ -142,7 +142,7 @@ export const LOG_HANDLERS: Record<
           domain: config.domain,
           token: request.token,
         };
-        const managementClient = await getManagementClient(managementClientConfig);
+        const managementClient = await getManagementClient(managementClientConfig, config.headers);
 
         log(`Fetching logs with supplied options`);
 
@@ -214,7 +214,7 @@ export const LOG_HANDLERS: Record<
           domain: config.domain,
           token: request.token,
         };
-        const managementClient = await getManagementClient(managementClientConfig);
+        const managementClient = await getManagementClient(managementClientConfig, config.headers);
 
         log(`Fetching log entry with ID: ${id}`);
 

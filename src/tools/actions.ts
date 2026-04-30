@@ -307,7 +307,7 @@ export const ACTION_HANDLERS: Record<
           domain: config.domain,
           token: request.token,
         };
-        const managementClient = await getManagementClient(managementClientConfig);
+        const managementClient = await getManagementClient(managementClientConfig, config.headers);
 
         // Use the Auth0 SDK to get all actions
         const { data: responseData } = await managementClient.actions.getAll(options);
@@ -420,7 +420,7 @@ export const ACTION_HANDLERS: Record<
           domain: config.domain,
           token: request.token,
         };
-        const managementClient = await getManagementClient(managementClientConfig);
+        const managementClient = await getManagementClient(managementClientConfig, config.headers);
 
         log(`Fetching action with ID: ${id}`);
 
@@ -516,7 +516,7 @@ export const ACTION_HANDLERS: Record<
           domain: config.domain,
           token: request.token,
         };
-        const managementClient = await getManagementClient(managementClientConfig);
+        const managementClient = await getManagementClient(managementClientConfig, config.headers);
 
         log(`Creating new action with name: ${name}`);
 
@@ -593,7 +593,7 @@ export const ACTION_HANDLERS: Record<
           domain: config.domain,
           token: request.token,
         };
-        const managementClient = await getManagementClient(managementClientConfig);
+        const managementClient = await getManagementClient(managementClientConfig, config.headers);
 
         log(`Updating action with ID: ${id}`);
 
@@ -665,7 +665,7 @@ export const ACTION_HANDLERS: Record<
           domain: config.domain,
           token: request.token,
         };
-        const managementClient = await getManagementClient(managementClientConfig);
+        const managementClient = await getManagementClient(managementClientConfig, config.headers);
 
         log(`Deploying action with ID: ${id}`);
 

@@ -195,14 +195,18 @@ export function getTools(options?: { mode?: ServerMode; withScope?: boolean }): 
 }
 
 /**
- * Returns all handlers, or a mode-filtered subset.
+ * Returns all handlers, or a mode/headers-filtered subset.
  * In StreamableHttp mode, local-only tool handlers are excluded and each handler is wrapped
  * to auto-inject the mode into HandlerConfig so handlers can adapt their responses.
+ * Headers provided here are merged into every handler invocation (per-call config.headers
+ * take precedence over these defaults).
  */
 export function getHandlers(options?: {
   mode?: ServerMode;
+  headers?: Record<string, string>;
 }): Record<string, (request: HandlerRequest, config: HandlerConfig) => Promise<HandlerResponse>> {
   const mode = options?.mode;
+  const baseHeaders = options?.headers;
 
   if (mode === ServerMode.StreamableHttp) {
     const localOnlyNames = new Set(TOOLS.filter((t) => t._meta?.localOnly).map((t) => t.name));
@@ -212,7 +216,18 @@ export function getHandlers(options?: {
     return Object.fromEntries(
       Object.entries(filtered).map(([name, handler]) => [
         name,
-        (request: HandlerRequest, config: HandlerConfig) => handler(request, { ...config, mode }),
+        (request: HandlerRequest, config: HandlerConfig) =>
+          handler(request, { ...config, mode, headers: { ...baseHeaders, ...config.headers } }),
+      ])
+    );
+  }
+
+  if (baseHeaders) {
+    return Object.fromEntries(
+      Object.entries(HANDLERS).map(([name, handler]) => [
+        name,
+        (request: HandlerRequest, config: HandlerConfig) =>
+          handler(request, { ...config, headers: { ...baseHeaders, ...config.headers } }),
       ])
     );
   }
