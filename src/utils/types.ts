@@ -75,9 +75,19 @@ export interface DefaultAppOrigin {
   domain: string;
   port?: number;
 }
+
 export interface QuickstartSpec {
   appType: QuickstartAppType;
   defaultAppOrigin: DefaultAppOrigin;
   callbackPath: string;
   logoutPath: string;
+  llmPromptUrl: string;
+  envSnippet: {
+    fileName: string;
+    requiredKeys: string[];
+    secretKeys: string[];
+  };
+  placeholders: Record<string, string>;
+  inputs: Record<string, string>;
+  environment: Record<string, any>;
 }
