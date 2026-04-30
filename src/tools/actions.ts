@@ -425,7 +425,7 @@ export const ACTION_HANDLERS: Record<
         log(`Fetching action with ID: ${id}`);
 
         // Use the Auth0 SDK to get a specific action
-        const action = await managementClient.actions.get({ id });
+        const { data: action } = await managementClient.actions.get({ id });
 
         log(
           `Successfully retrieved action: ${(action as any).name || 'Unknown'} (${(action as any).id || id})`
@@ -521,7 +521,7 @@ export const ACTION_HANDLERS: Record<
         log(`Creating new action with name: ${name}`);
 
         // Use the Auth0 SDK to create an action
-        const newAction = await managementClient.actions.create(actionData);
+        const { data: newAction } = await managementClient.actions.create(actionData);
 
         log(
           `Successfully created action: ${(newAction as any).name || name} (${(newAction as any).id || 'new action'})`
@@ -598,7 +598,7 @@ export const ACTION_HANDLERS: Record<
         log(`Updating action with ID: ${id}`);
 
         // Use the Auth0 SDK to update the action
-        const updatedAction = await managementClient.actions.update({ id }, updateData);
+        const { data: updatedAction } = await managementClient.actions.update({ id }, updateData);
 
         // Add information about secrets update to the result
         const result = {
@@ -670,7 +670,7 @@ export const ACTION_HANDLERS: Record<
         log(`Deploying action with ID: ${id}`);
 
         // Use the Auth0 SDK to deploy the action
-        const deployedAction = await managementClient.actions.deploy({ id });
+        const { data: deployedAction } = await managementClient.actions.deploy({ id });
 
         log(
           `Successfully deployed action: ${(deployedAction as any).name || 'Unknown'} (${(deployedAction as any).id || id})`

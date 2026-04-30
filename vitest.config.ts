@@ -1,6 +1,12 @@
 import { defineConfig } from 'vitest/config';
+import path from 'path';
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      keytar: path.resolve(__dirname, '__mocks__/keytar.ts'),
+    },
+  },
   test: {
     environment: 'node',
     include: ['test/**/*.test.ts'],

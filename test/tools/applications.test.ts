@@ -132,9 +132,9 @@ describe('Applications Tool Handlers', () => {
 
       // The response should be a JSON string that we can parse
       const parsedContent = JSON.parse(response.content[0].text);
-      // The client_id might be in the response directly or nested in a data property
-      const appData = parsedContent.data || parsedContent;
-      expect(appData.client_id).toBe(clientId);
+      expect(parsedContent.data).toBeUndefined();
+      expect(parsedContent.headers).toBeUndefined();
+      expect(parsedContent.client_id).toBe(clientId);
     });
 
     it('should handle missing client_id parameter', async () => {
@@ -203,12 +203,12 @@ describe('Applications Tool Handlers', () => {
       expect(response.isError).toBe(false);
 
       const parsedContent = JSON.parse(response.content[0].text);
-      // The client_id might be in the response directly or nested in a data property
-      const appData = parsedContent.data || parsedContent;
-      expect(appData.client_id).toBe(clientId);
+      expect(parsedContent.data).toBeUndefined();
+      expect(parsedContent.headers).toBeUndefined();
+      expect(parsedContent.client_id).toBe(clientId);
       // Verify client_secret is masked
-      expect(appData.client_secret).toBe('[REDACTED]');
-      expect(appData.client_secret).not.toContain('super_secret_value');
+      expect(parsedContent.client_secret).toBe('[REDACTED]');
+      expect(parsedContent.client_secret).not.toContain('super_secret_value');
     });
   });
 
@@ -426,9 +426,9 @@ describe('Applications Tool Handlers', () => {
 
       // The response should be a JSON string that we can parse
       const parsedContent = JSON.parse(response.content[0].text);
-      // The name might be in the response directly or nested in a data property
-      const appData = parsedContent.data || parsedContent;
-      expect(appData.name).toBe('Updated App');
+      expect(parsedContent.data).toBeUndefined();
+      expect(parsedContent.headers).toBeUndefined();
+      expect(parsedContent.name).toBe('Updated App');
     });
 
     it.each(['spa', 'native', 'regular_web', 'non_interactive'])(

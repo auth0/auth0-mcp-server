@@ -471,7 +471,7 @@ export const APPLICATION_HANDLERS: Record<
         log(`Fetching client with ID: ${clientId}`);
 
         // Use the Auth0 SDK to get a specific client
-        const application = await managementClient.clients.get({ client_id: clientId });
+        const { data: application } = await managementClient.clients.get({ client_id: clientId });
 
         // Ensure we have the required properties
         if (!application || typeof application !== 'object') {
@@ -836,7 +836,7 @@ export const APPLICATION_HANDLERS: Record<
         log(`Updating application with client_id: ${clientId}`);
 
         // Use the Auth0 SDK to update a client
-        const updatedApplication = await managementClient.clients.update(
+        const { data: updatedApplication } = await managementClient.clients.update(
           { client_id: clientId },
           updateData
         );

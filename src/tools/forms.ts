@@ -371,7 +371,7 @@ export const FORM_HANDLERS: Record<
         log(`Creating new form with name: ${name}`);
 
         // Use the Auth0 SDK to create a form
-        const newForm = await managementClient.forms.create(formData);
+        const { data: newForm } = await managementClient.forms.create(formData);
 
         log(
           `Successfully created form: ${(newForm as any).name || name} (${(newForm as any).id || 'new form'})`
