@@ -381,10 +381,10 @@ export const RESOURCE_SERVER_HANDLERS: Record<
         // Add context based on common error scenarios
         if (sdkError.statusCode === 401) {
           errorMessage +=
-            '\nError: Unauthorized. Your token might be expired or invalid. Try running "npx @auth0/auth0-mcp-server init" to refresh your token.';
+            '\nError: Unauthorized. Your token might be expired or invalid or missing read:resource_servers scope.';
         } else if (sdkError.statusCode === 403) {
           errorMessage +=
-            '\nError: Forbidden. Your token might not have the required scopes (read:resource_servers). Try running "npx @auth0/auth0-mcp-server init" to check the proper permissions.';
+            '\nError: Forbidden. Your token might not have the required scopes (read:resource_servers).';
         } else if (sdkError.statusCode === 429) {
           errorMessage +=
             '\nError: Rate limited. You have made too many requests to the Auth0 API. Please try again later.';
