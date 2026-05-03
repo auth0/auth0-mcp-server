@@ -406,7 +406,19 @@ export const APPLICATION_HANDLERS: Record<
           `Successfully retrieved ${formattedApplications.length} applications (page ${page + 1} of ${totalPages}, total: ${total})`
         );
 
-        return createSuccessResponse(formattedApplications);
+        const result = {
+          applications: formattedApplications,
+          count: formattedApplications.length,
+          total: total,
+          pagination: {
+            page: page,
+            per_page: perPage,
+            total_pages: totalPages,
+            has_next: page + 1 < totalPages,
+          },
+        };
+
+        return createSuccessResponse(result);
       } catch (sdkError: any) {
         // Handle SDK errors
         log('Auth0 SDK error');
