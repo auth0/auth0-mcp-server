@@ -21,10 +21,7 @@
     "entry_point": "dist/index.js",
     "mcp_config": {
       "command": "node",
-      "args": [
-        "${__dirname}/dist/index.js",
-        "run"
-      ],
+      "args": ["${__dirname}/dist/index.js", "run"],
       "env": {
         "AUTH0_TOKEN": "${user_config.auth0_token}",
         "AUTH0_DOMAIN": "${user_config.auth0_domain}"
@@ -117,10 +114,7 @@
       "description": "Update an existing Auth0 form"
     }
   ],
-  "keywords": [
-    "auth0",
-    "mcp"
-  ],
+  "keywords": ["auth0", "mcp"],
   "license": "MIT",
   "compatibility": {
     "runtimes": {
