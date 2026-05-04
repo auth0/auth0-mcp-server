@@ -393,6 +393,63 @@ describe('Applications Tool Handlers', () => {
         expect(capturedBody.token_endpoint_auth_method).toBeUndefined();
       });
     });
+
+    describe('oidc_conformant and jwt_configuration defaults', () => {
+      async function createAppAndCaptureBody(parameters: Record<string, any>) {
+        let capturedBody: Record<string, any> | undefined;
+        server.use(
+          http.post('https://*/api/v2/clients', async ({ request }) => {
+            capturedBody = (await request.json()) as Record<string, any>;
+            return HttpResponse.json({ ...capturedBody, client_id: 'test-app-id' });
+          })
+        );
+
+        const response = await APPLICATION_HANDLERS.auth0_create_application(
+          { token, parameters },
+          { domain }
+        );
+
+        expect(capturedBody).toBeDefined();
+        return { response, capturedBody: capturedBody! };
+      }
+
+      it('should always set oidc_conformant to true', async () => {
+        const { response, capturedBody } = await createAppAndCaptureBody({
+          name: 'Test App',
+          app_type: 'spa',
+        });
+
+        expect(response.isError).toBe(false);
+        expect(capturedBody.oidc_conformant).toBe(true);
+      });
+
+      it('should always set jwt_configuration with RS256 and lifetime_in_seconds 36000', async () => {
+        const { response, capturedBody } = await createAppAndCaptureBody({
+          name: 'Test App',
+          app_type: 'regular_web',
+        });
+
+        expect(response.isError).toBe(false);
+        expect(capturedBody.jwt_configuration).toBeDefined();
+        expect(capturedBody.jwt_configuration.alg).toBe('RS256');
+        expect(capturedBody.jwt_configuration.lifetime_in_seconds).toBe(36000);
+      });
+
+      it('should set oidc_conformant and jwt_configuration regardless of app_type', async () => {
+        for (const app_type of ['spa', 'native', 'regular_web', 'non_interactive']) {
+          const { capturedBody } = await createAppAndCaptureBody({
+            name: `${app_type} App`,
+            app_type,
+          });
+
+          expect(capturedBody.oidc_conformant).toBe(true);
+          expect(capturedBody.jwt_configuration).toMatchObject({
+            alg: 'RS256',
+            lifetime_in_seconds: 36000,
+          });
+        }
+      });
+    });
   });
 
   describe('auth0_update_application', () => {

@@ -652,6 +652,12 @@ export const APPLICATION_HANDLERS: Record<
       if (compliance_level !== undefined)
         clientData.compliance_level = compliance_level as ClientCreateComplianceLevelEnum;
 
+      clientData.oidc_conformant = true;
+      clientData.jwt_configuration = {
+        alg: 'RS256',
+        lifetime_in_seconds: 36000,
+      };
+
       try {
         const managementClientConfig: Auth0Config = {
           domain: config.domain,
