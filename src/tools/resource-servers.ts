@@ -310,7 +310,7 @@ export const RESOURCE_SERVER_HANDLERS: Record<
           domain: config.domain,
           token: request.token,
         };
-        const managementClient = await getManagementClient(managementClientConfig);
+        const managementClient = await getManagementClient(managementClientConfig, config.headers);
 
         log(`Fetching resource servers with supplied options`);
 
@@ -381,10 +381,10 @@ export const RESOURCE_SERVER_HANDLERS: Record<
         // Add context based on common error scenarios
         if (sdkError.statusCode === 401) {
           errorMessage +=
-            '\nError: Unauthorized. Your token might be expired or invalid. Try running "npx @auth0/auth0-mcp-server init" to refresh your token.';
+            '\nError: Unauthorized. Your token might be expired or invalid or missing read:resource_servers scope.';
         } else if (sdkError.statusCode === 403) {
           errorMessage +=
-            '\nError: Forbidden. Your token might not have the required scopes (read:resource_servers). Try running "npx @auth0/auth0-mcp-server init" to check the proper permissions.';
+            '\nError: Forbidden. Your token might not have the required scopes (read:resource_servers).';
         } else if (sdkError.statusCode === 429) {
           errorMessage +=
             '\nError: Rate limited. You have made too many requests to the Auth0 API. Please try again later.';
@@ -431,12 +431,12 @@ export const RESOURCE_SERVER_HANDLERS: Record<
           domain: config.domain,
           token: request.token,
         };
-        const managementClient = await getManagementClient(managementClientConfig);
+        const managementClient = await getManagementClient(managementClientConfig, config.headers);
 
         log(`Fetching resource server with ID: ${id}`);
 
         // Use the Auth0 SDK to get a specific resource server
-        const resourceServer = await managementClient.resourceServers.get({ id });
+        const { data: resourceServer } = await managementClient.resourceServers.get({ id });
 
         log(
           `Successfully retrieved resource server: ${(resourceServer as any).name || 'Unknown'} (${(resourceServer as any).id || id})`
@@ -518,7 +518,7 @@ export const RESOURCE_SERVER_HANDLERS: Record<
           domain: config.domain,
           token: request.token,
         };
-        const managementClient = await getManagementClient(managementClientConfig);
+        const managementClient = await getManagementClient(managementClientConfig, config.headers);
 
         log(`Creating resource server with identifier: ${identifier}`);
 
@@ -549,7 +549,8 @@ export const RESOURCE_SERVER_HANDLERS: Record<
           resourceServerData.proof_of_possession = proof_of_possession;
 
         // Use the Auth0 SDK to create a resource server
-        const resourceServer = await managementClient.resourceServers.create(resourceServerData);
+        const { data: resourceServer } =
+          await managementClient.resourceServers.create(resourceServerData);
 
         log(
           `Successfully created resource server: ${(resourceServer as any).name || 'Unknown'} (${(resourceServer as any).id || 'Unknown ID'})`
@@ -631,7 +632,7 @@ export const RESOURCE_SERVER_HANDLERS: Record<
           domain: config.domain,
           token: request.token,
         };
-        const managementClient = await getManagementClient(managementClientConfig);
+        const managementClient = await getManagementClient(managementClientConfig, config.headers);
 
         log(`Updating resource server with ID: ${id}`);
 
@@ -657,7 +658,10 @@ export const RESOURCE_SERVER_HANDLERS: Record<
         if (proof_of_possession !== undefined) updateData.proof_of_possession = proof_of_possession;
 
         // Use the Auth0 SDK to update the resource server
-        const resourceServer = await managementClient.resourceServers.update({ id }, updateData);
+        const { data: resourceServer } = await managementClient.resourceServers.update(
+          { id },
+          updateData
+        );
 
         log(
           `Successfully updated resource server: ${(resourceServer as any).name || 'Unknown'} (${(resourceServer as any).id || id})`

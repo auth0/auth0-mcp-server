@@ -83,7 +83,7 @@ export const APPLICATION_GRANTS_HANDLERS: Record<
           token: request.token,
         };
 
-        const managementClient = await getManagementClient(managementClientConfig);
+        const managementClient = await getManagementClient(managementClientConfig, config.headers);
 
         log(`Creating a new application grant for application: ${clientId} and API: ${audience}`);
 

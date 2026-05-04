@@ -140,9 +140,9 @@ describe('Forms Tool Handlers', () => {
 
       // The response should be a JSON string that we can parse
       const parsedContent = JSON.parse(response.content[0].text);
-      // The response might be nested in a data property or directly in the response
-      const formData = parsedContent.data || parsedContent;
-      expect(formData.id).toBe(formId);
+      expect(parsedContent.data).toBeUndefined();
+      expect(parsedContent.headers).toBeUndefined();
+      expect(parsedContent.id).toBe(formId);
     });
 
     it('should handle missing id parameter', async () => {
@@ -230,10 +230,10 @@ describe('Forms Tool Handlers', () => {
 
       // The response should be a JSON string that we can parse
       const parsedContent = JSON.parse(response.content[0].text);
-      // The response might be nested in a data property or directly in the response
-      const formData = parsedContent.data || parsedContent;
-      expect(formData.name).toBe('Test Form');
-      expect(formData.id).toBeDefined();
+      expect(parsedContent.data).toBeUndefined();
+      expect(parsedContent.headers).toBeUndefined();
+      expect(parsedContent.name).toBe('Test Form');
+      expect(parsedContent.id).toBeDefined();
     });
 
     it('should handle missing required parameters', async () => {
@@ -305,10 +305,10 @@ describe('Forms Tool Handlers', () => {
 
       // The response should be a JSON string that we can parse
       const parsedContent = JSON.parse(response.content[0].text);
-      // The response might be nested in a data property or directly in the response
-      const formData = parsedContent.data || parsedContent;
-      expect(formData.name).toBe('Updated Form');
-      expect(formData.id).toBe(formId);
+      expect(parsedContent.data).toBeUndefined();
+      expect(parsedContent.headers).toBeUndefined();
+      expect(parsedContent.name).toBe('Updated Form');
+      expect(parsedContent.id).toBe(formId);
     });
 
     it('should handle missing id parameter', async () => {

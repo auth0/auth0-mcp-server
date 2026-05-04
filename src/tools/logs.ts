@@ -142,7 +142,7 @@ export const LOG_HANDLERS: Record<
           domain: config.domain,
           token: request.token,
         };
-        const managementClient = await getManagementClient(managementClientConfig);
+        const managementClient = await getManagementClient(managementClientConfig, config.headers);
 
         log(`Fetching logs with supplied options`);
 
@@ -170,10 +170,10 @@ export const LOG_HANDLERS: Record<
         // Add context based on common error codes
         if (sdkError.statusCode === 401) {
           errorMessage +=
-            '\nError: Unauthorized. Your token might be expired or invalid. Try running "npx @auth0/auth0-mcp-server init" to refresh your token.';
+            '\nError: Unauthorized. Your token might be expired or invalid or missing read:logs scope.';
         } else if (sdkError.statusCode === 403) {
           errorMessage +=
-            '\nError: Forbidden. Your token might not have the required scopes (read:logs). Try running "npx @auth0/auth0-mcp-server init" to see the proper permissions.';
+            '\nError: Forbidden. Your token might not have the required scopes (read:logs).';
         }
 
         return createErrorResponse(errorMessage);
@@ -214,7 +214,7 @@ export const LOG_HANDLERS: Record<
           domain: config.domain,
           token: request.token,
         };
-        const managementClient = await getManagementClient(managementClientConfig);
+        const managementClient = await getManagementClient(managementClientConfig, config.headers);
 
         log(`Fetching log entry with ID: ${id}`);
 

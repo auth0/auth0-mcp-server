@@ -36,6 +36,7 @@ export interface HandlerRequest {
 export interface HandlerConfig {
   domain: string | undefined;
   mode?: ServerMode;
+  headers?: Record<string, string>;
 }
 
 export interface HandlerResponse {

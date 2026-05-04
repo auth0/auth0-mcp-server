@@ -1,4 +1,10 @@
-import { ServerMode, type HandlerConfig, type HandlerRequest, type HandlerResponse, type Tool } from '../utils/types.js';
+import {
+  ServerMode,
+  type HandlerConfig,
+  type HandlerRequest,
+  type HandlerResponse,
+  type Tool,
+} from '../utils/types.js';
 import { log } from '../utils/logger.js';
 import { createErrorResponse, createSuccessResponse } from '../utils/http-utility.js';
 import type { Auth0Config } from '../utils/config.js';
@@ -356,7 +362,7 @@ export const APPLICATION_HANDLERS: Record<
           domain: config.domain,
           token: request.token,
         };
-        const managementClient = await getManagementClient(managementClientConfig);
+        const managementClient = await getManagementClient(managementClientConfig, config.headers);
         // Use the Auth0 SDK to get all clients
         const { data: responseData } = await managementClient.clients.getAll(options);
 
@@ -400,7 +406,19 @@ export const APPLICATION_HANDLERS: Record<
           `Successfully retrieved ${formattedApplications.length} applications (page ${page + 1} of ${totalPages}, total: ${total})`
         );
 
-        return createSuccessResponse(formattedApplications);
+        const result = {
+          applications: formattedApplications,
+          count: formattedApplications.length,
+          total: total,
+          pagination: {
+            page: page,
+            per_page: perPage,
+            total_pages: totalPages,
+            has_next: page + 1 < totalPages,
+          },
+        };
+
+        return createSuccessResponse(result);
       } catch (sdkError: any) {
         // Handle SDK errors
         log('Auth0 SDK error');
@@ -410,10 +428,10 @@ export const APPLICATION_HANDLERS: Record<
         // Add context based on common error scenarios
         if (sdkError.statusCode === 401) {
           errorMessage +=
-            '\nError: Unauthorized. Your token might be expired or invalid. Try running "npx @auth0/auth0-mcp-server init" to refresh your token.';
+            '\nError: Unauthorized. Your token might be expired or invalid or missing read:clients scope.';
         } else if (sdkError.statusCode === 403) {
           errorMessage +=
-            '\nError: Forbidden. Your token might not have the required scopes (read:clients). Try running "npx @auth0/auth0-mcp-server init" to check the proper permissions.';
+            '\nError: Forbidden. Your token might not have the required scopes (read:clients).';
         } else if (sdkError.statusCode === 429) {
           errorMessage +=
             '\nError: Rate limited. You have made too many requests to the Auth0 API. Please try again later.';
@@ -460,12 +478,12 @@ export const APPLICATION_HANDLERS: Record<
           domain: config.domain,
           token: request.token,
         };
-        const managementClient = await getManagementClient(managementClientConfig);
+        const managementClient = await getManagementClient(managementClientConfig, config.headers);
 
         log(`Fetching client with ID: ${clientId}`);
 
         // Use the Auth0 SDK to get a specific client
-        const application = await managementClient.clients.get({ client_id: clientId });
+        const { data: application } = await managementClient.clients.get({ client_id: clientId });
 
         // Ensure we have the required properties
         if (!application || typeof application !== 'object') {
@@ -595,7 +613,8 @@ export const APPLICATION_HANDLERS: Record<
             : undefined;
       const resolvedAuthMethod = token_endpoint_auth_method ?? defaultAuthMethod;
       if (resolvedAuthMethod !== undefined)
-        clientData.token_endpoint_auth_method = resolvedAuthMethod as ClientCreateTokenEndpointAuthMethodEnum;
+        clientData.token_endpoint_auth_method =
+          resolvedAuthMethod as ClientCreateTokenEndpointAuthMethodEnum;
       if (is_first_party !== undefined) clientData.is_first_party = is_first_party;
       if (oidc_conformant !== undefined) clientData.oidc_conformant = oidc_conformant;
       if (jwt_configuration !== undefined) clientData.jwt_configuration = jwt_configuration;
@@ -638,7 +657,7 @@ export const APPLICATION_HANDLERS: Record<
           domain: config.domain,
           token: request.token,
         };
-        const managementClient = await getManagementClient(managementClientConfig);
+        const managementClient = await getManagementClient(managementClientConfig, config.headers);
 
         log(`Creating new application with name: ${name}, type: ${app_type}`);
 
@@ -824,12 +843,12 @@ export const APPLICATION_HANDLERS: Record<
           domain: config.domain,
           token: request.token,
         };
-        const managementClient = await getManagementClient(managementClientConfig);
+        const managementClient = await getManagementClient(managementClientConfig, config.headers);
 
         log(`Updating application with client_id: ${clientId}`);
 
         // Use the Auth0 SDK to update a client
-        const updatedApplication = await managementClient.clients.update(
+        const { data: updatedApplication } = await managementClient.clients.update(
           { client_id: clientId },
           updateData
         );
@@ -904,7 +923,7 @@ export const APPLICATION_HANDLERS: Record<
           domain: config.domain,
           token: request.token,
         };
-        const managementClient = await getManagementClient(managementClientConfig);
+        const managementClient = await getManagementClient(managementClientConfig, config.headers);
 
         log(`Fetching credentials for client: ${clientId}`);
 

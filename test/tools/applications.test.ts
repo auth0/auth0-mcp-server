@@ -132,9 +132,9 @@ describe('Applications Tool Handlers', () => {
 
       // The response should be a JSON string that we can parse
       const parsedContent = JSON.parse(response.content[0].text);
-      // The client_id might be in the response directly or nested in a data property
-      const appData = parsedContent.data || parsedContent;
-      expect(appData.client_id).toBe(clientId);
+      expect(parsedContent.data).toBeUndefined();
+      expect(parsedContent.headers).toBeUndefined();
+      expect(parsedContent.client_id).toBe(clientId);
     });
 
     it('should handle missing client_id parameter', async () => {
@@ -203,12 +203,12 @@ describe('Applications Tool Handlers', () => {
       expect(response.isError).toBe(false);
 
       const parsedContent = JSON.parse(response.content[0].text);
-      // The client_id might be in the response directly or nested in a data property
-      const appData = parsedContent.data || parsedContent;
-      expect(appData.client_id).toBe(clientId);
+      expect(parsedContent.data).toBeUndefined();
+      expect(parsedContent.headers).toBeUndefined();
+      expect(parsedContent.client_id).toBe(clientId);
       // Verify client_secret is masked
-      expect(appData.client_secret).toBe('[REDACTED]');
-      expect(appData.client_secret).not.toContain('super_secret_value');
+      expect(parsedContent.client_secret).toBe('[REDACTED]');
+      expect(parsedContent.client_secret).not.toContain('super_secret_value');
     });
   });
 
@@ -363,18 +363,15 @@ describe('Applications Tool Handlers', () => {
         { app_type: 'native', expected: 'none' },
         { app_type: 'regular_web', expected: 'client_secret_post' },
         { app_type: 'non_interactive', expected: 'client_secret_post' },
-      ])(
-        'should default to "$expected" for $app_type',
-        async ({ app_type, expected }) => {
-          const { response, capturedBody } = await createAppAndCaptureBody({
-            name: `${app_type} App`,
-            app_type,
-          });
+      ])('should default to "$expected" for $app_type', async ({ app_type, expected }) => {
+        const { response, capturedBody } = await createAppAndCaptureBody({
+          name: `${app_type} App`,
+          app_type,
+        });
 
-          expect(response.isError).toBe(false);
-          expect(capturedBody.token_endpoint_auth_method).toBe(expected);
-        }
-      );
+        expect(response.isError).toBe(false);
+        expect(capturedBody.token_endpoint_auth_method).toBe(expected);
+      });
 
       it('should use explicit token_endpoint_auth_method over default', async () => {
         const { response, capturedBody } = await createAppAndCaptureBody({
@@ -429,9 +426,9 @@ describe('Applications Tool Handlers', () => {
 
       // The response should be a JSON string that we can parse
       const parsedContent = JSON.parse(response.content[0].text);
-      // The name might be in the response directly or nested in a data property
-      const appData = parsedContent.data || parsedContent;
-      expect(appData.name).toBe('Updated App');
+      expect(parsedContent.data).toBeUndefined();
+      expect(parsedContent.headers).toBeUndefined();
+      expect(parsedContent.name).toBe('Updated App');
     });
 
     it.each(['spa', 'native', 'regular_web', 'non_interactive'])(
