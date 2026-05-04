@@ -5,6 +5,7 @@ import type { Auth0Config } from '../utils/config.js';
 import { getManagementClient } from '../utils/auth0-client.js';
 import { writeCredentialsToEnv } from '../utils/credentials-writer.js';
 import { maskSensitiveFields } from '../utils/response-masker.js';
+import { hasNonVerifiableCallbacks } from '../utils/onboarding.js';
 import type {
   ClientCreateTokenEndpointAuthMethodEnum,
   ClientCreateAppTypeEnum,
@@ -243,6 +244,11 @@ export const APPLICATION_TOOLS: Tool[] = [
         mobile: {
           type: 'object',
           description: 'Mobile app configuration settings',
+        },
+        skip_non_verifiable_callback_uri_confirmation_prompt: {
+          type: 'boolean',
+          description:
+            'Skip the non-verifiable callback URI confirmation prompt for localhost and custom scheme callbacks',
         },
       },
       required: ['client_id'],
@@ -619,6 +625,9 @@ export const APPLICATION_HANDLERS: Record<
         clientData.require_proof_of_possession = require_proof_of_possession;
       if (compliance_level !== undefined)
         clientData.compliance_level = compliance_level as ClientCreateComplianceLevelEnum;
+      if (callbacks && hasNonVerifiableCallbacks(callbacks)) {
+        clientData.skip_non_verifiable_callback_uri_confirmation_prompt = true;
+      }
 
       try {
         const managementClientConfig: Auth0Config = {
@@ -731,6 +740,7 @@ export const APPLICATION_HANDLERS: Record<
         signed_request_object,
         require_proof_of_possession,
         compliance_level,
+        skip_non_verifiable_callback_uri_confirmation_prompt,
       } = request.parameters;
 
       // Prepare update body, only including fields that are present
@@ -786,6 +796,16 @@ export const APPLICATION_HANDLERS: Record<
         updateData.require_proof_of_possession = require_proof_of_possession;
       if (compliance_level !== undefined)
         updateData.compliance_level = compliance_level as ClientCreateComplianceLevelEnum;
+      if (skip_non_verifiable_callback_uri_confirmation_prompt !== undefined)
+        updateData.skip_non_verifiable_callback_uri_confirmation_prompt =
+          skip_non_verifiable_callback_uri_confirmation_prompt;
+      if (
+        updateData.skip_non_verifiable_callback_uri_confirmation_prompt === undefined &&
+        callbacks &&
+        hasNonVerifiableCallbacks(callbacks)
+      ) {
+        updateData.skip_non_verifiable_callback_uri_confirmation_prompt = true;
+      }
 
       // Check for token
       if (!request.token) {
