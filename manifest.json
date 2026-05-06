@@ -16,6 +16,7 @@
   "homepage": "https://github.com/auth0/auth0-mcp-server#readme",
   "documentation": "https://auth0.com/docs/get-started/mcp",
   "support": "https://github.com/auth0/auth0-mcp-server/issues",
+  "icon": "https://cdn.auth0.com/website/auth0-logos/2023-branding/favicon/auth0-icon-onlight.svg",
   "server": {
     "type": "node",
     "entry_point": "dist/index.js",
