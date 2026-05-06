@@ -25,7 +25,11 @@
       "args": ["${__dirname}/dist/index.js", "run"],
       "env": {
         "AUTH0_TOKEN": "${user_config.auth0_token}",
-        "AUTH0_DOMAIN": "${user_config.auth0_domain}"
+        "AUTH0_DOMAIN": "${user_config.auth0_domain}",
+        "AUTH0_MCP_READ_ONLY": "${user_config.read_only}",
+        "AUTH0_MCP_TOOLS": "${user_config.tools}",
+        "AUTH0_MCP_ANALYTICS": "${user_config.analytics}",
+        "DEBUG": "${user_config.debug}"
       }
     }
   },
@@ -134,6 +138,34 @@
       "type": "string",
       "title": "Auth0 Tenant Domain",
       "description": "Optional tenant domain such as your-tenant.auth0.com. If omitted, the server will try to infer it from a JWT access token.",
+      "required": false
+    },
+    "read_only": {
+      "type": "boolean",
+      "title": "Read-only mode",
+      "description": "When enabled, only list and get operations are exposed. All create, update, and deploy tools are filtered out.",
+      "default": false,
+      "required": false
+    },
+    "tools": {
+      "type": "string",
+      "title": "Tool allowlist",
+      "description": "Comma-separated tool names or glob patterns to enable (e.g. auth0_list_*,auth0_get_*). Defaults to * (all tools).",
+      "default": "*",
+      "required": false
+    },
+    "analytics": {
+      "type": "string",
+      "title": "Analytics",
+      "description": "Set to \"false\" to opt out of anonymized analytics collection.",
+      "default": "true",
+      "required": false
+    },
+    "debug": {
+      "type": "string",
+      "title": "Debug namespace",
+      "description": "Set to \"auth0-mcp\" to enable detailed debug logging.",
+      "default": "",
       "required": false
     }
   }

@@ -17,3 +17,6 @@ package-lock.json
 # Auth0 credentials
 .env.local
 
+# MCPB bundle output
+*.mcpb
+

@@ -202,5 +202,63 @@ describe('Run Module', () => {
       expect(processExitSpy).toHaveBeenCalledWith(1);
       expect(startServer).not.toHaveBeenCalled();
     });
+
+    it('should skip keychain validation when AUTH0_TOKEN and AUTH0_DOMAIN are set', async () => {
+      process.env.AUTH0_TOKEN = 'env-token';
+      process.env.AUTH0_DOMAIN = 'env-tenant.auth0.com';
+      vi.mocked(keychain.getToken).mockResolvedValue(null);
+
+      await run({ tools: ['*'] });
+
+      expect(startServer).toHaveBeenCalled();
+      expect(keychain.getToken).not.toHaveBeenCalled();
+      expect(process.exit).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Env-var overrides (MCPB-style launch)', () => {
+    it('enables read-only mode when AUTH0_MCP_READ_ONLY=true', async () => {
+      process.env.AUTH0_MCP_READ_ONLY = 'true';
+
+      await run({ tools: ['*'] });
+
+      expect(startServer).toHaveBeenCalledWith({ tools: ['*'], readOnly: true });
+    });
+
+    it('does not enable read-only mode when AUTH0_MCP_READ_ONLY is not "true"', async () => {
+      process.env.AUTH0_MCP_READ_ONLY = 'false';
+
+      await run({ tools: ['*'] });
+
+      expect(startServer).toHaveBeenCalledWith({ tools: ['*'] });
+    });
+
+    it('parses AUTH0_MCP_TOOLS into the tools list when no CLI tools were provided', async () => {
+      process.env.AUTH0_MCP_TOOLS = 'auth0_list_*, auth0_get_*';
+
+      await run({ tools: ['*'] });
+
+      expect(startServer).toHaveBeenCalledWith({
+        tools: ['auth0_list_*', 'auth0_get_*'],
+      });
+    });
+
+    it('prefers CLI --tools over AUTH0_MCP_TOOLS', async () => {
+      process.env.AUTH0_MCP_TOOLS = 'auth0_list_*';
+
+      await run({ tools: ['auth0_list_applications'] });
+
+      expect(startServer).toHaveBeenCalledWith({
+        tools: ['auth0_list_applications'],
+      });
+    });
+
+    it('falls back to wildcard when AUTH0_MCP_TOOLS is empty after trimming', async () => {
+      process.env.AUTH0_MCP_TOOLS = ' , , ';
+
+      await run({ tools: ['*'] });
+
+      expect(startServer).toHaveBeenCalledWith({ tools: ['*'] });
+    });
   });
 });
