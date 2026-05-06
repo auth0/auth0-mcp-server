@@ -26,6 +26,8 @@
     "prebuild": "npm run format && npm run lint",
     "build": "rm -rf dist && tsc",
     "postbuild": "shx chmod +x dist/*.js",
+    "build:mcpb": "npm run build && npm prune --omit=dev && npx @anthropic-ai/mcpb pack . auth0-mcp-server.mcpb",
+    "postbuild:mcpb": "echo '⚠️  Dev dependencies were pruned. Run npm install to restore them.'",
     "dev": "tsx src/index.ts run",
     "dev:debug": "DEBUG=auth0-mcp tsx src/index.ts run",
     "dev:inspect": "npx @modelcontextprotocol/inspector tsx src/index.ts run",
