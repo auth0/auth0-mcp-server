@@ -15,22 +15,22 @@ runs:
 
   steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
 
     - name: Setup Node
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@v6
       with:
         node-version: ${{ inputs.node-version }}
-        cache: 'npm'
+        package-manager-cache: false
         registry-url: 'https://registry.npmjs.org'
 
     - name: Update npm
       shell: bash
-      run: npm install -g npm@11
+      run: npm install -g "npm@11.11.0"
 
     - name: Install dependencies
       shell: bash
-      run: npm ci --include=dev
+      run: npm i --include=dev
 
     - name: Build package
       if: inputs.require-build == 'true'

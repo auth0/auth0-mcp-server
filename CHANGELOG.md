@@ -1,5 +1,26 @@
 # Change Log
 
+## [v0.1.0-beta.12](https://github.com/auth0/auth0-mcp-server/tree/v0.1.0-beta.12) (2026-05-05)
+
+**Added**
+- feat: auto-set token_endpoint_auth_method for created applications [\#153](https://github.com/auth0/auth0-mcp-server/pull/153) ([GilbertLS](https://github.com/GilbertLS))
+- feat: additional headers, consistent tool responses, and SDK improvements [\#154](https://github.com/auth0/auth0-mcp-server/pull/154) ([kushalshit27](https://github.com/kushalshit27))
+- Set oidc conformant to true and jwt algorithm type to RS256 for auth0_create_application tool [\#158](https://github.com/auth0/auth0-mcp-server/pull/158) ([wdaimee](https://github.com/wdaimee))
+
+## [v0.1.0-beta.11](https://github.com/auth0/auth0-mcp-server/tree/v0.1.0-beta.11) (2026-04-13)
+
+**Added**
+- feat: support MCP server mode with export tools [\#145](https://github.com/auth0/auth0-mcp-server/pull/145) ([kushalshit27](https://github.com/kushalshit27))
+
+## [v0.1.0-beta.10](https://github.com/auth0/auth0-mcp-server/tree/v0.1.0-beta.10) (2026-03-26)
+
+**Added**
+- feat: add mcpName field [\#125](https://github.com/auth0/auth0-mcp-server/pull/125) ([kushalshit27](https://github.com/kushalshit27))
+
+**Security**
+- chore(package): update dependencies [\#126](https://github.com/auth0/auth0-mcp-server/pull/126) ([kushalshit27](https://github.com/kushalshit27))
+- fix(deps): upgrade hono to resolve critical/high severity vulnerabilities  [\#112](https://github.com/auth0/auth0-mcp-server/pull/112) ([arpit-jn](https://github.com/arpit-jn))
+
 ## [v0.1.0-beta.9](https://github.com/auth0/auth0-mcp-server/tree/v0.1.0-beta.9) (2026-03-10)
 [Full Changelog](https://github.com/auth0/auth0-mcp-server/compare/v0.1.0-beta.8...v0.1.0-beta.9)
 

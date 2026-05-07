@@ -1,4 +1,5 @@
-import { Tool } from './types.js';
+import { HANDLERS, TOOLS } from '../tools/index.js';
+import { HandlerConfig, HandlerRequest, HandlerResponse, ServerMode, Tool } from './types.js';
 import { log } from './logger.js';
 import { Glob } from './glob.js';
 
@@ -168,4 +169,68 @@ export function validatePatterns(patterns: string[], availableTools: Tool[]): vo
       throw new Error(`${errorPrefix}: ${pattern}. Accepted tools are: ${toolNames.join(', ')}`);
     }
   }
+}
+
+/**
+ * Returns all tools, or a filtered subset based on mode and scope options.
+ * In StreamableHttp mode, local-only tools (e.g. auth0_save_credentials_to_file) are excluded.
+ * When withScope is true, tools without _meta.requiredScopes are excluded.
+ *
+ * @param options.mode - Server mode; StreamableHttp excludes local-only tools
+ * @param options.withScope - When true, only returns tools that declare requiredScopes in _meta.
+ *
+ */
+export function getTools(options?: { mode?: ServerMode; withScope?: boolean }): Tool[] {
+  let tools = TOOLS;
+
+  if (options?.mode === ServerMode.StreamableHttp) {
+    tools = tools.filter((t) => !t._meta?.localOnly);
+  }
+
+  if (options?.withScope) {
+    tools = tools.filter((t) => !!t._meta?.requiredScopes && t._meta.requiredScopes.length > 0);
+  }
+
+  return tools;
+}
+
+/**
+ * Returns all handlers, or a mode/headers-filtered subset.
+ * In StreamableHttp mode, local-only tool handlers are excluded and each handler is wrapped
+ * to auto-inject the mode into HandlerConfig so handlers can adapt their responses.
+ * Headers provided here are merged into every handler invocation (per-call config.headers
+ * take precedence over these defaults).
+ */
+export function getHandlers(options?: {
+  mode?: ServerMode;
+  headers?: Record<string, string>;
+}): Record<string, (request: HandlerRequest, config: HandlerConfig) => Promise<HandlerResponse>> {
+  const mode = options?.mode;
+  const baseHeaders = options?.headers;
+
+  if (mode === ServerMode.StreamableHttp) {
+    const localOnlyNames = new Set(TOOLS.filter((t) => t._meta?.localOnly).map((t) => t.name));
+    const filtered = Object.fromEntries(
+      Object.entries(HANDLERS).filter(([name]) => !localOnlyNames.has(name))
+    );
+    return Object.fromEntries(
+      Object.entries(filtered).map(([name, handler]) => [
+        name,
+        (request: HandlerRequest, config: HandlerConfig) =>
+          handler(request, { ...config, mode, headers: { ...baseHeaders, ...config.headers } }),
+      ])
+    );
+  }
+
+  if (baseHeaders) {
+    return Object.fromEntries(
+      Object.entries(HANDLERS).map(([name, handler]) => [
+        name,
+        (request: HandlerRequest, config: HandlerConfig) =>
+          handler(request, { ...config, headers: { ...baseHeaders, ...config.headers } }),
+      ])
+    );
+  }
+
+  return HANDLERS;
 }

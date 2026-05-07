@@ -216,7 +216,7 @@ export const FORM_HANDLERS: Record<
           domain: config.domain,
           token: request.token,
         };
-        const managementClient = await getManagementClient(managementClientConfig);
+        const managementClient = await getManagementClient(managementClientConfig, config.headers);
 
         log(`Fetching forms with supplied options`);
 
@@ -288,7 +288,7 @@ export const FORM_HANDLERS: Record<
           domain: config.domain,
           token: request.token,
         };
-        const managementClient = await getManagementClient(managementClientConfig);
+        const managementClient = await getManagementClient(managementClientConfig, config.headers);
 
         log(`Fetching form with ID: ${id}`);
 
@@ -366,12 +366,12 @@ export const FORM_HANDLERS: Record<
           domain: config.domain,
           token: request.token,
         };
-        const managementClient = await getManagementClient(managementClientConfig);
+        const managementClient = await getManagementClient(managementClientConfig, config.headers);
 
         log(`Creating new form with name: ${name}`);
 
         // Use the Auth0 SDK to create a form
-        const newForm = await managementClient.forms.create(formData);
+        const { data: newForm } = await managementClient.forms.create(formData);
 
         log(
           `Successfully created form: ${(newForm as any).name || name} (${(newForm as any).id || 'new form'})`
@@ -446,7 +446,7 @@ export const FORM_HANDLERS: Record<
           domain: config.domain,
           token: request.token,
         };
-        const managementClient = await getManagementClient(managementClientConfig);
+        const managementClient = await getManagementClient(managementClientConfig, config.headers);
 
         log(`Updating form with ID: ${id}`);
 
