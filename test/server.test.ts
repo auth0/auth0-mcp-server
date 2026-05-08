@@ -71,6 +71,14 @@ vi.mock('../src/tools/index.js', () => {
   };
 });
 
+function getCallToolHandler() {
+  const handlerCall = mockSetRequestHandler.mock.calls.find(
+    (call) => call[0] === CallToolRequestSchema
+  );
+  expect(handlerCall).toBeDefined();
+  return handlerCall![1];
+}
+
 describe('Server', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -162,12 +170,7 @@ describe('Server', () => {
         expect.any(Function)
       );
 
-      // Get the handler function that was registered
-      const handlerCall = mockSetRequestHandler.mock.calls.find(
-        (call) => call[0] === CallToolRequestSchema
-      );
-      expect(handlerCall).toBeDefined();
-      const handlerFn = handlerCall![1];
+      const handlerFn = getCallToolHandler();
 
       // Call the handler with a valid tool request
       const request = {
@@ -196,12 +199,7 @@ describe('Server', () => {
     it('should handle unknown tool errors', async () => {
       await startServer();
 
-      // Get the handler function that was registered
-      const handlerCall = mockSetRequestHandler.mock.calls.find(
-        (call) => call[0] === CallToolRequestSchema
-      );
-      expect(handlerCall).toBeDefined();
-      const handlerFn = handlerCall![1];
+      const handlerFn = getCallToolHandler();
 
       // Call the handler with an invalid tool name
       const request = {
@@ -216,7 +214,28 @@ describe('Server', () => {
       // Verify the error response
       expect(result).toHaveProperty('content');
       expect(result).toHaveProperty('isError', true);
-      expect(result.content[0].text).toContain('Error: Unknown tool');
+      expect(result.content[0].text).toContain('Error: Unknown or restricted tool');
+    });
+
+    it('should reject a tool that is in HANDLERS but filtered out of availableTools', async () => {
+      // Start server with a restrictive tools filter that excludes test_tool
+      await startServer({ tools: ['nonexistent_*'], readOnly: false });
+
+      const handlerFn = getCallToolHandler();
+
+      // test_tool exists in HANDLERS but is not in availableTools (filtered out)
+      const request = {
+        params: {
+          name: 'test_tool',
+          arguments: {},
+        },
+      };
+
+      const result = await handlerFn(request);
+
+      expect(result).toHaveProperty('isError', true);
+      expect(result.content[0].text).toContain('Unknown or restricted tool');
+      expect(HANDLERS.test_tool).not.toHaveBeenCalled();
     });
 
     it('should reload config if it becomes invalid during a tool call', async () => {
@@ -228,12 +247,7 @@ describe('Server', () => {
 
       await startServer();
 
-      // Get the handler function that was registered
-      const handlerCall = mockSetRequestHandler.mock.calls.find(
-        (call) => call[0] === CallToolRequestSchema
-      );
-      expect(handlerCall).toBeDefined();
-      const handlerFn = handlerCall![1];
+      const handlerFn = getCallToolHandler();
 
       // Call the handler
       const request = {
@@ -258,12 +272,7 @@ describe('Server', () => {
 
       await startServer();
 
-      // Get the handler function that was registered
-      const handlerCall = mockSetRequestHandler.mock.calls.find(
-        (call) => call[0] === CallToolRequestSchema
-      );
-      expect(handlerCall).toBeDefined();
-      const handlerFn = handlerCall![1];
+      const handlerFn = getCallToolHandler();
 
       // Call the handler
       const request = {
@@ -286,12 +295,7 @@ describe('Server', () => {
 
       await startServer();
 
-      // Get the handler function that was registered
-      const handlerCall = mockSetRequestHandler.mock.calls.find(
-        (call) => call[0] === CallToolRequestSchema
-      );
-      expect(handlerCall).toBeDefined();
-      const handlerFn = handlerCall![1];
+      const handlerFn = getCallToolHandler();
 
       // Call the handler
       const request = {
@@ -315,12 +319,7 @@ describe('Server', () => {
 
       await startServer();
 
-      // Get the handler function that was registered
-      const handlerCall = mockSetRequestHandler.mock.calls.find(
-        (call) => call[0] === CallToolRequestSchema
-      );
-      expect(handlerCall).toBeDefined();
-      const handlerFn = handlerCall![1];
+      const handlerFn = getCallToolHandler();
 
       // Call the handler
       const request = {

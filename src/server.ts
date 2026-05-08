@@ -87,8 +87,10 @@ export async function startServer(options?: ServerOptions) {
       log(`Received tool call: ${toolName}`);
 
       try {
-        if (!HANDLERS[toolName]) {
-          throw new Error(`Unknown tool: ${toolName}`);
+        // Check available (filtered) tools, not all handlers
+        const isToolAvailable = availableTools.some((t) => t.name === toolName);
+        if (!isToolAvailable || !HANDLERS[toolName]) {
+          throw new Error(`Unknown or restricted tool: ${toolName}`);
         }
 
         // Check if config is still valid, reload if needed
