@@ -33,7 +33,7 @@ const makeMockRawSpec = (framework: string) => ({
   defaultAppOrigin: { scheme: 'http', domain: 'localhost', port: 3000 },
   callbackPath: '/callback',
   logoutPath: '/logout',
-  llmPromptUrl: `https://example.com/${framework}-prompt`,
+  llmPromptPath: `https://example.com/${framework}-prompt`,
   envSnippet: {
     fileName: '.env',
     requiredKeys: ['CLIENT_ID'],
@@ -53,7 +53,7 @@ const makeExpectedSpec = (framework: string) => ({
   defaultAppOrigin: { scheme: 'http', domain: 'localhost', port: 3000 },
   callbackPath: '/callback',
   logoutPath: '/logout',
-  llmPromptUrl: `https://example.com/${framework}-prompt`,
+  llmPromptPath: `https://example.com/${framework}-prompt`,
   envSnippet: {
     fileName: '.env',
     requiredKeys: ['CLIENT_ID'],
