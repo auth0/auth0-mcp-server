@@ -1,0 +1,172 @@
+{
+  "manifest_version": "0.3",
+  "name": "auth0-mcp-server",
+  "display_name": "Auth0 MCP Server",
+  "version": "0.1.0-beta.11",
+  "description": "Manage Auth0 applications, APIs, actions, logs, forms, and grants using natural language through MCP.",
+  "long_description": "Auth0 MCP Server is a local Model Context Protocol server for managing an Auth0 tenant with AI tools. It supports applications, resource servers, actions, logs, forms, and application grants, while preserving least-privilege controls through scoped Auth0 access and optional tool filtering.\n\nThis bundle can run with credentials already stored by `auth0-mcp-server init`, or you can provide `AUTH0_TOKEN` and `AUTH0_DOMAIN` directly through the host application's MCP Bundle configuration.",
+  "author": {
+    "name": "Auth0",
+    "url": "https://auth0.com/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/auth0/auth0-mcp-server"
+  },
+  "homepage": "https://github.com/auth0/auth0-mcp-server#readme",
+  "documentation": "https://auth0.com/docs/get-started/mcp",
+  "support": "https://github.com/auth0/auth0-mcp-server/issues",
+  "icon": "https://cdn.auth0.com/website/auth0-logos/2023-branding/favicon/auth0-icon-onlight.svg",
+  "server": {
+    "type": "node",
+    "entry_point": "dist/index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": ["${__dirname}/dist/index.js", "run"],
+      "env": {
+        "AUTH0_TOKEN": "${user_config.auth0_token}",
+        "AUTH0_DOMAIN": "${user_config.auth0_domain}",
+        "AUTH0_MCP_READ_ONLY": "${user_config.read_only}",
+        "AUTH0_MCP_TOOLS": "${user_config.tools}",
+        "AUTH0_MCP_ANALYTICS": "${user_config.analytics}",
+        "DEBUG": "${user_config.debug}"
+      }
+    }
+  },
+  "tools": [
+    {
+      "name": "auth0_list_applications",
+      "description": "List all applications in the Auth0 tenant or search by name"
+    },
+    {
+      "name": "auth0_get_application",
+      "description": "Get details about a specific Auth0 application"
+    },
+    {
+      "name": "auth0_create_application",
+      "description": "Create a new Auth0 application with the tenant. Prefer OIDC compliant unless otherwise specified."
+    },
+    {
+      "name": "auth0_update_application",
+      "description": "Update an existing Auth0 application"
+    },
+    {
+      "name": "auth0_save_credentials_to_file",
+      "description": "Save Auth0 application credentials to a local file and add the file to .gitignore when needed."
+    },
+    {
+      "name": "auth0_list_resource_servers",
+      "description": "List all resource servers (APIs) in the Auth0 tenant"
+    },
+    {
+      "name": "auth0_get_resource_server",
+      "description": "Get details about a specific Auth0 resource server"
+    },
+    {
+      "name": "auth0_create_resource_server",
+      "description": "Create a new Auth0 resource server (API). Use RS256 for the signing_alg unless otherwise specified."
+    },
+    {
+      "name": "auth0_update_resource_server",
+      "description": "Update an existing Auth0 resource server"
+    },
+    {
+      "name": "auth0_create_application_grant",
+      "description": "Create a client grant that authorizes an Auth0 application to access a specific API with defined scopes."
+    },
+    {
+      "name": "auth0_list_actions",
+      "description": "List all actions in the Auth0 tenant"
+    },
+    {
+      "name": "auth0_get_action",
+      "description": "Get details about a specific Auth0 action"
+    },
+    {
+      "name": "auth0_create_action",
+      "description": "Create a new Auth0 action"
+    },
+    {
+      "name": "auth0_update_action",
+      "description": "Update an existing Auth0 action"
+    },
+    {
+      "name": "auth0_deploy_action",
+      "description": "Deploy an Auth0 action"
+    },
+    {
+      "name": "auth0_list_logs",
+      "description": "List logs from the Auth0 tenant"
+    },
+    {
+      "name": "auth0_get_log",
+      "description": "Get a specific log entry by ID"
+    },
+    {
+      "name": "auth0_list_forms",
+      "description": "List all forms in the Auth0 tenant"
+    },
+    {
+      "name": "auth0_get_form",
+      "description": "Get details about a specific Auth0 form"
+    },
+    {
+      "name": "auth0_create_form",
+      "description": "Create a new Auth0 form"
+    },
+    {
+      "name": "auth0_update_form",
+      "description": "Update an existing Auth0 form"
+    }
+  ],
+  "keywords": ["auth0", "mcp"],
+  "license": "MIT",
+  "compatibility": {
+    "runtimes": {
+      "node": ">=18.0.0"
+    }
+  },
+  "user_config": {
+    "auth0_token": {
+      "type": "string",
+      "title": "Auth0 Management API Token",
+      "description": "Optional access token for Auth0 Management API requests. If omitted, the server falls back to credentials stored by the init flow.",
+      "sensitive": true,
+      "required": false
+    },
+    "auth0_domain": {
+      "type": "string",
+      "title": "Auth0 Tenant Domain",
+      "description": "Optional tenant domain such as your-tenant.auth0.com. If omitted, the server will try to infer it from a JWT access token.",
+      "required": false
+    },
+    "read_only": {
+      "type": "boolean",
+      "title": "Read-only mode",
+      "description": "When enabled, only list and get operations are exposed. All create, update, and deploy tools are filtered out.",
+      "default": false,
+      "required": false
+    },
+    "tools": {
+      "type": "string",
+      "title": "Tool allowlist",
+      "description": "Comma-separated tool names or glob patterns to enable (e.g. auth0_list_*,auth0_get_*). Defaults to * (all tools).",
+      "default": "*",
+      "required": false
+    },
+    "analytics": {
+      "type": "string",
+      "title": "Analytics",
+      "description": "Set to \"false\" to opt out of anonymized analytics collection.",
+      "default": "true",
+      "required": false
+    },
+    "debug": {
+      "type": "string",
+      "title": "Debug namespace",
+      "description": "Set to \"auth0-mcp\" to enable detailed debug logging.",
+      "default": "",
+      "required": false
+    }
+  }
+}
