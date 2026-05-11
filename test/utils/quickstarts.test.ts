@@ -19,7 +19,7 @@ const FRAMEWORK_FILENAMES: Record<string, string> = {
 };
 
 const defUrl = (framework: string) =>
-  `${CDN_BASE}/versions/${MOCK_VERSION}/assets/definitions/${FRAMEWORK_FILENAMES[framework]}`;
+  `${CDN_BASE}/versions/${MOCK_VERSION}/assets/definitions/en/${FRAMEWORK_FILENAMES[framework]}`;
 
 const MOCK_QUICKSTART_RELEASE_RESPONSE = {
   name: 'quickstarts',
@@ -31,7 +31,7 @@ const MOCK_QUICKSTART_RELEASE_RESPONSE = {
 const makeMockRawSpec = (framework: string) => ({
   appType: 'spa',
   defaultAppOrigin: { scheme: 'http', domain: 'localhost', port: 3000 },
-  callBackPath: '/callback',
+  callbackPath: '/callback',
   logoutPath: '/logout',
   llmPromptUrl: `https://example.com/${framework}-prompt`,
   envSnippet: {
@@ -116,7 +116,7 @@ describe('fetchQuickstartSpec', () => {
     server.use(
       mockLatest(),
       http.get(
-        `${CDN_BASE}/versions/${MOCK_VERSION}/assets/definitions/${expectedFilename}`,
+        `${CDN_BASE}/versions/${MOCK_VERSION}/assets/definitions/en/${expectedFilename}`,
         ({ request }) => {
           capturedUrl = request.url;
           return HttpResponse.json(makeMockRawSpec(framework));
@@ -125,6 +125,47 @@ describe('fetchQuickstartSpec', () => {
     );
     await fetchQuickstartSpec(framework);
     expect(capturedUrl).toContain(expectedFilename);
+  });
+
+  it.each(['React', 'REACT', 'Vue', 'Angular', 'NextJS'])(
+    'handles mixed-case framework input "%s"',
+    async (framework) => {
+      const lower = framework.toLowerCase();
+      server.use(mockLatest(), mockDefinition(lower));
+      const result = await fetchQuickstartSpec(framework);
+      expect(result).toEqual(makeExpectedSpec(lower));
+    }
+  );
+
+  it.each([undefined, '', 123])('returns null when callbackPath is %s', async (callbackPath) => {
+    server.use(
+      mockLatest(),
+      http.get(defUrl('react'), () =>
+        HttpResponse.json({ ...makeMockRawSpec('react'), callbackPath })
+      )
+    );
+    const result = await fetchQuickstartSpec('react');
+    expect(result).toBeNull();
+  });
+
+  it('returns null when CDN returns an invalid version format', async () => {
+    server.use(
+      http.get(QUICKSTART_RELEASE_URL, () =>
+        HttpResponse.json({ ...MOCK_QUICKSTART_RELEASE_RESPONSE, current: '../../evil' })
+      )
+    );
+    const result = await fetchQuickstartSpec('react');
+    expect(result).toBeNull();
+  });
+
+  it('returns null when CDN returns a version with extra characters', async () => {
+    server.use(
+      http.get(QUICKSTART_RELEASE_URL, () =>
+        HttpResponse.json({ ...MOCK_QUICKSTART_RELEASE_RESPONSE, current: '1.2.3-beta' })
+      )
+    );
+    const result = await fetchQuickstartSpec('react');
+    expect(result).toBeNull();
   });
 
   it('returns null for unknown framework without network calls', async () => {
@@ -254,6 +295,87 @@ describe('fetchQuickstartSpec', () => {
     );
     const result = await fetchQuickstartSpec('react');
     expect(result).toEqual(makeExpectedSpec('react'));
+  });
+
+  it('deduplicates concurrent requests for the same framework into a single CDN call', async () => {
+    let latestCalls = 0;
+    server.use(
+      http.get(QUICKSTART_RELEASE_URL, () => {
+        latestCalls++;
+        return HttpResponse.json(MOCK_QUICKSTART_RELEASE_RESPONSE);
+      }),
+      mockDefinition('react')
+    );
+
+    const [a, b, c] = await Promise.all([
+      fetchQuickstartSpec('react'),
+      fetchQuickstartSpec('react'),
+      fetchQuickstartSpec('react'),
+    ]);
+
+    expect(latestCalls).toBe(1);
+    expect(a).toEqual(makeExpectedSpec('react'));
+    expect(b).toEqual(a);
+    expect(c).toEqual(a);
+  });
+
+  it('deduplicates concurrent requests even when they error', async () => {
+    let latestCalls = 0;
+    server.use(
+      http.get(QUICKSTART_RELEASE_URL, () => {
+        latestCalls++;
+        return new HttpResponse(null, { status: 500 });
+      })
+    );
+
+    const [a, b] = await Promise.all([
+      fetchQuickstartSpec('react'),
+      fetchQuickstartSpec('react'),
+    ]);
+
+    // fetchWithOptions retries once on 5xx, so 2 CDN calls total (not 4 from two independent requests)
+    expect(latestCalls).toBe(2);
+    expect(a).toBeNull();
+    expect(b).toBeNull();
+  });
+
+  it('allows a new fetch after the inflight promise settles', async () => {
+    let latestCalls = 0;
+    server.use(
+      http.get(QUICKSTART_RELEASE_URL, () => {
+        latestCalls++;
+        return HttpResponse.json(MOCK_QUICKSTART_RELEASE_RESPONSE);
+      }),
+      mockDefinition('react')
+    );
+
+    await fetchQuickstartSpec('react');
+
+    vi.spyOn(Date, 'now').mockReturnValue(Date.now() + CACHE_TTL_MS + 1);
+    await fetchQuickstartSpec('react');
+
+    expect(latestCalls).toBe(2);
+  });
+
+  it('fires independent CDN requests for two different frameworks fetched concurrently', async () => {
+    let latestCalls = 0;
+    server.use(
+      http.get(QUICKSTART_RELEASE_URL, () => {
+        latestCalls++;
+        return HttpResponse.json(MOCK_QUICKSTART_RELEASE_RESPONSE);
+      }),
+      mockDefinition('react'),
+      mockDefinition('angular')
+    );
+
+    const [react, angular] = await Promise.all([
+      fetchQuickstartSpec('react'),
+      fetchQuickstartSpec('angular'),
+    ]);
+
+    expect(latestCalls).toBe(2);
+    expect(react).toEqual(makeExpectedSpec('react'));
+    expect(angular).toEqual(makeExpectedSpec('angular'));
   });
 
   it('does not re-fetch production.json when serving from cache', async () => {

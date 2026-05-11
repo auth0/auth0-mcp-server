@@ -1,6 +1,6 @@
+import { z } from 'zod';
 import { log } from './logger.js';
 import { fetchWithOptions } from './fetch.js';
-import { QuickstartSpec } from './types.js';
 
 const CDN_BASE = 'https://cdn.auth0.com/manhattan/quickstarts';
 const QUICKSTART_RELEASE_URL = `${CDN_BASE}/releases/production.json`;
@@ -27,7 +27,32 @@ interface QuickstartReleaseResponse {
   fallback: string;
 }
 
+const QuickstartSpecSchema = z.object({
+  appType: z.enum(['spa', 'webapp', 'native']),
+  defaultAppOrigin: z.object({
+    scheme: z.string().min(1),
+    domain: z.string().min(1),
+    port: z.number().optional(),
+  }),
+  callbackPath: z.string().min(1),
+  logoutPath: z.string().min(1),
+  llmPromptUrl: z.string().min(1),
+  envSnippet: z.object({
+    fileName: z.string().min(1),
+    requiredKeys: z.array(z.string()),
+    secretKeys: z.array(z.string()),
+  }),
+  placeholders: z.record(z.string(), z.unknown()),
+  inputs: z.record(z.string(), z.unknown()),
+  environment: z.record(z.string(), z.string()),
+});
+
+export type QuickstartSpec = z.infer<typeof QuickstartSpecSchema>;
+export type QuickstartAppType = QuickstartSpec['appType'];
+export type DefaultAppOrigin = QuickstartSpec['defaultAppOrigin'];
+
 const cache = new Map<string, CacheEntry>();
+const inflight = new Map<string, Promise<QuickstartSpec | null>>();
 
 class QuickstartCDNNotFoundError extends Error {
   constructor(url: string) {
@@ -36,29 +61,22 @@ class QuickstartCDNNotFoundError extends Error {
   }
 }
 
-const stripUnusedFields = (raw: any): QuickstartSpec => ({
-  appType: raw.appType,
-  defaultAppOrigin: raw.defaultAppOrigin,
-  callbackPath: raw.callBackPath,
-  logoutPath: raw.logoutPath,
-  inputs: raw.inputs,
-  placeholders: raw.placeholders,
-  environment: raw.environment,
-  llmPromptUrl: raw.llmPromptUrl,
-  envSnippet: raw.envSnippet,
-});
 
 const fetchFromCDN = async (framework: string): Promise<QuickstartSpec> => {
   const quickstartReleaseResponse = await fetchWithOptions(QUICKSTART_RELEASE_URL, FETCH_OPTIONS);
   if (!quickstartReleaseResponse.ok) {
-    throw new Error(`Failed to fetch latest.json: ${quickstartReleaseResponse.status}`);
+    throw new Error(`Failed to fetch production.json: ${quickstartReleaseResponse.status}`);
   }
 
   const { current: version } =
     (await quickstartReleaseResponse.json()) as QuickstartReleaseResponse;
 
+  if (!/^\d+\.\d+\.\d+$/.test(version)) {
+    throw new Error(`Invalid version format from CDN: ${version}`);
+  }
+
   const fileName = FRAMEWORK_FILENAMES[framework];
-  const url = `${CDN_BASE}/versions/${version}/assets/definitions/${fileName}`;
+  const url = `${CDN_BASE}/versions/${version}/assets/definitions/en/${fileName}`;
 
   const definitionResponse = await fetchWithOptions(url, FETCH_OPTIONS);
   if (definitionResponse.status === 404) {
@@ -70,7 +88,7 @@ const fetchFromCDN = async (framework: string): Promise<QuickstartSpec> => {
   }
 
   const raw = await definitionResponse.json();
-  return stripUnusedFields(raw);
+  return QuickstartSpecSchema.parse(raw);
 };
 
 export const fetchQuickstartSpec = async (framework: string): Promise<QuickstartSpec | null> => {
@@ -87,22 +105,33 @@ export const fetchQuickstartSpec = async (framework: string): Promise<Quickstart
     return cached.spec;
   }
 
-  try {
-    const spec = await fetchFromCDN(key);
-    cache.set(key, { spec, fetchedAt: Date.now() });
-    return spec;
-  } catch (error) {
-    if (error instanceof QuickstartCDNNotFoundError) {
-      log(`Quickstart spec not found for framework: ${key}`);
+  const existing = inflight.get(key);
+  if (existing) return existing;
+
+  // Deduplicate concurrent cache-miss fetches so only one CDN request fires per framework at a time.
+  const promise = (async () => {
+    try {
+      const spec = await fetchFromCDN(key);
+      cache.set(key, { spec, fetchedAt: Date.now() });
+      return spec;
+    } catch (error) {
+      if (error instanceof QuickstartCDNNotFoundError) {
+        log(`Quickstart spec not found for framework: ${key}`);
+        return null;
+      }
+
+      if (cached) {
+        log(`Returning stale quickstart spec for ${key} due to CDN error`);
+        return cached.spec;
+      }
+
+      log(`CDN fetch failed and no cached data for ${key}: ${error}`);
       return null;
+    } finally {
+      inflight.delete(key);
     }
+  })();
 
-    if (cached) {
-      log(`Returning stale quickstart spec for ${key} due to CDN error`);
-      return cached.spec;
-    }
-
-    log(`CDN fetch failed and no cached data for ${key}: ${error}`);
-    return null;
-  }
+  inflight.set(key, promise);
+  return promise;
 };
