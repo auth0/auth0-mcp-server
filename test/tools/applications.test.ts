@@ -16,12 +16,28 @@ vi.mock('../../src/utils/credentials-writer', () => {
   return {
     writeCredentialsToEnv: vi.fn().mockResolvedValue({
       file_path: '/mock/path/.env.local',
-      env_var_names: ['AUTH0_CLIENT_ID', 'AUTH0_CLIENT_SECRET', 'AUTH0_DOMAIN'],
+      keys_written: ['AUTH0_CLIENT_ID', 'AUTH0_CLIENT_SECRET', 'AUTH0_DOMAIN'],
       file_created: true,
     }),
     detectExistingEnvFile: vi.fn().mockReturnValue(null),
   };
 });
+
+const { mockResolveAndWrite } = vi.hoisted(() => ({
+  mockResolveAndWrite: vi.fn().mockResolvedValue({
+    success: true,
+    client_id: 'some-id',
+    credentials_saved_to: '/mock/project/.env.local',
+    keys_written: ['VITE_AUTH0_DOMAIN', 'VITE_AUTH0_CLIENT_ID'],
+    generated_keys: [],
+    file_created: true,
+    message: 'Credentials saved securely to /mock/project/.env.local',
+  }),
+}));
+
+vi.mock('../../src/utils/env-credentials', () => ({
+  resolveAndWriteCredentials: mockResolveAndWrite,
+}));
 
 describe('Applications Tool Handlers', () => {
   const domain = mockConfig.domain;
@@ -339,121 +355,118 @@ describe('Applications Tool Handlers', () => {
   });
 
   describe('auth0_save_credentials_to_file', () => {
-    beforeEach(async () => {
-      const { writeCredentialsToEnv } = await import('../../src/utils/credentials-writer');
-      vi.mocked(writeCredentialsToEnv).mockResolvedValue({
-        file_path: '/mock/path/.env.local',
-        env_var_names: ['AUTH0_CLIENT_ID', 'AUTH0_CLIENT_SECRET', 'AUTH0_DOMAIN'],
+    beforeEach(() => {
+      mockResolveAndWrite.mockResolvedValue({
+        success: true,
+        client_id: 'some-id',
+        credentials_saved_to: '/mock/project/.env.local',
+        keys_written: ['VITE_AUTH0_DOMAIN', 'VITE_AUTH0_CLIENT_ID'],
+        generated_keys: [],
         file_created: true,
+        message: 'Credentials saved securely to /mock/project/.env.local',
       });
     });
 
-    it('should save credentials to .env.local file', async () => {
-      const clientId = 'app-with-secret';
-
-      // Override the handler to return a response with client_secret
-      server.use(
-        http.get(`https://test-tenant.auth0.com/api/v2/clients/${clientId}`, () => {
-          return HttpResponse.json({
-            client_id: clientId,
-            name: 'App with Secret',
-            client_secret: 'super_secret_value_67890',
-            app_type: 'regular_web',
-            callbacks: ['http://localhost:3000/callback'],
-          });
-        })
+    it('should return error when client_id is missing', async () => {
+      const response = await APPLICATION_HANDLERS.auth0_save_credentials_to_file(
+        { token, parameters: { framework: 'react', project_path: '/mock/project' } },
+        { domain }
       );
-
-      const request = {
-        token,
-        parameters: {
-          client_id: clientId,
-          file_path: '.env.local',
-        },
-      };
-
-      const config = { domain };
-
-      const response = await APPLICATION_HANDLERS.auth0_save_credentials_to_file(request, config);
-
-      // Debug: log error if any
-      if (response.isError) {
-        console.log('Error response:', response.content[0].text);
-      }
-
-      expect(response.isError).toBe(false);
-
-      const parsedContent = JSON.parse(response.content[0].text);
-      expect(parsedContent.client_id).toBe(clientId);
-      // Verify credentials info is in response (but not the secret itself)
-      expect(parsedContent.credentials_saved_to).toBeDefined();
-      expect(parsedContent.env_vars).toBeDefined();
-      expect(parsedContent.message).toContain('saved securely');
-      // Verify client_secret is NOT in the response
-      expect(parsedContent.client_secret).toBeUndefined();
-    });
-
-    it('should handle missing client_id parameter', async () => {
-      const request = {
-        token,
-        parameters: {
-          file_path: '.env.local',
-        },
-      };
-
-      const config = { domain };
-
-      const response = await APPLICATION_HANDLERS.auth0_save_credentials_to_file(request, config);
-
       expect(response.isError).toBe(true);
       expect(response.content[0].text).toContain('client_id is required');
     });
 
-    it('should handle missing file_path parameter', async () => {
-      const request = {
-        token,
-        parameters: {
-          client_id: 'some-client-id',
-        },
-      };
-
-      const config = { domain };
-
-      const response = await APPLICATION_HANDLERS.auth0_save_credentials_to_file(request, config);
-
+    it('should return error when framework is missing', async () => {
+      const response = await APPLICATION_HANDLERS.auth0_save_credentials_to_file(
+        { token, parameters: { client_id: 'some-id', project_path: '/mock/project' } },
+        { domain }
+      );
       expect(response.isError).toBe(true);
-      expect(response.content[0].text).toContain('file_path is required');
+      expect(response.content[0].text).toContain('framework is required');
     });
 
-    it('should handle application without client_secret', async () => {
-      const clientId = 'public-spa-app';
-
-      // Override the handler to return a public client (no secret)
-      server.use(
-        http.get(`https://*/api/v2/clients/${clientId}`, () => {
-          return HttpResponse.json({
-            client_id: clientId,
-            name: 'Public SPA',
-            app_type: 'spa',
-            // No client_secret for public clients
-          });
-        })
+    it('should return error when project_path is missing', async () => {
+      const response = await APPLICATION_HANDLERS.auth0_save_credentials_to_file(
+        { token, parameters: { client_id: 'some-id', framework: 'react' } },
+        { domain }
       );
-
-      const request = {
-        token,
-        parameters: {
-          client_id: clientId,
-          file_path: '.env.local',
-        },
-      };
-
-      const config = { domain };
-
-      const response = await APPLICATION_HANDLERS.auth0_save_credentials_to_file(request, config);
-
       expect(response.isError).toBe(true);
-      expect(response.content[0].text).toContain('does not have a client_secret');
+      expect(response.content[0].text).toContain('project_path is required');
+    });
+
+    it('should return error when token is missing', async () => {
+      const response = await APPLICATION_HANDLERS.auth0_save_credentials_to_file(
+        {
+          token: '',
+          parameters: { client_id: 'some-id', framework: 'react', project_path: '/mock/project' },
+        },
+        { domain }
+      );
+      expect(response.isError).toBe(true);
+      expect(response.content[0].text).toContain('Missing authorization token');
+    });
+
+    it('should return error when domain is not configured', async () => {
+      const response = await APPLICATION_HANDLERS.auth0_save_credentials_to_file(
+        {
+          token,
+          parameters: { client_id: 'some-id', framework: 'react', project_path: '/mock/project' },
+        },
+        { domain: undefined }
+      );
+      expect(response.isError).toBe(true);
+      expect(response.content[0].text).toContain('Auth0 domain is not configured');
+    });
+
+    it('should return keys_written, credentials_saved_to, and generated_keys on success', async () => {
+      const response = await APPLICATION_HANDLERS.auth0_save_credentials_to_file(
+        {
+          token,
+          parameters: { client_id: 'some-id', framework: 'react', project_path: '/mock/project' },
+        },
+        { domain }
+      );
+      expect(response.isError).toBe(false);
+      const parsed = JSON.parse(response.content[0].text);
+      expect(parsed.keys_written).toEqual(['VITE_AUTH0_DOMAIN', 'VITE_AUTH0_CLIENT_ID']);
+      expect(parsed.credentials_saved_to).toBe('/mock/project/.env.local');
+      expect(parsed.generated_keys).toEqual([]);
+      expect(parsed.client_secret).toBeUndefined();
+    });
+
+    it('should propagate error from resolveAndWriteCredentials', async () => {
+      mockResolveAndWrite.mockResolvedValueOnce({
+        success: false,
+        error: 'project_path "/bad" does not exist or is not a directory',
+      });
+
+      const response = await APPLICATION_HANDLERS.auth0_save_credentials_to_file(
+        { token, parameters: { client_id: 'some-id', framework: 'react', project_path: '/bad' } },
+        { domain }
+      );
+      expect(response.isError).toBe(true);
+      expect(response.content[0].text).toContain('does not exist or is not a directory');
+    });
+
+    it('should return success with no keys written when quickstart spec has no envSnippet', async () => {
+      mockResolveAndWrite.mockResolvedValueOnce({
+        success: true,
+        client_id: 'some-id',
+        credentials_saved_to: '',
+        keys_written: [],
+        generated_keys: [],
+        file_created: false,
+        message: 'No .env file needed for this framework.',
+      });
+
+      const response = await APPLICATION_HANDLERS.auth0_save_credentials_to_file(
+        { token, parameters: { client_id: 'some-id', framework: 'react', project_path: '/mock/project' } },
+        { domain }
+      );
+      expect(response.isError).toBe(false);
+      const parsed = JSON.parse(response.content[0].text);
+      expect(parsed.keys_written).toEqual([]);
+      expect(parsed.message).toBe('No .env file needed for this framework.');
     });
   });
 

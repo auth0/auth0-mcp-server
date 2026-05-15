@@ -7,7 +7,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 import {
   writeCredentialsToEnv,
   detectExistingEnvFile,
-  type Credentials,
+  parseEnvFile,
 } from '../../src/utils/credentials-writer.js';
 
 describe('credentials-writer', () => {
@@ -35,21 +35,21 @@ describe('credentials-writer', () => {
 
   describe('writeCredentialsToEnv', () => {
     it('should create .env.local file with credentials', async () => {
-      const credentials: Credentials = {
-        client_id: 'test_client_id',
-        client_secret: 'test_client_secret',
-        domain: 'test.auth0.com',
-        callback_url: 'http://localhost:3000/callback',
+      const credentials = {
+        AUTH0_CLIENT_ID: 'test_client_id',
+        AUTH0_CLIENT_SECRET: 'test_client_secret',
+        AUTH0_DOMAIN: 'test.auth0.com',
+        AUTH0_CALLBACK_URL: 'http://localhost:3000/callback',
       };
 
       const result = await writeCredentialsToEnv(credentials);
 
       expect(result.file_created).toBe(true);
       expect(result.file_path).toBe(envFilePath);
-      expect(result.env_var_names).toEqual([
+      expect(result.keys_written).toEqual([
         'AUTH0_CLIENT_ID',
-        'AUTH0_DOMAIN',
         'AUTH0_CLIENT_SECRET',
+        'AUTH0_DOMAIN',
         'AUTH0_CALLBACK_URL',
       ]);
 
@@ -61,36 +61,39 @@ describe('credentials-writer', () => {
       expect(content).toContain('AUTH0_CALLBACK_URL=http://localhost:3000/callback');
     });
 
-    it('should append to existing .env.local file', async () => {
-      // Create initial file with existing content
-      const existingContent = 'EXISTING_VAR=existing_value\n';
-      fs.writeFileSync(envFilePath, existingContent, 'utf-8');
+    it('should merge with existing .env.local file (parse-then-merge, no duplicates)', async () => {
+      fs.writeFileSync(envFilePath, 'EXISTING_VAR=existing_value\n', 'utf-8');
 
-      const credentials: Credentials = {
-        client_id: 'test_client_id',
-        client_secret: 'test_client_secret',
-        domain: 'test.auth0.com',
+      const credentials = {
+        AUTH0_CLIENT_ID: 'test_client_id',
+        AUTH0_CLIENT_SECRET: 'test_client_secret',
       };
 
       const result = await writeCredentialsToEnv(credentials);
 
       expect(result.file_created).toBe(false);
-      expect(result.file_path).toBe(envFilePath);
 
-      // Verify both old and new content exist
       const content = fs.readFileSync(envFilePath, 'utf-8');
       expect(content).toContain('EXISTING_VAR=existing_value');
       expect(content).toContain('AUTH0_CLIENT_ID=test_client_id');
       expect(content).toContain('AUTH0_CLIENT_SECRET=test_client_secret');
+      // No duplicate keys
+      expect(content.match(/AUTH0_CLIENT_ID/g)?.length).toBe(1);
+    });
+
+    it('should overwrite existing key values on merge', async () => {
+      fs.writeFileSync(envFilePath, 'AUTH0_CLIENT_ID=old_value\n', 'utf-8');
+
+      await writeCredentialsToEnv({ AUTH0_CLIENT_ID: 'new_value' });
+
+      const content = fs.readFileSync(envFilePath, 'utf-8');
+      expect(content).toContain('AUTH0_CLIENT_ID=new_value');
+      expect(content).not.toContain('AUTH0_CLIENT_ID=old_value');
+      expect(content.match(/AUTH0_CLIENT_ID/g)?.length).toBe(1);
     });
 
     it('should create .gitignore if it does not exist', async () => {
-      const credentials: Credentials = {
-        client_id: 'test_client_id',
-        domain: 'test.auth0.com',
-      };
-
-      await writeCredentialsToEnv(credentials);
+      await writeCredentialsToEnv({ AUTH0_DOMAIN: 'test.auth0.com' });
 
       expect(fs.existsSync(gitignorePath)).toBe(true);
       const gitignoreContent = fs.readFileSync(gitignorePath, 'utf-8');
@@ -98,16 +101,9 @@ describe('credentials-writer', () => {
     });
 
     it('should append to existing .gitignore', async () => {
-      // Create existing .gitignore
-      const existingGitignore = 'node_modules/\ndist/\n';
-      fs.writeFileSync(gitignorePath, existingGitignore, 'utf-8');
+      fs.writeFileSync(gitignorePath, 'node_modules/\ndist/\n', 'utf-8');
 
-      const credentials: Credentials = {
-        client_id: 'test_client_id',
-        domain: 'test.auth0.com',
-      };
-
-      await writeCredentialsToEnv(credentials);
+      await writeCredentialsToEnv({ AUTH0_DOMAIN: 'test.auth0.com' });
 
       const gitignoreContent = fs.readFileSync(gitignorePath, 'utf-8');
       expect(gitignoreContent).toContain('node_modules/');
@@ -115,31 +111,18 @@ describe('credentials-writer', () => {
     });
 
     it('should not duplicate .env.local in .gitignore', async () => {
-      // Create .gitignore that already contains .env.local
-      const existingGitignore = 'node_modules/\n.env.local\n';
-      fs.writeFileSync(gitignorePath, existingGitignore, 'utf-8');
+      fs.writeFileSync(gitignorePath, 'node_modules/\n.env.local\n', 'utf-8');
 
-      const credentials: Credentials = {
-        client_id: 'test_client_id',
-        domain: 'test.auth0.com',
-      };
-
-      await writeCredentialsToEnv(credentials);
+      await writeCredentialsToEnv({ AUTH0_DOMAIN: 'test.auth0.com' });
 
       const gitignoreContent = fs.readFileSync(gitignorePath, 'utf-8');
-      const matches = gitignoreContent.match(/\.env\.local/g);
-      expect(matches?.length).toBe(1);
+      expect(gitignoreContent.match(/\.env\.local/g)?.length).toBe(1);
     });
 
-    it('should handle credentials without client_secret', async () => {
-      const credentials: Credentials = {
-        client_id: 'test_client_id',
-        domain: 'test.auth0.com',
-      };
+    it('should write only the keys provided', async () => {
+      const result = await writeCredentialsToEnv({ AUTH0_CLIENT_ID: 'test_client_id' });
 
-      const result = await writeCredentialsToEnv(credentials);
-
-      expect(result.env_var_names).toEqual(['AUTH0_CLIENT_ID', 'AUTH0_DOMAIN']);
+      expect(result.keys_written).toEqual(['AUTH0_CLIENT_ID']);
 
       const content = fs.readFileSync(envFilePath, 'utf-8');
       expect(content).toContain('AUTH0_CLIENT_ID=test_client_id');
@@ -148,61 +131,79 @@ describe('credentials-writer', () => {
 
     it('should write to custom file path', async () => {
       const customPath = path.join(testDir, '.env.custom');
-      const credentials: Credentials = {
-        client_id: 'test_client_id',
-        domain: 'test.auth0.com',
-      };
 
-      const result = await writeCredentialsToEnv(credentials, {
-        filePath: customPath,
-      });
+      const result = await writeCredentialsToEnv(
+        { AUTH0_CLIENT_ID: 'test_client_id' },
+        { filePath: customPath }
+      );
 
       expect(result.file_path).toBe(customPath);
       expect(fs.existsSync(customPath)).toBe(true);
     });
 
     it('should reject file paths that traverse outside the working directory', async () => {
-      const credentials: Credentials = {
-        client_id: 'test_client_id',
-        domain: 'test.auth0.com',
-      };
-
       await expect(
-        writeCredentialsToEnv(credentials, { filePath: '../../etc/evil-file' })
+        writeCredentialsToEnv(
+          { AUTH0_DOMAIN: 'test.auth0.com' },
+          { filePath: '../../etc/evil-file' }
+        )
       ).rejects.toThrow('Security error: file path');
 
       await expect(
-        writeCredentialsToEnv(credentials, { filePath: '/tmp/evil-file' })
+        writeCredentialsToEnv({ AUTH0_DOMAIN: 'test.auth0.com' }, { filePath: '/tmp/evil-file' })
       ).rejects.toThrow('Security error: file path');
     });
 
     it('should allow file paths within the working directory', async () => {
-      const credentials: Credentials = {
-        client_id: 'test_client_id',
-        domain: 'test.auth0.com',
-      };
-
       const subDir = path.join(testDir, 'config');
       fs.mkdirSync(subDir, { recursive: true });
 
-      const result = await writeCredentialsToEnv(credentials, {
-        filePath: path.join(subDir, '.env'),
-      });
+      const result = await writeCredentialsToEnv(
+        { AUTH0_CLIENT_ID: 'test_client_id' },
+        { filePath: path.join(subDir, '.env') }
+      );
 
       expect(result.file_created).toBe(true);
       expect(fs.existsSync(path.join(subDir, '.env'))).toBe(true);
     });
 
-    it('should include timestamp in generated content', async () => {
-      const credentials: Credentials = {
-        client_id: 'test_client_id',
-        domain: 'test.auth0.com',
-      };
+    it('should set chmod 600 on the env file', async () => {
+      await writeCredentialsToEnv({ AUTH0_DOMAIN: 'test.auth0.com' });
 
-      await writeCredentialsToEnv(credentials);
+      const stat = fs.statSync(envFilePath);
+      // 0o100600 = regular file + owner read/write
+      expect(stat.mode & 0o777).toBe(0o600);
+    });
+  });
 
-      const content = fs.readFileSync(envFilePath, 'utf-8');
-      expect(content).toContain('# Auth0 Credentials (Generated:');
+  describe('parseEnvFile', () => {
+    it('should parse key=value pairs from an env file', () => {
+      fs.writeFileSync(envFilePath, 'FOO=bar\nBAZ=qux\n', 'utf-8');
+
+      const result = parseEnvFile(envFilePath);
+
+      expect(result).toEqual({ FOO: 'bar', BAZ: 'qux' });
+    });
+
+    it('should return empty object when file does not exist', () => {
+      const result = parseEnvFile('/nonexistent/.env');
+      expect(result).toEqual({});
+    });
+
+    it('should ignore comment lines and blank lines', () => {
+      fs.writeFileSync(envFilePath, '# comment\n\nFOO=bar\n', 'utf-8');
+
+      const result = parseEnvFile(envFilePath);
+
+      expect(result).toEqual({ FOO: 'bar' });
+    });
+
+    it('should preserve values containing = characters', () => {
+      fs.writeFileSync(envFilePath, 'FOO=bar=baz\n', 'utf-8');
+
+      const result = parseEnvFile(envFilePath);
+
+      expect(result).toEqual({ FOO: 'bar=baz' });
     });
   });
 

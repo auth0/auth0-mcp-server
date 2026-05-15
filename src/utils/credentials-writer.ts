@@ -3,22 +3,11 @@ import * as path from 'path';
 import { log } from './logger.js';
 
 /**
- * Credentials to be written to environment file
- */
-export interface Credentials {
-  client_id: string;
-  client_secret?: string;
-  domain: string;
-  callback_url?: string;
-  [key: string]: string | undefined;
-}
-
-/**
  * Result of writing credentials to file
  */
 export interface CredentialsWriteResult {
   file_path: string;
-  env_var_names: string[];
+  keys_written: string[];
   file_created: boolean;
 }
 
@@ -37,10 +26,9 @@ export interface WriteCredentialsOptions {
  *
  * File behavior:
  * - If the file does NOT exist: creates a new file with the credentials
- * - If the file DOES exist: appends credentials to the end of the file,
- *   preserving all existing content. Existing variables are NOT overwritten
- *   or deduplicated — duplicate entries may result if called multiple times
- *   for the same application.
+ * - If the file DOES exist: parses existing key=value pairs, merges incoming
+ *   credentials on top, and writes the full merged result back. Existing keys
+ *   not present in the incoming credentials are preserved. No duplicates.
  *
  * Additional behavior:
  * - Sets restrictive file permissions (chmod 600 — owner read/write only)
@@ -48,11 +36,11 @@ export interface WriteCredentialsOptions {
  * - Prevents credentials from appearing in MCP client logs
  *
  * @param credentials - The credentials to write
- * @param options - Optional configuration for file path, gitignore creation, etc.
- * @returns Information about where credentials were written, including whether the file was created or appended to
+ * @param options - Optional configuration for file path and gitignore creation
+ * @returns Information about where credentials were written, including whether the file was created or updated
  */
 export async function writeCredentialsToEnv(
-  credentials: Credentials,
+  credentials: Record<string, string>,
   options?: WriteCredentialsOptions
 ): Promise<CredentialsWriteResult> {
   const cwd = process.cwd();
@@ -68,39 +56,14 @@ export async function writeCredentialsToEnv(
   }
 
   const fileExisted = fs.existsSync(envFile);
+  const existing = fileExisted ? parseEnvFile(envFile) : {};
 
-  // Prepare environment variables
-  const envVars: Record<string, string> = {
-    AUTH0_CLIENT_ID: credentials.client_id,
-    AUTH0_DOMAIN: credentials.domain,
-  };
-
-  if (credentials.client_secret) {
-    envVars.AUTH0_CLIENT_SECRET = credentials.client_secret;
-  }
-
-  if (credentials.callback_url) {
-    envVars.AUTH0_CALLBACK_URL = credentials.callback_url;
-  }
-
-  // Format as .env content
-  const timestamp = new Date().toISOString();
-  const header = `\n# Auth0 Credentials (Generated: ${timestamp})\n`;
+  const merged = { ...existing, ...credentials };
   const content =
-    header +
-    Object.entries(envVars)
+    Object.entries(merged)
       .map(([key, value]) => `${key}=${value}`)
-      .join('\n') +
-    '\n';
-
-  // Always append if file exists to preserve existing environment variables
-  if (fileExisted) {
-    log(`Appending credentials to existing file: ${envFile}`);
-    fs.appendFileSync(envFile, content, 'utf-8');
-  } else {
-    log(`Creating new file with credentials: ${envFile}`);
-    fs.writeFileSync(envFile, content, 'utf-8');
-  }
+      .join('\n') + '\n';
+  fs.writeFileSync(envFile, content, 'utf-8');
 
   // Set restrictive permissions (owner read/write only)
   try {
@@ -119,7 +82,7 @@ export async function writeCredentialsToEnv(
 
   return {
     file_path: envFile,
-    env_var_names: Object.keys(envVars),
+    keys_written: Object.keys(credentials),
     file_created: !fileExisted,
   };
 }
@@ -151,6 +114,22 @@ function ensureGitignore(cwd: string, envFileName: string): void {
   } catch (error) {
     log(`Warning: Could not update .gitignore: ${error}`);
   }
+}
+
+/**
+ * Parses an env file into a key/value map.
+ *
+ * @param filePath - Path to the env file
+ * @returns Map of key/value pairs from the file, or an empty object if the file does not exist
+ */
+export function parseEnvFile(filePath: string): Record<string, string> {
+  if (!fs.existsSync(filePath)) return {};
+  const result: Record<string, string> = {};
+  for (const line of fs.readFileSync(filePath, 'utf-8').split('\n')) {
+    const match = line.match(/^([A-Za-z_][A-Za-z0-9_]*)=(.*)/);
+    if (match) result[match[1]] = match[2];
+  }
+  return result;
 }
 
 /**

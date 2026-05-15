@@ -1,4 +1,4 @@
-import { QuickstartSpec, QuickstartAppType, DefaultAppOrigin } from "./quickstarts";
+import { QuickstartSpec, QuickstartAppType, DefaultAppOrigin } from './quickstarts';
 
 export enum UrlSource {
   Detected = 'detected',

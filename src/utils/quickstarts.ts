@@ -27,6 +27,17 @@ interface QuickstartReleaseResponse {
   fallback: string;
 }
 
+const EnvEntrySchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('separator') }),
+  z.object({
+    type: z.literal('var'),
+    name: z.string(),
+    value: z.string(),
+    comment: z.string().optional(),
+    sensitive: z.boolean().optional(),
+  }),
+]);
+
 const QuickstartSpecSchema = z.object({
   appType: z.enum(['spa', 'webapp', 'native']),
   defaultAppOrigin: z.object({
@@ -36,11 +47,12 @@ const QuickstartSpecSchema = z.object({
   }),
   callbackPath: z.string().min(1),
   logoutPath: z.string().min(1),
-  llmPromptPath: z.string().min(1),
+  llmPromptPath: z.string().min(1).optional(),
   envSnippet: z.object({
+    type: z.string(),
+    language: z.string(),
     fileName: z.string().min(1),
-    requiredKeys: z.array(z.string()),
-    secretKeys: z.array(z.string()),
+    entries: z.array(EnvEntrySchema),
   }).optional(),
   placeholders: z.record(z.string(), z.unknown()),
   inputs: z.record(z.string(), z.unknown()),

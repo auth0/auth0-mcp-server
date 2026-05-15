@@ -35,9 +35,13 @@ const makeMockRawSpec = (framework: string) => ({
   logoutPath: '/logout',
   llmPromptPath: `https://example.com/${framework}-prompt`,
   envSnippet: {
+    type: 'env',
+    language: 'shell',
     fileName: '.env',
-    requiredKeys: ['CLIENT_ID'],
-    secretKeys: ['CLIENT_SECRET'],
+    entries: [
+      { type: 'var', name: 'CLIENT_ID', value: '{yourClientId}' },
+      { type: 'var', name: 'CLIENT_SECRET', value: '{yourClientSecret}', sensitive: true },
+    ],
   },
   placeholders: { domain: 'example.auth0.com' },
   inputs: { framework },
@@ -55,9 +59,13 @@ const makeExpectedSpec = (framework: string) => ({
   logoutPath: '/logout',
   llmPromptPath: `https://example.com/${framework}-prompt`,
   envSnippet: {
+    type: 'env',
+    language: 'shell',
     fileName: '.env',
-    requiredKeys: ['CLIENT_ID'],
-    secretKeys: ['CLIENT_SECRET'],
+    entries: [
+      { type: 'var', name: 'CLIENT_ID', value: '{yourClientId}' },
+      { type: 'var', name: 'CLIENT_SECRET', value: '{yourClientSecret}', sensitive: true },
+    ],
   },
   placeholders: { domain: 'example.auth0.com' },
   inputs: { framework },
@@ -116,7 +124,7 @@ describe('fetchQuickstartSpec', () => {
     server.use(
       mockLatest(),
       http.get(
-        `${CDN_BASE}/versions/${MOCK_VERSION}/assets/definitions/en/${expectedFilename}`,
+        defUrl(framework),
         ({ request }) => {
           capturedUrl = request.url;
           return HttpResponse.json(makeMockRawSpec(framework));
@@ -328,10 +336,7 @@ describe('fetchQuickstartSpec', () => {
       })
     );
 
-    const [a, b] = await Promise.all([
-      fetchQuickstartSpec('react'),
-      fetchQuickstartSpec('react'),
-    ]);
+    const [a, b] = await Promise.all([fetchQuickstartSpec('react'), fetchQuickstartSpec('react')]);
 
     // fetchWithOptions retries once on 5xx, so 2 CDN calls total (not 4 from two independent requests)
     expect(latestCalls).toBe(2);
