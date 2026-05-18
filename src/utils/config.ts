@@ -1,4 +1,5 @@
 import * as os from 'os';
+import { jwtDecode } from 'jwt-decode';
 import { keychain } from './keychain.js';
 import {
   isTokenExpired,
@@ -6,6 +7,7 @@ import {
   getValidAccessToken,
 } from '../auth/device-auth-flow.js';
 import { log } from './logger.js';
+import { getTenantFromToken } from './terminal.js';
 
 // Ensure HOME is set
 if (!process.env.HOME) {
@@ -43,6 +45,68 @@ export interface Auth0Config {
    * Defaults to domain if not explicitly provided.
    */
   tenantName?: string;
+
+  /**
+   * Where the configuration was loaded from.
+   * Environment-backed configuration is useful for bundle-based installs where
+   * hosts can securely prompt for values and inject them at launch time.
+   */
+  source?: 'keychain' | 'env';
+}
+
+interface JwtPayload {
+  exp?: number;
+}
+
+/**
+ * Attempts to load Auth0 credentials from environment variables.
+ * This enables MCP bundle hosts to provide credentials directly through
+ * user_config-backed environment injection without requiring a prior init flow.
+ */
+function loadConfigFromEnvironment(): Auth0Config | null {
+  const token = process.env.AUTH0_TOKEN?.trim();
+
+  if (!token) {
+    return null;
+  }
+
+  const explicitDomain = process.env.AUTH0_DOMAIN?.trim();
+  const inferredDomain = explicitDomain || inferDomainFromToken(token) || '';
+
+  return {
+    token,
+    domain: inferredDomain,
+    tenantName: inferredDomain || 'default',
+    source: 'env',
+  };
+}
+
+function inferDomainFromToken(token: string): string | undefined {
+  try {
+    return getTenantFromToken(token);
+  } catch (error) {
+    log(
+      `Unable to infer AUTH0_DOMAIN from AUTH0_TOKEN: ${error instanceof Error ? error.message : String(error)}`
+    );
+    return undefined;
+  }
+}
+
+function isJwtTokenExpired(token: string, bufferSeconds = 300): boolean {
+  try {
+    const payload = jwtDecode<JwtPayload>(token);
+
+    if (!payload.exp) {
+      return false;
+    }
+
+    return Date.now() + bufferSeconds * 1000 >= payload.exp * 1000;
+  } catch (error) {
+    log(
+      `Unable to decode AUTH0_TOKEN for expiration check, assuming non-JWT token: ${error instanceof Error ? error.message : String(error)}`
+    );
+    return false;
+  }
 }
 
 /**
@@ -57,6 +121,13 @@ export interface Auth0Config {
  *          or null if retrieval fails
  */
 export async function loadConfig(): Promise<Auth0Config | null> {
+  const envConfig = loadConfigFromEnvironment();
+
+  if (envConfig) {
+    log('Loaded Auth0 configuration from environment variables');
+    return envConfig;
+  }
+
   const token = await getValidAccessToken();
   const domain = await keychain.getDomain();
 
@@ -64,6 +135,7 @@ export async function loadConfig(): Promise<Auth0Config | null> {
     token: token || '',
     domain: domain || '',
     tenantName: domain || 'default',
+    source: 'keychain',
   };
 }
 
@@ -103,6 +175,15 @@ export async function validateConfig(config: Auth0Config | null): Promise<boolea
   if (!config.domain) {
     log('Auth0 domain is missing');
     return false;
+  }
+
+  if (config.source === 'env') {
+    if (isJwtTokenExpired(config.token)) {
+      log('AUTH0_TOKEN is expired or will expire soon');
+      return false;
+    }
+
+    return true;
   }
 
   if (await isTokenExpired()) {

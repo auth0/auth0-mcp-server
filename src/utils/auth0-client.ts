@@ -37,12 +37,16 @@ function getUserAgent(): string {
  * @returns {Promise<ManagementClient>} A configured Auth0 Management API client
  *   ready to make authenticated requests to the Auth0 Management API.
  */
-export const getManagementClient = async (config: Auth0Config): Promise<ManagementClient> => {
+export const getManagementClient = async (
+  config: Auth0Config,
+  additionalHeaders?: Record<string, string>
+): Promise<ManagementClient> => {
   return new ManagementClient({
     domain: config.domain,
     token: config.token,
     retry: { maxRetries: 10, enabled: true },
     headers: {
+      ...(additionalHeaders ?? {}),
       'User-agent': getUserAgent(),
     },
   });

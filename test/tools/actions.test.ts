@@ -141,9 +141,9 @@ describe('Actions Tool Handlers', () => {
 
       // The response should be a JSON string that we can parse
       const parsedContent = JSON.parse(response.content[0].text);
-      // The response might be nested in a data property or directly in the response
-      const actionData = parsedContent.data || parsedContent;
-      expect(actionData.id).toBe(actionId);
+      expect(parsedContent.data).toBeUndefined();
+      expect(parsedContent.headers).toBeUndefined();
+      expect(parsedContent.id).toBe(actionId);
     });
 
     it('should handle missing id parameter', async () => {
@@ -221,10 +221,10 @@ describe('Actions Tool Handlers', () => {
 
       // The response should be a JSON string that we can parse
       const parsedContent = JSON.parse(response.content[0].text);
-      // The response might be nested in a data property or directly in the response
-      const actionData = parsedContent.data || parsedContent;
-      expect(actionData.name).toBe('Test Action');
-      expect(actionData.id).toBeDefined();
+      expect(parsedContent.data).toBeUndefined();
+      expect(parsedContent.headers).toBeUndefined();
+      expect(parsedContent.name).toBe('Test Action');
+      expect(parsedContent.id).toBeDefined();
     });
 
     it('should handle missing required parameters', async () => {
@@ -322,10 +322,10 @@ describe('Actions Tool Handlers', () => {
 
       // The response should be a JSON string that we can parse
       const parsedContent = JSON.parse(response.content[0].text);
-      // The response might be nested in a data property or directly in the response
-      const actionData = parsedContent.data || parsedContent;
-      expect(actionData.name).toBe('Updated Action');
-      expect(actionData.id).toBe(actionId);
+      expect(parsedContent.data).toBeUndefined();
+      expect(parsedContent.headers).toBeUndefined();
+      expect(parsedContent.name).toBe('Updated Action');
+      expect(parsedContent.id).toBe(actionId);
     });
 
     it('should handle missing id parameter', async () => {
@@ -388,10 +388,10 @@ describe('Actions Tool Handlers', () => {
 
       // The response should be a JSON string that we can parse
       const parsedContent = JSON.parse(response.content[0].text);
-      // The response might be nested in a data property or directly in the response
-      const actionData = parsedContent.data || parsedContent;
-      expect(actionData.id).toBe(actionId);
-      expect(actionData.status).toBe('built');
+      expect(parsedContent.data).toBeUndefined();
+      expect(parsedContent.headers).toBeUndefined();
+      expect(parsedContent.id).toBe(actionId);
+      expect(parsedContent.status).toBe('built');
     });
 
     it('should handle missing id parameter', async () => {
