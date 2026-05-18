@@ -327,10 +327,11 @@ describe('VSCodeClientManager', () => {
       vi.mocked(promptForChoice).mockResolvedValueOnce('global');
       await vscodeManager.configure({ tools: ['applications'] });
 
-      const globalMessage = vi.mocked(cliOutput).mock.calls[0]?.[0];
-
-      expect(globalMessage).toContain('Auth0 MCP server configured globally for VS Code');
+      expect(cliOutput).toHaveBeenCalledTimes(1);
+      const globalMessage = vi.mocked(cliOutput).mock.calls[0]?.[0] as string;
+      expect(globalMessage).toContain('configured globally for VS Code');
       expect(globalMessage).toContain('Restart VS Code');
+      expect(globalMessage).toContain('apply changes.');
       expect(log).toHaveBeenCalledWith(
         expect.stringContaining('Updated VS Code global config file at:')
       );
@@ -346,13 +347,14 @@ describe('VSCodeClientManager', () => {
         workspaceFolder,
       });
 
-      const workspaceMessage = vi.mocked(cliOutput).mock.calls[0]?.[0];
-
-      expect(workspaceMessage).toContain('Auth0 MCP server configured for workspace');
+      expect(cliOutput).toHaveBeenCalledTimes(1);
+      const workspaceMessage = vi.mocked(cliOutput).mock.calls[0]?.[0] as string;
+      expect(workspaceMessage).toContain('configured for workspace');
       expect(workspaceMessage).toContain(
         `open VS Code in the workspace folder: ${workspaceFolder}`
       );
       expect(workspaceMessage).toContain('Restart VS Code');
+      expect(workspaceMessage).toContain('apply changes.');
       expect(log).toHaveBeenCalledWith(
         expect.stringContaining(`Updated VS Code workspace (${workspaceFolder}) config file at:`)
       );
