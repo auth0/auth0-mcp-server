@@ -73,7 +73,7 @@
     "@types/node": "^25.6.0",
     "@vitest/coverage-v8": "^4.1.5",
     "@vitest/ui": "^4.1.5",
-    "eslint": "10.3.0",
+    "eslint": "10.4.0",
     "eslint-config-prettier": "^10.1.8",
     "globals": "^17.6.0",
     "msw": "^2.14.2",
