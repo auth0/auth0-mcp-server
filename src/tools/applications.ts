@@ -686,10 +686,17 @@ export const APPLICATION_HANDLERS: Record<
         );
 
         // Mask sensitive fields before returning response
-        const maskedApplication = maskSensitiveFields(newApplication);
+        const maskedResponse = maskSensitiveFields(newApplication);
 
-        // Add credentials access instructions if client_secret exists
-        const response: any = { ...maskedApplication };
+        const contentBlocks: { type: string; text: string }[] = [
+          {
+            type: 'text',
+            text: JSON.stringify(maskedResponse, null, 2),
+          },
+        ];
+
+        const notes: string[] = [];
+
         if (appData.client_secret) {
           const howToAccess = [
             `View in Auth0 Dashboard: https://manage.auth0.com/dashboard/us/${config.domain.split('.')[0]}/applications/${appData.client_id}/settings`,
@@ -702,13 +709,28 @@ export const APPLICATION_HANDLERS: Record<
             );
           }
 
-          response._credentials_access = {
-            note: 'Credentials are masked for security (not logged in MCP client logs)',
-            how_to_access: howToAccess,
-          };
+          notes.push(
+            `CREDENTIALS: Credentials are masked for security (not logged in MCP client logs). How to access:\n${howToAccess.map((h, i) => `  ${i + 1}. ${h}`).join('\n')}`
+          );
         }
 
-        return createSuccessResponse(response);
+        if (clientData.skip_non_verifiable_callback_uri_confirmation_prompt) {
+          notes.push(
+            'CALLBACK URLS: "skip_non_verifiable_callback_uri_confirmation_prompt" was automatically set to true because one or more callback URLs (e.g. localhost or custom schemes) could not be verified. This means users will not see an additional confirmation prompt for these URLs during login. If you later switch to a verifiable callback URL (e.g. a publicly accessible https URL), you can update this setting to false using the auth0_update_application tool. Inform the user about this setting.'
+          );
+        }
+
+        if (notes.length > 0) {
+          contentBlocks.push({
+            type: 'text',
+            text: `\n---\nIMPORTANT — Please relay the following to the user:\n${notes.map((n, i) => `${i + 1}. ${n}`).join('\n')}`,
+          });
+        }
+
+        return {
+          content: contentBlocks,
+          isError: false,
+        };
       } catch (sdkError: any) {
         // Handle SDK errors
         log('Auth0 SDK error');
@@ -886,9 +908,34 @@ export const APPLICATION_HANDLERS: Record<
         );
 
         // Mask sensitive fields before returning response
-        const maskedApplication = maskSensitiveFields(updatedApplication);
+        const maskedResponse = maskSensitiveFields(updatedApplication);
 
-        return createSuccessResponse(maskedApplication);
+        const contentBlocks: { type: string; text: string }[] = [
+          {
+            type: 'text',
+            text: JSON.stringify(maskedResponse, null, 2),
+          },
+        ];
+
+        const notes: string[] = [];
+
+        if (updateData.skip_non_verifiable_callback_uri_confirmation_prompt) {
+          notes.push(
+            'CALLBACK URLS: "skip_non_verifiable_callback_uri_confirmation_prompt" was automatically set to true because one or more callback URLs (e.g. localhost or custom schemes) could not be verified. This means users will not see an additional confirmation prompt for these URLs during login. If you later switch to a verifiable callback URL (e.g. a publicly accessible https URL), you can update this setting to false using the auth0_update_application tool. Inform the user about this setting.'
+          );
+        }
+
+        if (notes.length > 0) {
+          contentBlocks.push({
+            type: 'text',
+            text: `\n---\nIMPORTANT — Please relay the following to the user:\n${notes.map((n, i) => `${i + 1}. ${n}`).join('\n')}`,
+          });
+        }
+
+        return {
+          content: contentBlocks,
+          isError: false,
+        };
       } catch (sdkError: any) {
         // Handle SDK errors
         log('Auth0 SDK error');
