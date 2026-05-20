@@ -5,7 +5,7 @@ import * as packageModule from '../../src/utils/package';
 
 // Mock dependencies
 vi.mock('auth0', () => ({
-  ManagementClient: vi.fn(function() {
+  ManagementClient: vi.fn(function () {
     return {
       // Mock implementation as needed
     };
@@ -108,6 +108,31 @@ describe('Management Client', () => {
 
       // Cleanup
       spy.mockRestore();
+    });
+
+    it('should forward additionalHeaders to ManagementClient', async () => {
+      const additionalHeaders = { 'X-Request-ID': 'trace-123', 'X-Custom': 'value' };
+
+      await getManagementClient(mockConfig, additionalHeaders);
+
+      const callArgs = vi.mocked(ManagementClient).mock.calls[0][0];
+      expect(callArgs.headers?.['X-Request-ID']).toBe('trace-123');
+      expect(callArgs.headers?.['X-Custom']).toBe('value');
+    });
+
+    it('should not include additionalHeaders when not provided', async () => {
+      await getManagementClient(mockConfig);
+
+      const callArgs = vi.mocked(ManagementClient).mock.calls[0][0];
+      const headerKeys = Object.keys(callArgs.headers ?? {});
+      expect(headerKeys).toEqual(['User-agent']);
+    });
+
+    it('should not allow additionalHeaders to override User-agent', async () => {
+      await getManagementClient(mockConfig, { 'User-agent': 'attacker/1.0' });
+
+      const callArgs = vi.mocked(ManagementClient).mock.calls[0][0];
+      expect(callArgs.headers?.['User-agent']).toMatch(/^auth0-mcp-server\//);
     });
   });
 });

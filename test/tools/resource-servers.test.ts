@@ -145,9 +145,9 @@ describe('Resource Servers Tool Handlers', () => {
 
       // The response should be a JSON string that we can parse
       const parsedContent = JSON.parse(response.content[0].text);
-      // The response might be nested in a data property or directly in the response
-      const resourceData = parsedContent.data || parsedContent;
-      expect(resourceData.id).toBe(resourceServerId);
+      expect(parsedContent.data).toBeUndefined();
+      expect(parsedContent.headers).toBeUndefined();
+      expect(parsedContent.id).toBe(resourceServerId);
     });
 
     it('should handle missing id parameter', async () => {
@@ -215,11 +215,11 @@ describe('Resource Servers Tool Handlers', () => {
 
       // The response should be a JSON string that we can parse
       const parsedContent = JSON.parse(response.content[0].text);
-      // The response might be nested in a data property or directly in the response
-      const resourceData = parsedContent.data || parsedContent;
-      expect(resourceData.name).toBe('Test API');
-      expect(resourceData.identifier).toBe('https://test-api.example.com');
-      expect(resourceData.id).toBeDefined();
+      expect(parsedContent.data).toBeUndefined();
+      expect(parsedContent.headers).toBeUndefined();
+      expect(parsedContent.name).toBe('Test API');
+      expect(parsedContent.identifier).toBe('https://test-api.example.com');
+      expect(parsedContent.id).toBeDefined();
     });
 
     it('should handle missing required parameters', async () => {
@@ -327,10 +327,10 @@ describe('Resource Servers Tool Handlers', () => {
 
       // The response should be a JSON string that we can parse
       const parsedContent = JSON.parse(response.content[0].text);
-      // The response might be nested in a data property or directly in the response
-      const resourceData = parsedContent.data || parsedContent;
-      expect(resourceData.name).toBe('Updated API');
-      expect(resourceData.id).toBe(resourceServerId);
+      expect(parsedContent.data).toBeUndefined();
+      expect(parsedContent.headers).toBeUndefined();
+      expect(parsedContent.name).toBe('Updated API');
+      expect(parsedContent.id).toBe(resourceServerId);
     });
 
     it('should handle missing id parameter', async () => {

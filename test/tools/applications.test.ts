@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { http, HttpResponse } from 'msw';
 import { APPLICATION_HANDLERS } from '../../src/tools/applications';
+import { ServerMode } from '../../src/utils/types';
 import { mockConfig } from '../mocks/config';
 import { mockApplications } from '../mocks/auth0/applications';
 import { server } from '../setup';
@@ -147,9 +148,9 @@ describe('Applications Tool Handlers', () => {
 
       // The response should be a JSON string that we can parse
       const parsedContent = JSON.parse(response.content[0].text);
-      // The client_id might be in the response directly or nested in a data property
-      const appData = parsedContent.data || parsedContent;
-      expect(appData.client_id).toBe(clientId);
+      expect(parsedContent.data).toBeUndefined();
+      expect(parsedContent.headers).toBeUndefined();
+      expect(parsedContent.client_id).toBe(clientId);
     });
 
     it('should handle missing client_id parameter', async () => {
@@ -218,12 +219,12 @@ describe('Applications Tool Handlers', () => {
       expect(response.isError).toBe(false);
 
       const parsedContent = JSON.parse(response.content[0].text);
-      // The client_id might be in the response directly or nested in a data property
-      const appData = parsedContent.data || parsedContent;
-      expect(appData.client_id).toBe(clientId);
+      expect(parsedContent.data).toBeUndefined();
+      expect(parsedContent.headers).toBeUndefined();
+      expect(parsedContent.client_id).toBe(clientId);
       // Verify client_secret is masked
-      expect(appData.client_secret).toBe('[REDACTED]');
-      expect(appData.client_secret).not.toContain('super_secret_value');
+      expect(parsedContent.client_secret).toBe('[REDACTED]');
+      expect(parsedContent.client_secret).not.toContain('super_secret_value');
     });
   });
 
@@ -314,6 +315,156 @@ describe('Applications Tool Handlers', () => {
       expect(parsedContent._credentials_access.note).toContain('masked for security');
       expect(parsedContent._credentials_access.how_to_access).toBeDefined();
       expect(parsedContent._credentials_access.how_to_access.length).toBeGreaterThan(0);
+      // In local mode, the file-save instruction must be present
+      const howToAccess = parsedContent._credentials_access.how_to_access as string[];
+      expect(howToAccess.some((s) => s.includes('auth0_save_credentials_to_file'))).toBe(true);
+    });
+
+    it('should omit auth0_save_credentials_to_file instruction in StreamableHttp mode', async () => {
+      server.use(
+        http.post('https://*/api/v2/clients', async ({ request }) => {
+          const body = (await request.json()) as Record<string, any>;
+          return HttpResponse.json({
+            ...body,
+            client_id: 'new-app-hosted',
+            client_secret: 'super_secret_value_hosted',
+          });
+        })
+      );
+
+      const request = {
+        token,
+        parameters: {
+          name: 'Hosted App',
+          app_type: 'spa',
+        },
+      };
+
+      const config = { domain, mode: ServerMode.StreamableHttp };
+
+      const response = await APPLICATION_HANDLERS.auth0_create_application(request, config);
+
+      expect(response.isError).toBe(false);
+
+      const parsedContent = JSON.parse(response.content[0].text);
+      expect(parsedContent._credentials_access).toBeDefined();
+      const howToAccess = parsedContent._credentials_access.how_to_access as string[];
+      // No file-save instruction in hosted mode
+      expect(howToAccess.some((s) => s.includes('auth0_save_credentials_to_file'))).toBe(false);
+      // Dashboard and API instructions still present
+      expect(howToAccess.some((s) => s.includes('Auth0 Dashboard'))).toBe(true);
+    });
+
+    describe('token_endpoint_auth_method defaults', () => {
+      async function createAppAndCaptureBody(parameters: Record<string, any>) {
+        let capturedBody: Record<string, any> | undefined;
+        server.use(
+          http.post('https://*/api/v2/clients', async ({ request }) => {
+            capturedBody = (await request.json()) as Record<string, any>;
+            return HttpResponse.json({ ...capturedBody, client_id: 'test-app-id' });
+          })
+        );
+
+        const response = await APPLICATION_HANDLERS.auth0_create_application(
+          { token, parameters },
+          { domain }
+        );
+
+        expect(capturedBody).toBeDefined();
+        return { response, capturedBody: capturedBody! };
+      }
+
+      it.each([
+        { app_type: 'spa', expected: 'none' },
+        { app_type: 'native', expected: 'none' },
+        { app_type: 'regular_web', expected: 'client_secret_post' },
+        { app_type: 'non_interactive', expected: 'client_secret_post' },
+      ])('should default to "$expected" for $app_type', async ({ app_type, expected }) => {
+        const { response, capturedBody } = await createAppAndCaptureBody({
+          name: `${app_type} App`,
+          app_type,
+        });
+
+        expect(response.isError).toBe(false);
+        expect(capturedBody.token_endpoint_auth_method).toBe(expected);
+      });
+
+      it('should use explicit token_endpoint_auth_method over default', async () => {
+        const { response, capturedBody } = await createAppAndCaptureBody({
+          name: 'Explicit Auth App',
+          app_type: 'spa',
+          token_endpoint_auth_method: 'client_secret_basic',
+        });
+
+        expect(response.isError).toBe(false);
+        expect(capturedBody.token_endpoint_auth_method).toBe('client_secret_basic');
+      });
+
+      it('should not set token_endpoint_auth_method when app_type is not provided', async () => {
+        const { response, capturedBody } = await createAppAndCaptureBody({
+          name: 'No Type App',
+        });
+
+        expect(response.isError).toBe(false);
+        expect(capturedBody.token_endpoint_auth_method).toBeUndefined();
+      });
+    });
+
+    describe('oidc_conformant and jwt_configuration defaults', () => {
+      async function createAppAndCaptureBody(parameters: Record<string, any>) {
+        let capturedBody: Record<string, any> | undefined;
+        server.use(
+          http.post('https://*/api/v2/clients', async ({ request }) => {
+            capturedBody = (await request.json()) as Record<string, any>;
+            return HttpResponse.json({ ...capturedBody, client_id: 'test-app-id' });
+          })
+        );
+
+        const response = await APPLICATION_HANDLERS.auth0_create_application(
+          { token, parameters },
+          { domain }
+        );
+
+        expect(capturedBody).toBeDefined();
+        return { response, capturedBody: capturedBody! };
+      }
+
+      it('should always set oidc_conformant to true', async () => {
+        const { response, capturedBody } = await createAppAndCaptureBody({
+          name: 'Test App',
+          app_type: 'spa',
+        });
+
+        expect(response.isError).toBe(false);
+        expect(capturedBody.oidc_conformant).toBe(true);
+      });
+
+      it('should always set jwt_configuration with RS256 and lifetime_in_seconds 36000', async () => {
+        const { response, capturedBody } = await createAppAndCaptureBody({
+          name: 'Test App',
+          app_type: 'regular_web',
+        });
+
+        expect(response.isError).toBe(false);
+        expect(capturedBody.jwt_configuration).toBeDefined();
+        expect(capturedBody.jwt_configuration.alg).toBe('RS256');
+        expect(capturedBody.jwt_configuration.lifetime_in_seconds).toBe(36000);
+      });
+
+      it('should set oidc_conformant and jwt_configuration regardless of app_type', async () => {
+        for (const app_type of ['spa', 'native', 'regular_web', 'non_interactive']) {
+          const { capturedBody } = await createAppAndCaptureBody({
+            name: `${app_type} App`,
+            app_type,
+          });
+
+          expect(capturedBody.oidc_conformant).toBe(true);
+          expect(capturedBody.jwt_configuration).toMatchObject({
+            alg: 'RS256',
+            lifetime_in_seconds: 36000,
+          });
+        }
+      });
     });
   });
 
@@ -348,10 +499,34 @@ describe('Applications Tool Handlers', () => {
 
       // The response should be a JSON string that we can parse
       const parsedContent = JSON.parse(response.content[0].text);
-      // The name might be in the response directly or nested in a data property
-      const appData = parsedContent.data || parsedContent;
-      expect(appData.name).toBe('Updated App');
+      expect(parsedContent.data).toBeUndefined();
+      expect(parsedContent.headers).toBeUndefined();
+      expect(parsedContent.name).toBe('Updated App');
     });
+
+    it.each(['spa', 'native', 'regular_web', 'non_interactive'])(
+      'should not auto-set token_endpoint_auth_method when app_type is %s',
+      async (app_type) => {
+        const clientId = mockApplications[0].client_id;
+        let capturedBody: Record<string, any> | undefined;
+        server.use(
+          http.patch(`https://*/api/v2/clients/${clientId}`, async ({ request }) => {
+            capturedBody = (await request.json()) as Record<string, any>;
+            return HttpResponse.json({ ...mockApplications[0], ...capturedBody });
+          })
+        );
+
+        const request = {
+          token,
+          parameters: { client_id: clientId, app_type },
+        };
+        const response = await APPLICATION_HANDLERS.auth0_update_application(request, { domain });
+
+        expect(response.isError).toBe(false);
+        expect(capturedBody).toBeDefined();
+        expect(capturedBody!.token_endpoint_auth_method).toBeUndefined();
+      }
+    );
   });
 
   describe('auth0_save_credentials_to_file', () => {

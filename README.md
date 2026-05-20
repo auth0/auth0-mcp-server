@@ -18,6 +18,8 @@
 
 [MCP (Model Context Protocol)](https://modelcontextprotocol.io/introduction) is an open protocol introduced by Anthropic that standardizes how large language models communicate with external tools, resources or remote services.
 
+Connect Claude, Cursor, or Windsurf to your Auth0 tenant to create apps, deploy Actions, debug logs, and manage users — all without touching the dashboard.
+
 > [!CAUTION]
 > **Beta Software Notice: This software is currently in beta and is provided AS IS without any warranties.**
 >
@@ -255,6 +257,15 @@ npx @auth0/auth0-mcp-server run --tools '*'
 
 > [!IMPORTANT]
 > When both `--read-only` and `--tools` flags are used together, the `--read-only` flag takes priority for security. This means even if your `--tools` pattern matches non-read-only tools, only read-only operations will be available. This ensures you can rely on the `--read-only` flag as a security guardrail.
+
+For environments where CLI flags cannot be passed through (for example, MCP bundle installs), the same controls are available as environment variables:
+
+| Variable              | Equivalent flag | Example                                    |
+| --------------------- | --------------- | ------------------------------------------ |
+| `AUTH0_MCP_READ_ONLY` | `--read-only`   | `AUTH0_MCP_READ_ONLY=true`                 |
+| `AUTH0_MCP_TOOLS`     | `--tools`       | `AUTH0_MCP_TOOLS=auth0_list_*,auth0_get_*` |
+
+CLI flags take precedence when both are provided.
 
 This approach offers several important benefits:
 

@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import keytar from 'keytar';
+import keytar from '@github/keytar';
 import * as deviceAuthFlow from '../../src/auth/device-auth-flow';
 import { KEYCHAIN_SERVICE_NAME, KeychainItem } from '../../src/utils/constants';
 
 // Mock dependencies
-vi.mock('keytar');
+vi.mock('@github/keytar');
 vi.mock('open');
 vi.mock('../../src/utils/terminal', () => ({
   startSpinner: vi.fn(),

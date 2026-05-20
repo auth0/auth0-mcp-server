@@ -5,7 +5,8 @@ import { log } from './logger.js';
  */
 export interface MaskOptions {
   sensitiveFields?: string[];
-  replacement?: string;}
+  replacement?: string;
+}
 
 /**
  * Default sensitive fields that should be masked in responses
@@ -65,8 +66,8 @@ export function maskSensitiveFields(data: any, options?: MaskOptions): any {
     const value = data[key];
 
     // Check if this field should be masked (exact match only)
-    const shouldMask = fieldsToMask.some((sensitiveField) =>
-      key.toLowerCase() === sensitiveField.toLowerCase()
+    const shouldMask = fieldsToMask.some(
+      (sensitiveField) => key.toLowerCase() === sensitiveField.toLowerCase()
     );
 
     if (shouldMask && value) {
@@ -95,10 +96,7 @@ export function maskSensitiveFields(data: any, options?: MaskOptions): any {
  * @param sensitiveFields - Optional list of sensitive field names
  * @returns True if sensitive fields are found, false otherwise
  */
-export function containsSensitiveFields(
-  data: any,
-  sensitiveFields?: string[]
-): boolean {
+export function containsSensitiveFields(data: any, sensitiveFields?: string[]): boolean {
   const fieldsToCheck = sensitiveFields || DEFAULT_SENSITIVE_FIELDS;
 
   if (typeof data !== 'object' || data === null) {
@@ -114,8 +112,8 @@ export function containsSensitiveFields(
       continue;
     }
 
-    const shouldMask = fieldsToCheck.some((sensitiveField) =>
-      key.toLowerCase() === sensitiveField.toLowerCase()
+    const shouldMask = fieldsToCheck.some(
+      (sensitiveField) => key.toLowerCase() === sensitiveField.toLowerCase()
     );
 
     if (shouldMask && data[key]) {
@@ -139,10 +137,7 @@ export function containsSensitiveFields(
  * @param sensitiveFields - Optional list of sensitive field names
  * @returns Array of sensitive field names found
  */
-export function getSensitiveFieldNames(
-  data: any,
-  sensitiveFields?: string[]
-): string[] {
+export function getSensitiveFieldNames(data: any, sensitiveFields?: string[]): string[] {
   const fieldsToCheck = sensitiveFields || DEFAULT_SENSITIVE_FIELDS;
   const foundFields = new Set<string>();
 
@@ -162,8 +157,8 @@ export function getSensitiveFieldNames(
       }
 
       const fullPath = path ? `${path}.${key}` : key;
-      const shouldMask = fieldsToCheck.some((sensitiveField) =>
-        key.toLowerCase() === sensitiveField.toLowerCase()
+      const shouldMask = fieldsToCheck.some(
+        (sensitiveField) => key.toLowerCase() === sensitiveField.toLowerCase()
       );
 
       if (shouldMask && obj[key]) {
