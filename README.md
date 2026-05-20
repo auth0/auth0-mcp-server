@@ -20,6 +20,9 @@
 
 Connect Claude, Cursor, or Windsurf to your Auth0 tenant to create apps, deploy Actions, debug logs, and manage users — all without touching the dashboard.
 
+> [!NOTE]
+> **Looking to add Auth0 authorization to your own MCP server?** See the [Auth0 for MCP documentation](https://auth0.com/ai/docs/mcp/intro/overview) and the [auth0-ai-samples](https://github.com/auth0-samples/auth0-ai-samples/tree/main/auth-for-mcp) for framework-specific examples.
+
 > [!CAUTION]
 > **Beta Software Notice: This software is currently in beta and is provided AS IS without any warranties.**
 >
