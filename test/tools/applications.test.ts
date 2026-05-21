@@ -322,7 +322,7 @@ describe('Applications Tool Handlers', () => {
       expect(response.content[0].text).toContain('name is required');
     });
 
-    it('should mask client_secret in create response and provide access instructions in notes', async () => {
+    it('should mask client_secret in create response and provide access instructions', async () => {
       // Override the handler to return a response with client_secret
       server.use(
         http.post('https://*/api/v2/clients', async ({ request }) => {
@@ -354,14 +354,14 @@ describe('Applications Tool Handlers', () => {
       // Verify client_secret is masked
       expect(parsedContent.client_secret).toBe('[REDACTED]');
       expect(parsedContent.client_secret).not.toContain('super_secret_value');
-      // Verify credentials access instructions are in the notes block
-      expect(response.content.length).toBe(2);
-      const notesText = response.content[1].text;
-      expect(notesText).toContain('CREDENTIALS');
-      expect(notesText).toContain('masked for security');
-      expect(notesText).toContain('auth0_save_credentials_to_file');
-      expect(notesText).toContain('Auth0 Dashboard');
-      expect(notesText).toContain('Retrieve via API');
+      // Verify credentials access instructions are provided
+      expect(parsedContent._credentials_access).toBeDefined();
+      expect(parsedContent._credentials_access.note).toContain('masked for security');
+      expect(parsedContent._credentials_access.how_to_access).toBeDefined();
+      expect(parsedContent._credentials_access.how_to_access.length).toBeGreaterThan(0);
+      // In local mode, the file-save instruction must be present
+      const howToAccess = parsedContent._credentials_access.how_to_access as string[];
+      expect(howToAccess.some((s) => s.includes('auth0_save_credentials_to_file'))).toBe(true);
     });
 
     it('should omit auth0_save_credentials_to_file instruction in StreamableHttp mode', async () => {
@@ -390,80 +390,13 @@ describe('Applications Tool Handlers', () => {
 
       expect(response.isError).toBe(false);
 
-      expect(response.content.length).toBe(2);
-      const notesText = response.content[1].text;
+      const parsedContent = JSON.parse(response.content[0].text);
+      expect(parsedContent._credentials_access).toBeDefined();
+      const howToAccess = parsedContent._credentials_access.how_to_access as string[];
       // No file-save instruction in hosted mode
-      expect(notesText).not.toContain('auth0_save_credentials_to_file');
+      expect(howToAccess.some((s) => s.includes('auth0_save_credentials_to_file'))).toBe(false);
       // Dashboard and API instructions still present
-      expect(notesText).toContain('Auth0 Dashboard');
-    });
-
-    it('should include callback URL note in notes when localhost callback is used', async () => {
-      server.use(
-        http.post('https://*/api/v2/clients', async ({ request }) => {
-          const body = (await request.json()) as Record<string, any>;
-          return HttpResponse.json({
-            ...body,
-            client_id: 'new-app-localhost',
-            client_secret: 'some_secret',
-          });
-        })
-      );
-
-      const request = {
-        token,
-        parameters: {
-          name: 'Localhost App',
-          app_type: 'regular_web',
-          callbacks: ['http://localhost:3000/callback'],
-        },
-      };
-
-      const config = { domain };
-
-      const response = await APPLICATION_HANDLERS.auth0_create_application(request, config);
-
-      expect(response.isError).toBe(false);
-      expect(response.content.length).toBe(2);
-      const notesText = response.content[1].text;
-      expect(notesText).toContain('CALLBACK URLS');
-      expect(notesText).toContain('skip_non_verifiable_callback_uri_confirmation_prompt');
-      expect(notesText).toContain('automatically set to true');
-      expect(notesText).toContain('verifiable callback URL');
-      expect(notesText).toContain('auth0_update_application');
-    });
-
-    it('should not include callback URL note when all callbacks are verifiable', async () => {
-      server.use(
-        http.post('https://*/api/v2/clients', async ({ request }) => {
-          const body = (await request.json()) as Record<string, any>;
-          return HttpResponse.json({
-            ...body,
-            client_id: 'new-app-verifiable',
-            client_secret: 'some_secret',
-          });
-        })
-      );
-
-      const request = {
-        token,
-        parameters: {
-          name: 'Verifiable App',
-          app_type: 'regular_web',
-          callbacks: ['https://example.com/callback'],
-        },
-      };
-
-      const config = { domain };
-
-      const response = await APPLICATION_HANDLERS.auth0_create_application(request, config);
-
-      expect(response.isError).toBe(false);
-      expect(response.content.length).toBe(2);
-      const notesText = response.content[1].text;
-      // Should have credentials note but NOT callback URL note
-      expect(notesText).toContain('CREDENTIALS');
-      expect(notesText).not.toContain('CALLBACK URLS');
+      expect(howToAccess.some((s) => s.includes('Auth0 Dashboard'))).toBe(true);
     });
 
     describe('token_endpoint_auth_method defaults', () => {
@@ -667,70 +600,6 @@ describe('Applications Tool Handlers', () => {
 
       expect(response.isError).toBe(false);
       expect(capturedBody.skip_non_verifiable_callback_uri_confirmation_prompt).toBe(true);
-    });
-
-    it('should include callback URL note when non-verifiable callbacks are added during update', async () => {
-      const clientId = mockApplications[0].client_id;
-
-      server.use(
-        http.patch(`https://*/api/v2/clients/${clientId}`, async ({ request }) => {
-          const body = (await request.json()) as Record<string, any>;
-          return HttpResponse.json({
-            ...mockApplications[0],
-            ...body,
-          });
-        })
-      );
-
-      const request = {
-        token,
-        parameters: {
-          client_id: clientId,
-          callbacks: ['http://localhost:3000/callback'],
-        },
-      };
-
-      const config = { domain };
-
-      const response = await APPLICATION_HANDLERS.auth0_update_application(request, config);
-
-      expect(response.isError).toBe(false);
-      expect(response.content.length).toBe(2);
-      const notesText = response.content[1].text;
-      expect(notesText).toContain('CALLBACK URLS');
-      expect(notesText).toContain('skip_non_verifiable_callback_uri_confirmation_prompt');
-      expect(notesText).toContain('automatically set to true');
-      expect(notesText).toContain('verifiable callback URL');
-      expect(notesText).toContain('auth0_update_application');
-    });
-
-    it('should not include callback URL note when update uses verifiable callbacks', async () => {
-      const clientId = mockApplications[0].client_id;
-
-      server.use(
-        http.patch(`https://*/api/v2/clients/${clientId}`, async ({ request }) => {
-          const body = (await request.json()) as Record<string, any>;
-          return HttpResponse.json({
-            ...mockApplications[0],
-            ...body,
-          });
-        })
-      );
-
-      const request = {
-        token,
-        parameters: {
-          client_id: clientId,
-          callbacks: ['https://example.com/callback'],
-        },
-      };
-
-      const config = { domain };
-
-      const response = await APPLICATION_HANDLERS.auth0_update_application(request, config);
-
-      expect(response.isError).toBe(false);
-      expect(response.content.length).toBe(1);
     });
 
     it('should not auto-set skip_non_verifiable_callback_uri_confirmation_prompt for verifiable callbacks', async () => {

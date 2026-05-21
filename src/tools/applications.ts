@@ -72,7 +72,7 @@ export const APPLICATION_TOOLS: Tool[] = [
   {
     name: 'auth0_create_application',
     description:
-      'Create a new Auth0 application with the tenant. Prefer OIDC compliant unless otherwise specified.',
+      'Create a new Auth0 application with the tenant. Prefer OIDC compliant unless otherwise specified. After creating, always explicitly tell the user that the client_secret is redacted in this response for security and provide the dashboard URL and API URL from _credentials_access so they know where to view the full secret. Also inform the user about any automatically applied settings (such as skip_non_verifiable_callback_uri_confirmation_prompt). To save credentials locally, always ask the user for a file path before calling auth0_save_credentials_to_file — never assume a default path.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -163,7 +163,8 @@ export const APPLICATION_TOOLS: Tool[] = [
   },
   {
     name: 'auth0_update_application',
-    description: 'Update an existing Auth0 application',
+    description:
+      'Update an existing Auth0 application. After updating, always inform the user about any automatically applied settings (such as skip_non_verifiable_callback_uri_confirmation_prompt).',
     inputSchema: {
       type: 'object',
       properties: {
@@ -686,17 +687,10 @@ export const APPLICATION_HANDLERS: Record<
         );
 
         // Mask sensitive fields before returning response
-        const maskedResponse = maskSensitiveFields(newApplication);
+        const maskedApplication = maskSensitiveFields(newApplication);
 
-        const contentBlocks: { type: string; text: string }[] = [
-          {
-            type: 'text',
-            text: JSON.stringify(maskedResponse, null, 2),
-          },
-        ];
-
-        const notes: string[] = [];
-
+        // Add credentials access instructions if client_secret exists
+        const response: any = { ...maskedApplication };
         if (appData.client_secret) {
           const howToAccess = [
             `View in Auth0 Dashboard: https://manage.auth0.com/dashboard/us/${config.domain.split('.')[0]}/applications/${appData.client_id}/settings`,
@@ -709,28 +703,13 @@ export const APPLICATION_HANDLERS: Record<
             );
           }
 
-          notes.push(
-            `CREDENTIALS: Credentials are masked for security (not logged in MCP client logs). How to access:\n${howToAccess.map((h, i) => `  ${i + 1}. ${h}`).join('\n')}`
-          );
+          response._credentials_access = {
+            note: 'Credentials are masked for security (not logged in MCP client logs)',
+            how_to_access: howToAccess,
+          };
         }
 
-        if (clientData.skip_non_verifiable_callback_uri_confirmation_prompt) {
-          notes.push(
-            'CALLBACK URLS: "skip_non_verifiable_callback_uri_confirmation_prompt" was automatically set to true because one or more callback URLs (e.g. localhost or custom schemes) could not be verified. This means users will not see an additional confirmation prompt for these URLs during login. If you later switch to a verifiable callback URL (e.g. a publicly accessible https URL), you can update this setting to false using the auth0_update_application tool. Inform the user about this setting.'
-          );
-        }
-
-        if (notes.length > 0) {
-          contentBlocks.push({
-            type: 'text',
-            text: `\n---\nIMPORTANT — Please relay the following to the user:\n${notes.map((n, i) => `${i + 1}. ${n}`).join('\n')}`,
-          });
-        }
-
-        return {
-          content: contentBlocks,
-          isError: false,
-        };
+        return createSuccessResponse(response);
       } catch (sdkError: any) {
         // Handle SDK errors
         log('Auth0 SDK error');
@@ -908,34 +887,9 @@ export const APPLICATION_HANDLERS: Record<
         );
 
         // Mask sensitive fields before returning response
-        const maskedResponse = maskSensitiveFields(updatedApplication);
+        const maskedApplication = maskSensitiveFields(updatedApplication);
 
-        const contentBlocks: { type: string; text: string }[] = [
-          {
-            type: 'text',
-            text: JSON.stringify(maskedResponse, null, 2),
-          },
-        ];
-
-        const notes: string[] = [];
-
-        if (updateData.skip_non_verifiable_callback_uri_confirmation_prompt) {
-          notes.push(
-            'CALLBACK URLS: "skip_non_verifiable_callback_uri_confirmation_prompt" was automatically set to true because one or more callback URLs (e.g. localhost or custom schemes) could not be verified. This means users will not see an additional confirmation prompt for these URLs during login. If you later switch to a verifiable callback URL (e.g. a publicly accessible https URL), you can update this setting to false using the auth0_update_application tool. Inform the user about this setting.'
-          );
-        }
-
-        if (notes.length > 0) {
-          contentBlocks.push({
-            type: 'text',
-            text: `\n---\nIMPORTANT — Please relay the following to the user:\n${notes.map((n, i) => `${i + 1}. ${n}`).join('\n')}`,
-          });
-        }
-
-        return {
-          content: contentBlocks,
-          isError: false,
-        };
+        return createSuccessResponse(maskedApplication);
       } catch (sdkError: any) {
         // Handle SDK errors
         log('Auth0 SDK error');
