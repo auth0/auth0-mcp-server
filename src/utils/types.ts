@@ -75,4 +75,3 @@ export interface Auth0PaginatedResponse {
   per_page?: number;
   [key: string]: any;
 }
-
