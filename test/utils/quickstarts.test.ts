@@ -176,6 +176,25 @@ describe('fetchQuickstartSpec', () => {
     expect(result).toBeNull();
   });
 
+  it('returns null when CDN returns JSON that fails Zod schema validation', async () => {
+    server.use(
+      mockLatest(),
+      http.get(defUrl('react'), () =>
+        HttpResponse.json({
+          appType: 'invalid_type',
+          defaultAppOrigin: { scheme: 'http', domain: 'localhost' },
+          callbackPath: '/callback',
+          logoutPath: '/logout',
+          placeholders: {},
+          inputs: {},
+          environment: {},
+        })
+      )
+    );
+    const result = await fetchQuickstartSpec('react');
+    expect(result).toBeNull();
+  });
+
   it('returns null for unknown framework without network calls', async () => {
     let fetchCalled = false;
     server.use(

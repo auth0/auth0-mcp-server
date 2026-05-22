@@ -390,4 +390,94 @@ describe('resolveAndWriteCredentials — spec path (supported framework)', () =>
       expect(result.message).toContain('generated automatically');
     }
   });
+
+  it('resolves ISSUER key pattern to https://{domain}', async () => {
+    mockFetchQuickstartSpec.mockResolvedValue({
+      ...specSpaNoSecret,
+      envSnippet: {
+        ...specSpaNoSecret.envSnippet,
+        entries: [
+          { type: 'var' as const, name: 'AUTH0_ISSUER_BASE_URL', value: '{yourIssuer}' },
+        ],
+      },
+    });
+
+    await resolveAndWriteCredentials(specParams, config, token);
+
+    expect(mockWriteCredentialsToEnv).toHaveBeenCalledWith(
+      expect.objectContaining({ AUTH0_ISSUER_BASE_URL: `https://${config.domain}` }),
+      expect.any(Object)
+    );
+  });
+
+  it('resolves CALLBACK key pattern to provided callback_url', async () => {
+    mockFetchQuickstartSpec.mockResolvedValue({
+      ...specSpaNoSecret,
+      envSnippet: {
+        ...specSpaNoSecret.envSnippet,
+        entries: [
+          { type: 'var' as const, name: 'AUTH0_CALLBACK_URL', value: '{yourCallbackUrl}' },
+        ],
+      },
+    });
+
+    await resolveAndWriteCredentials(
+      { ...specParams, callback_url: 'http://localhost:3000/api/auth/callback' },
+      config,
+      token
+    );
+
+    expect(mockWriteCredentialsToEnv).toHaveBeenCalledWith(
+      expect.objectContaining({ AUTH0_CALLBACK_URL: 'http://localhost:3000/api/auth/callback' }),
+      expect.any(Object)
+    );
+  });
+
+  it('omits CALLBACK key when callback_url param is undefined', async () => {
+    mockFetchQuickstartSpec.mockResolvedValue({
+      ...specSpaNoSecret,
+      envSnippet: {
+        ...specSpaNoSecret.envSnippet,
+        entries: [
+          { type: 'var' as const, name: 'AUTH0_DOMAIN', value: '{yourDomain}' },
+          { type: 'var' as const, name: 'AUTH0_CALLBACK_URL', value: '{yourCallbackUrl}' },
+        ],
+      },
+    });
+
+    await resolveAndWriteCredentials(specParams, config, token);
+
+    const credentialMap = mockWriteCredentialsToEnv.mock.calls[0][0];
+    expect(credentialMap).toHaveProperty('AUTH0_DOMAIN');
+    expect(credentialMap).not.toHaveProperty('AUTH0_CALLBACK_URL');
+  });
+
+  it('forwards base_url, callback_url, and port params to credential resolution', async () => {
+    mockFetchQuickstartSpec.mockResolvedValue({
+      ...specSpaNoSecret,
+      envSnippet: {
+        ...specSpaNoSecret.envSnippet,
+        entries: [
+          { type: 'var' as const, name: 'AUTH0_BASE_URL', value: '{yourBaseUrl}' },
+          { type: 'var' as const, name: 'AUTH0_CALLBACK_URL', value: '{yourCallbackUrl}' },
+          { type: 'var' as const, name: 'AUTH0_PORT', value: '{yourPort}' },
+        ],
+      },
+    });
+
+    await resolveAndWriteCredentials(
+      { ...specParams, base_url: 'http://localhost:8080', callback_url: 'http://localhost:8080/cb', port: 8080 },
+      config,
+      token
+    );
+
+    expect(mockWriteCredentialsToEnv).toHaveBeenCalledWith(
+      expect.objectContaining({
+        AUTH0_BASE_URL: 'http://localhost:8080',
+        AUTH0_CALLBACK_URL: 'http://localhost:8080/cb',
+        AUTH0_PORT: '8080',
+      }),
+      expect.any(Object)
+    );
+  });
 });
