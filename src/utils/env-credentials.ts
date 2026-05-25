@@ -7,6 +7,7 @@ import type { QuickstartSpec, DefaultAppOrigin } from './quickstarts.js';
 import { getManagementClient } from './auth0-client.js';
 import { writeCredentialsToEnv, parseEnvFile } from './credentials-writer.js';
 import type { HandlerConfig } from './types.js';
+import trackEvent from './analytics.js';
 
 type EnvSnippet = NonNullable<QuickstartSpec['envSnippet']>;
 
@@ -80,6 +81,7 @@ export async function resolveAndWriteCredentials(
     };
   }
 
+  const resolutionPath: 'spec' | 'fallback' = spec?.envSnippet ? 'spec' : 'fallback';
   const resolved = spec?.envSnippet
     ? await buildSpecCredentials(params, spec.envSnippet, spec.defaultAppOrigin, config, token)
     : await buildFallbackCredentials(params, config, token);
@@ -92,6 +94,12 @@ export async function resolveAndWriteCredentials(
   log(`Credentials saved to: ${credentialsInfo.file_path}`);
 
   const generatedKeys = resolved.generated_keys;
+
+  trackEvent.trackCredentialResolution(
+    framework,
+    resolutionPath,
+    generatedKeys.includes('AUTH0_SECRET')
+  );
 
   return {
     success: true,

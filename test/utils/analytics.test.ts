@@ -137,6 +137,51 @@ describe('TrackEvent', () => {
     });
   });
 
+  describe('trackCredentialResolution', () => {
+    it('should track credential resolution with framework, resolution path, and secret generated', () => {
+      const spy = vi.spyOn(trackEvent as any, 'track');
+
+      trackEvent.trackCredentialResolution('nextjs', 'spec', true);
+
+      expect(spy).toHaveBeenCalledWith(
+        'auth0-mcp-server-credential-resolution',
+        expect.objectContaining({
+          framework: 'nextjs',
+          resolution_path: 'spec',
+          secret_generated: true,
+        })
+      );
+    });
+
+    it('should track fallback path when spec is unavailable', () => {
+      const spy = vi.spyOn(trackEvent as any, 'track');
+
+      trackEvent.trackCredentialResolution('sveltekit', 'fallback', false);
+
+      expect(spy).toHaveBeenCalledWith(
+        'auth0-mcp-server-credential-resolution',
+        expect.objectContaining({
+          framework: 'sveltekit',
+          resolution_path: 'fallback',
+          secret_generated: false,
+        })
+      );
+    });
+
+    it('should not send event when tracking is disabled', () => {
+      const originalEnv = process.env.AUTH0_MCP_ANALYTICS;
+      process.env.AUTH0_MCP_ANALYTICS = 'false';
+      const spy = vi.spyOn(trackEvent as any, 'sendEvent');
+
+      try {
+        trackEvent.trackCredentialResolution('react', 'spec', false);
+        expect(spy).not.toHaveBeenCalled();
+      } finally {
+        process.env.AUTH0_MCP_ANALYTICS = originalEnv;
+      }
+    });
+  });
+
   describe('private methods', () => {
     describe('track', () => {
       it('should not send event when tracking is disabled', async () => {

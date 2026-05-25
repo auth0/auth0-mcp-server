@@ -94,6 +94,28 @@ export class TrackEvent {
   }
 
   /**
+   * Track credential resolution event
+   *
+   * @param framework - The framework used for credential resolution
+   * @param resolution_path - Whether the spec or fallback path was used
+   * @param secret_generated - Whether AUTH0_SECRET was auto-generated
+   */
+  trackCredentialResolution(
+    framework: string,
+    resolution_path: 'spec' | 'fallback',
+    secret_generated: boolean
+  ): void {
+    const eventName = `${EVENT_NAME_PREFIX}-credential-resolution`;
+    const properties = {
+      framework,
+      resolution_path,
+      secret_generated,
+      ...this.getCommonProperties(),
+    };
+    this.track(eventName, properties);
+  }
+
+  /**
    * Internal method to track an event
    *
    * @param eventName - Name of the event to track
