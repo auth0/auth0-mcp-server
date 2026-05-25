@@ -10,6 +10,7 @@ import { createErrorResponse, createSuccessResponse } from '../utils/http-utilit
 import type { Auth0Config } from '../utils/config.js';
 import { getManagementClient } from '../utils/auth0-client.js';
 import { resolveAndWriteCredentials } from '../utils/env-credentials.js';
+import { SUPPORTED_FRAMEWORKS } from '../utils/onboarding.js';
 import { maskSensitiveFields } from '../utils/response-masker.js';
 import type {
   ClientCreateTokenEndpointAuthMethodEnum,
@@ -283,7 +284,7 @@ export const APPLICATION_TOOLS: Tool[] = [
         },
         framework: {
           type: 'string',
-          description: `The framework the project uses. ALWAYS pass the actual framework name (e.g. sveltekit, react, nextjs, express). NEVER substitute or guess a different framework name.`,
+          description: `The framework the project uses. Pass the exact framework name (e.g. "svelte", "express", "flask"). Only these have optimized env specs: ${SUPPORTED_FRAMEWORKS.join(', ')}. All other frameworks use a generic fallback with standard Auth0 env variables.`,
         },
         project_path: {
           type: 'string',

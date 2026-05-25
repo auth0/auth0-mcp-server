@@ -1,11 +1,12 @@
 import { z } from 'zod';
 import { log } from './logger.js';
 import { fetchWithOptions } from './fetch.js';
+import { isFrameworkSupported, type SupportedFramework } from './onboarding.js';
 
 const CDN_BASE = 'https://cdn.auth0.com/manhattan/quickstarts';
 const QUICKSTART_RELEASE_URL = `${CDN_BASE}/releases/production.json`;
 
-const FRAMEWORK_FILENAMES: Record<string, string> = {
+const FRAMEWORK_FILENAMES: Record<SupportedFramework, string> = {
   react: 'react-quickstart-definition.json',
   vue: 'vuejs-quickstart-definition.json',
   angular: 'angular-quickstart-definition.json',
@@ -87,7 +88,7 @@ const fetchFromCDN = async (framework: string): Promise<QuickstartSpec> => {
     throw new Error(`Invalid version format from CDN: ${version}`);
   }
 
-  const fileName = FRAMEWORK_FILENAMES[framework];
+  const fileName = FRAMEWORK_FILENAMES[framework as SupportedFramework];
   const url = `${CDN_BASE}/versions/${version}/assets/definitions/en/${fileName}`;
 
   const definitionResponse = await fetchWithOptions(url, FETCH_OPTIONS);
@@ -104,11 +105,11 @@ const fetchFromCDN = async (framework: string): Promise<QuickstartSpec> => {
 };
 
 export const fetchQuickstartSpec = async (framework: string): Promise<QuickstartSpec | null> => {
-  const key = framework.toLowerCase();
-
-  if (!FRAMEWORK_FILENAMES[key]) {
+  if (!isFrameworkSupported(framework)) {
     return null;
   }
+
+  const key = framework.toLowerCase();
 
   const now = Date.now();
   const cached = cache.get(key);

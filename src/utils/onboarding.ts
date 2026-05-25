@@ -1,5 +1,12 @@
 import { QuickstartSpec, QuickstartAppType, DefaultAppOrigin } from './quickstarts';
 
+export const SUPPORTED_FRAMEWORKS = ['react', 'angular', 'vue', 'nextjs'] as const;
+export type SupportedFramework = (typeof SUPPORTED_FRAMEWORKS)[number];
+
+export function isFrameworkSupported(framework: string): framework is SupportedFramework {
+  return SUPPORTED_FRAMEWORKS.includes(framework.toLowerCase() as SupportedFramework);
+}
+
 export enum UrlSource {
   Detected = 'detected',
   FrameworkDefault = 'framework_default',

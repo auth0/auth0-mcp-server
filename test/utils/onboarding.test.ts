@@ -1,6 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { resolveCallbackUrls, resolveDefaultOrigin, UrlSource } from '../../src/utils/onboarding';
-import type { QuickstartSpec, DefaultAppOrigin } from '../../src/utils/types';
+import {
+  resolveCallbackUrls,
+  resolveDefaultOrigin,
+  UrlSource,
+  SUPPORTED_FRAMEWORKS,
+  isFrameworkSupported,
+} from '../../src/utils/onboarding';
+import type { QuickstartSpec, DefaultAppOrigin } from '../../src/utils/quickstarts';
 
 const defaultSpec: QuickstartSpec = {
   appType: 'spa',
@@ -11,7 +17,29 @@ const defaultSpec: QuickstartSpec = {
   },
   callbackPath: '/callback',
   logoutPath: '/logout',
+  placeholders: {},
+  inputs: {},
+  environment: {},
 };
+
+describe('isFrameworkSupported', () => {
+  it.each(SUPPORTED_FRAMEWORKS)('returns true for supported framework: %s', (framework) => {
+    expect(isFrameworkSupported(framework)).toBe(true);
+  });
+
+  it('is case-insensitive', () => {
+    expect(isFrameworkSupported('NextJS')).toBe(true);
+    expect(isFrameworkSupported('REACT')).toBe(true);
+    expect(isFrameworkSupported('Angular')).toBe(true);
+  });
+
+  it('returns false for unsupported frameworks', () => {
+    expect(isFrameworkSupported('sveltekit')).toBe(false);
+    expect(isFrameworkSupported('express')).toBe(false);
+    expect(isFrameworkSupported('flask')).toBe(false);
+    expect(isFrameworkSupported('')).toBe(false);
+  });
+});
 
 describe('resolveDefaultOrigin', () => {
   it('should resolve domain with port', () => {
