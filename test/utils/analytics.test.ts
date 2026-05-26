@@ -141,7 +141,7 @@ describe('TrackEvent', () => {
     it('should track credential resolution with framework, resolution path, and secret generated', () => {
       const spy = vi.spyOn(trackEvent as any, 'track');
 
-      trackEvent.trackCredentialResolution('nextjs', 'spec', true);
+      trackEvent.trackCredentialResolution('nextjs', 'spec', true, ['AUTH0_DOMAIN', 'AUTH0_CLIENT_ID']);
 
       expect(spy).toHaveBeenCalledWith(
         'auth0-mcp-server-credential-resolution',
@@ -149,6 +149,7 @@ describe('TrackEvent', () => {
           framework: 'nextjs',
           resolution_path: 'spec',
           secret_generated: true,
+          keys_written: 'AUTH0_CLIENT_ID,AUTH0_DOMAIN',
         })
       );
     });
@@ -156,7 +157,7 @@ describe('TrackEvent', () => {
     it('should track fallback path when spec is unavailable', () => {
       const spy = vi.spyOn(trackEvent as any, 'track');
 
-      trackEvent.trackCredentialResolution('sveltekit', 'fallback', false);
+      trackEvent.trackCredentialResolution('sveltekit', 'fallback', false, ['AUTH0_SECRET', 'AUTH0_DOMAIN']);
 
       expect(spy).toHaveBeenCalledWith(
         'auth0-mcp-server-credential-resolution',
@@ -164,6 +165,7 @@ describe('TrackEvent', () => {
           framework: 'sveltekit',
           resolution_path: 'fallback',
           secret_generated: false,
+          keys_written: 'AUTH0_DOMAIN,AUTH0_SECRET',
         })
       );
     });
@@ -174,7 +176,7 @@ describe('TrackEvent', () => {
       const spy = vi.spyOn(trackEvent as any, 'sendEvent');
 
       try {
-        trackEvent.trackCredentialResolution('react', 'spec', false);
+        trackEvent.trackCredentialResolution('react', 'spec', false, ['AUTH0_DOMAIN']);
         expect(spy).not.toHaveBeenCalled();
       } finally {
         process.env.AUTH0_MCP_ANALYTICS = originalEnv;

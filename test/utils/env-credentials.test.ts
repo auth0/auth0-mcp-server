@@ -3,9 +3,10 @@ import { http, HttpResponse } from 'msw';
 import * as fs from 'fs';
 import { server } from '../setup';
 
-const { mockWriteCredentialsToEnv, mockParseEnvFile } = vi.hoisted(() => ({
+const { mockWriteCredentialsToEnv, mockParseEnvFile, mockDetectExistingEnvFile } = vi.hoisted(() => ({
   mockWriteCredentialsToEnv: vi.fn(),
   mockParseEnvFile: vi.fn(),
+  mockDetectExistingEnvFile: vi.fn(),
 }));
 
 vi.mock('../../src/utils/logger.js', () => ({ log: vi.fn() }));
@@ -13,6 +14,7 @@ vi.mock('../../src/utils/quickstarts.js', () => ({ fetchQuickstartSpec: vi.fn() 
 vi.mock('../../src/utils/credentials-writer.js', () => ({
   writeCredentialsToEnv: mockWriteCredentialsToEnv,
   parseEnvFile: mockParseEnvFile,
+  detectExistingEnvFile: mockDetectExistingEnvFile,
 }));
 
 vi.mock('fs');
@@ -45,6 +47,17 @@ const mockWriteResult = {
   file_created: true,
 };
 
+const defaultPlaceholders = {
+  '%AUTH0_DOMAIN%': { inputKey: 'auth0Domain' },
+  '%AUTH0_CLIENT_ID%': { inputKey: 'auth0ClientId' },
+  '%AUTH0_CLIENT_SECRET%': { inputKey: 'auth0ClientSecret' },
+  '%AUTH0_SECRET%': { inputKey: 'sessionCookieSecret' },
+  '%PORT%': { inputKey: 'port' },
+  '%APP_DOMAIN%': { inputKey: 'appDomain' },
+  '%APP_SCHEME%': { inputKey: 'appScheme' },
+  '%CALLBACK_URL%': { inputKey: 'callbackUrl' },
+};
+
 const specWithSecret = {
   appType: 'webapp' as const,
   defaultAppOrigin: { scheme: 'http', domain: 'localhost', port: 3000 },
@@ -55,12 +68,12 @@ const specWithSecret = {
     language: 'shell',
     fileName: '.env.local',
     entries: [
-      { type: 'var' as const, name: 'AUTH0_DOMAIN', value: '{yourDomain}' },
-      { type: 'var' as const, name: 'AUTH0_CLIENT_ID', value: '{yourClientId}' },
-      { type: 'var' as const, name: 'AUTH0_CLIENT_SECRET', value: '{yourClientSecret}', sensitive: true },
+      { type: 'var' as const, name: 'AUTH0_DOMAIN', value: '%AUTH0_DOMAIN%' },
+      { type: 'var' as const, name: 'AUTH0_CLIENT_ID', value: '%AUTH0_CLIENT_ID%' },
+      { type: 'var' as const, name: 'AUTH0_CLIENT_SECRET', value: '%AUTH0_CLIENT_SECRET%', sensitive: true },
     ],
   },
-  placeholders: {},
+  placeholders: defaultPlaceholders,
   inputs: {},
   environment: {},
 };
@@ -75,11 +88,11 @@ const specSpaNoSecret = {
     language: 'shell',
     fileName: '.env.local',
     entries: [
-      { type: 'var' as const, name: 'AUTH0_DOMAIN', value: '{yourDomain}' },
-      { type: 'var' as const, name: 'AUTH0_CLIENT_ID', value: '{yourClientId}' },
+      { type: 'var' as const, name: 'AUTH0_DOMAIN', value: '%AUTH0_DOMAIN%' },
+      { type: 'var' as const, name: 'AUTH0_CLIENT_ID', value: '%AUTH0_CLIENT_ID%' },
     ],
   },
-  placeholders: {},
+  placeholders: defaultPlaceholders,
   inputs: {},
   environment: {},
 };
@@ -101,6 +114,7 @@ beforeEach(() => {
   vi.mocked(fs.statSync).mockReturnValue({ isDirectory: () => true } as any);
   mockFetchQuickstartSpec.mockResolvedValue(null);
   mockWriteCredentialsToEnv.mockResolvedValue(mockWriteResult);
+  mockDetectExistingEnvFile.mockReturnValue(null);
   mockParseEnvFile.mockReturnValue({});
 });
 
@@ -345,7 +359,7 @@ describe('resolveAndWriteCredentials — spec path (supported framework)', () =>
       envSnippet: {
         ...specSpaNoSecret.envSnippet,
         entries: [
-          { type: 'var' as const, name: 'AUTH0_BASE_URL', value: '{yourBaseUrl}' },
+          { type: 'var' as const, name: 'AUTH0_BASE_URL', value: '%APP_SCHEME%://%APP_DOMAIN%:%PORT%' },
         ],
       },
     });
@@ -363,7 +377,7 @@ describe('resolveAndWriteCredentials — spec path (supported framework)', () =>
       ...specSpaNoSecret,
       envSnippet: {
         ...specSpaNoSecret.envSnippet,
-        entries: [{ type: 'var' as const, name: 'AUTH0_BASE_URL', value: '{yourBaseUrl}' }],
+        entries: [{ type: 'var' as const, name: 'AUTH0_BASE_URL', value: '%APP_SCHEME%://%APP_DOMAIN%:%PORT%' }],
       },
     });
 
@@ -391,13 +405,13 @@ describe('resolveAndWriteCredentials — spec path (supported framework)', () =>
     }
   });
 
-  it('resolves ISSUER key pattern to https://{domain}', async () => {
+  it('resolves ISSUER key using https:// prefix with domain placeholder', async () => {
     mockFetchQuickstartSpec.mockResolvedValue({
       ...specSpaNoSecret,
       envSnippet: {
         ...specSpaNoSecret.envSnippet,
         entries: [
-          { type: 'var' as const, name: 'AUTH0_ISSUER_BASE_URL', value: '{yourIssuer}' },
+          { type: 'var' as const, name: 'AUTH0_ISSUER_BASE_URL', value: 'https://%AUTH0_DOMAIN%' },
         ],
       },
     });
@@ -416,7 +430,7 @@ describe('resolveAndWriteCredentials — spec path (supported framework)', () =>
       envSnippet: {
         ...specSpaNoSecret.envSnippet,
         entries: [
-          { type: 'var' as const, name: 'AUTH0_CALLBACK_URL', value: '{yourCallbackUrl}' },
+          { type: 'var' as const, name: 'AUTH0_CALLBACK_URL', value: '%CALLBACK_URL%' },
         ],
       },
     });
@@ -439,8 +453,8 @@ describe('resolveAndWriteCredentials — spec path (supported framework)', () =>
       envSnippet: {
         ...specSpaNoSecret.envSnippet,
         entries: [
-          { type: 'var' as const, name: 'AUTH0_DOMAIN', value: '{yourDomain}' },
-          { type: 'var' as const, name: 'AUTH0_CALLBACK_URL', value: '{yourCallbackUrl}' },
+          { type: 'var' as const, name: 'AUTH0_DOMAIN', value: '%AUTH0_DOMAIN%' },
+          { type: 'var' as const, name: 'AUTH0_CALLBACK_URL', value: '%CALLBACK_URL%' },
         ],
       },
     });
@@ -458,9 +472,9 @@ describe('resolveAndWriteCredentials — spec path (supported framework)', () =>
       envSnippet: {
         ...specSpaNoSecret.envSnippet,
         entries: [
-          { type: 'var' as const, name: 'AUTH0_BASE_URL', value: '{yourBaseUrl}' },
-          { type: 'var' as const, name: 'AUTH0_CALLBACK_URL', value: '{yourCallbackUrl}' },
-          { type: 'var' as const, name: 'AUTH0_PORT', value: '{yourPort}' },
+          { type: 'var' as const, name: 'AUTH0_BASE_URL', value: '%APP_SCHEME%://%APP_DOMAIN%:%PORT%' },
+          { type: 'var' as const, name: 'AUTH0_CALLBACK_URL', value: '%CALLBACK_URL%' },
+          { type: 'var' as const, name: 'AUTH0_PORT', value: '%PORT%' },
         ],
       },
     });

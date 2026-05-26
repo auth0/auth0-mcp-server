@@ -61,7 +61,7 @@ describe('credentials-writer', () => {
       expect(content).toContain('AUTH0_CALLBACK_URL=http://localhost:3000/callback');
     });
 
-    it('should merge with existing .env.local file (parse-then-merge, no duplicates)', async () => {
+    it('should append to existing .env.local file preserving all content', async () => {
       fs.writeFileSync(envFilePath, 'EXISTING_VAR=existing_value\n', 'utf-8');
 
       const credentials = {
@@ -77,19 +77,32 @@ describe('credentials-writer', () => {
       expect(content).toContain('EXISTING_VAR=existing_value');
       expect(content).toContain('AUTH0_CLIENT_ID=test_client_id');
       expect(content).toContain('AUTH0_CLIENT_SECRET=test_client_secret');
-      // No duplicate keys
-      expect(content.match(/AUTH0_CLIENT_ID/g)?.length).toBe(1);
     });
 
-    it('should overwrite existing key values on merge', async () => {
+    it('should comment out existing key and append new value', async () => {
       fs.writeFileSync(envFilePath, 'AUTH0_CLIENT_ID=old_value\n', 'utf-8');
 
       await writeCredentialsToEnv({ AUTH0_CLIENT_ID: 'new_value' });
 
       const content = fs.readFileSync(envFilePath, 'utf-8');
       expect(content).toContain('AUTH0_CLIENT_ID=new_value');
-      expect(content).not.toContain('AUTH0_CLIENT_ID=old_value');
-      expect(content.match(/AUTH0_CLIENT_ID/g)?.length).toBe(1);
+      expect(content).toContain('# AUTH0_CLIENT_ID=old_value');
+    });
+
+    it('should preserve comments and blank lines in existing file', async () => {
+      fs.writeFileSync(
+        envFilePath,
+        '# This is a comment\n\nEXISTING_VAR=value\n# Another comment\n',
+        'utf-8'
+      );
+
+      await writeCredentialsToEnv({ AUTH0_DOMAIN: 'test.auth0.com' });
+
+      const content = fs.readFileSync(envFilePath, 'utf-8');
+      expect(content).toContain('# This is a comment');
+      expect(content).toContain('# Another comment');
+      expect(content).toContain('EXISTING_VAR=value');
+      expect(content).toContain('AUTH0_DOMAIN=test.auth0.com');
     });
 
     it('should create .gitignore if it does not exist', async () => {

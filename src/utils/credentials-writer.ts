@@ -26,9 +26,9 @@ export interface WriteCredentialsOptions {
  *
  * File behavior:
  * - If the file does NOT exist: creates a new file with the credentials
- * - If the file DOES exist: parses existing key=value pairs, merges incoming
- *   credentials on top, and writes the full merged result back. Existing keys
- *   not present in the incoming credentials are preserved. No duplicates.
+ * - If the file DOES exist: comments out any lines whose keys conflict with
+ *   the incoming credentials, preserves all other content (comments, blank
+ *   lines, unrelated variables), and appends the new credentials at the end.
  *
  * Additional behavior:
  * - Sets restrictive file permissions (chmod 600 — owner read/write only)
@@ -56,13 +56,32 @@ export async function writeCredentialsToEnv(
   }
 
   const fileExisted = fs.existsSync(envFile);
-  const existing = fileExisted ? parseEnvFile(envFile) : {};
+  const incomingKeys = new Set(Object.keys(credentials));
 
-  const merged = { ...existing, ...credentials };
-  const content =
-    Object.entries(merged)
-      .map(([key, value]) => `${key}=${value}`)
-      .join('\n') + '\n';
+  let content: string;
+
+  if (fileExisted) {
+    const existingContent = fs.readFileSync(envFile, 'utf-8');
+    const updatedLines = commentOutConflictingKeys(existingContent, incomingKeys);
+    const newSection =
+      `\n# Auth0 Credentials (Generated: ${new Date().toISOString()})\n` +
+      Object.entries(credentials)
+        .map(([key, value]) => `${key}=${value}`)
+        .join('\n') +
+      '\n';
+    content = updatedLines + newSection;
+    log(`Appending credentials to existing file: ${envFile}`);
+  } else {
+    const header = `# Auth0 Credentials (Generated: ${new Date().toISOString()})\n`;
+    content =
+      header +
+      Object.entries(credentials)
+        .map(([key, value]) => `${key}=${value}`)
+        .join('\n') +
+      '\n';
+    log(`Creating new file with credentials: ${envFile}`);
+  }
+
   fs.writeFileSync(envFile, content, 'utf-8');
 
   // Set restrictive permissions (owner read/write only)
@@ -85,6 +104,22 @@ export async function writeCredentialsToEnv(
     keys_written: Object.keys(credentials),
     file_created: !fileExisted,
   };
+}
+
+/**
+ * Comments out lines in existing env content whose keys conflict with incoming credentials.
+ * Preserves all other content (comments, blank lines, unrelated variables) as-is.
+ */
+function commentOutConflictingKeys(existingContent: string, incomingKeys: Set<string>): string {
+  const lines = existingContent.split('\n');
+  const result = lines.map((line) => {
+    const match = line.match(/^([A-Za-z_][A-Za-z0-9_]*)=/);
+    if (match && incomingKeys.has(match[1])) {
+      return `# ${line}`;
+    }
+    return line;
+  });
+  return result.join('\n');
 }
 
 /**
@@ -137,12 +172,12 @@ export function parseEnvFile(filePath: string): Record<string, string> {
  *
  * @returns Path to the first found env file, or null if none exist
  */
-export function detectExistingEnvFile(): string | null {
-  const cwd = process.cwd();
+export function detectExistingEnvFile(dir?: string): string | null {
+  const baseDir = dir ?? process.cwd();
   const envFileNames = ['.env.local', '.env', '.env.development.local', '.env.development'];
 
   for (const fileName of envFileNames) {
-    const filePath = path.join(cwd, fileName);
+    const filePath = path.join(baseDir, fileName);
     if (fs.existsSync(filePath)) {
       log(`Detected existing env file: ${filePath}`);
       return filePath;

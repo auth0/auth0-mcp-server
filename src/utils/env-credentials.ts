@@ -5,7 +5,7 @@ import { log } from './logger.js';
 import { fetchQuickstartSpec } from './quickstarts.js';
 import type { QuickstartSpec, DefaultAppOrigin } from './quickstarts.js';
 import { getManagementClient } from './auth0-client.js';
-import { writeCredentialsToEnv, parseEnvFile } from './credentials-writer.js';
+import { writeCredentialsToEnv, parseEnvFile, detectExistingEnvFile } from './credentials-writer.js';
 import type { HandlerConfig } from './types.js';
 import trackEvent from './analytics.js';
 
@@ -83,7 +83,7 @@ export async function resolveAndWriteCredentials(
 
   const resolutionPath: 'spec' | 'fallback' = spec?.envSnippet ? 'spec' : 'fallback';
   const resolved = spec?.envSnippet
-    ? await buildSpecCredentials(params, spec.envSnippet, spec.defaultAppOrigin, config, token)
+    ? await buildSpecCredentials(params, spec.envSnippet, spec.defaultAppOrigin, config, token, spec.placeholders)
     : await buildFallbackCredentials(params, config, token);
 
   if (!resolved.success) return resolved;
@@ -98,7 +98,8 @@ export async function resolveAndWriteCredentials(
   trackEvent.trackCredentialResolution(
     framework,
     resolutionPath,
-    generatedKeys.includes('AUTH0_SECRET')
+    generatedKeys.includes('AUTH0_SECRET'),
+    credentialsInfo.keys_written
   );
 
   return {
@@ -118,6 +119,9 @@ export async function resolveAndWriteCredentials(
 /**
  * Builds a credential map from the CDN quickstart spec's envSnippet.
  *
+ * Resolves each entry's value template by substituting placeholders (e.g. %AUTH0_DOMAIN%)
+ * with actual values derived from the spec's placeholder→inputKey mapping.
+ *
  * SPA frameworks (empty secretKeys) skip the Management API call entirely.
  * AUTH0_SECRET is generated only when required and not already present in the existing env file.
  */
@@ -126,7 +130,8 @@ async function buildSpecCredentials(
   envSnippet: EnvSnippet,
   defaultAppOrigin: DefaultAppOrigin,
   config: HandlerConfig,
-  token: string
+  token: string,
+  placeholders: Record<string, unknown>
 ): Promise<ResolvedCredentials> {
   const {
     client_id: clientId,
@@ -135,12 +140,11 @@ async function buildSpecCredentials(
     callback_url: callbackUrl,
     port,
   } = params;
-  const envFilePath = path.join(projectPath, envSnippet.fileName);
+  const envFilePath = detectExistingEnvFile(projectPath) ?? path.join(projectPath, envSnippet.fileName);
 
   const varEntries = envSnippet.entries.filter((e) => e.type === 'var') as {
     type: 'var'; name: string; value: string; comment?: string; sensitive?: boolean;
   }[];
-  const requiredKeys = varEntries.map((e) => e.name);
   const secretKeys = varEntries.filter((e) => e.sensitive).map((e) => e.name);
 
   let clientSecret: string | undefined;
@@ -160,48 +164,75 @@ async function buildSpecCredentials(
     }
   }
 
+  const resolvedPort = port
+    ? String(port)
+    : baseUrl
+      ? new URL(baseUrl).port || String(defaultAppOrigin.port ?? 3000)
+      : String(defaultAppOrigin.port ?? 3000);
+
+  const inputValues: Record<string, string | undefined> = {
+    auth0Domain: config.domain,
+    auth0ClientId: clientId,
+    auth0ClientSecret: clientSecret,
+    port: resolvedPort,
+    appDomain: baseUrl ? new URL(baseUrl).hostname : (defaultAppOrigin.domain ?? 'localhost'),
+    appScheme: baseUrl ? new URL(baseUrl).protocol.replace(':', '') : (defaultAppOrigin.scheme ?? 'http'),
+  };
+
+  if (callbackUrl) {
+    inputValues.callbackUrl = callbackUrl;
+  }
+
+  const placeholderMap = buildPlaceholderMap(placeholders, inputValues);
+
   const existingEnv = parseEnvFile(envFilePath);
   const credentialMap: Record<string, string> = {};
   const generated_keys: string[] = [];
 
-  // Resolve each required env key to its value based on pattern matching against the key name.
-  // AUTH0_SECRET is handled separately as it must be generated server-side.
-  for (const key of requiredKeys) {
-    const upper = key.toUpperCase();
-
-    if (key === 'AUTH0_SECRET') {
+  for (const entry of varEntries) {
+    if (entry.name === 'AUTH0_SECRET') {
       if (!existingEnv['AUTH0_SECRET']) {
-        // Always generated server-side — never accepted as a parameter to prevent secret exposure through the LLM
-        credentialMap[key] = randomBytes(32).toString('hex');
-        generated_keys.push(key);
+        credentialMap[entry.name] = randomBytes(32).toString('hex');
+        generated_keys.push(entry.name);
       }
       continue;
     }
 
-    const resolvedPort = port
-      ? String(port)
-      : baseUrl
-        ? new URL(baseUrl).port || String(defaultAppOrigin.port ?? 3000)
-        : String(defaultAppOrigin.port ?? 3000);
-
-    const keyPatterns: [string, string | undefined][] = [
-      ['ISSUER', `https://${config.domain}`],
-      ['DOMAIN', config.domain!],
-      ['CLIENT_SECRET', secretKeys.includes(key) ? clientSecret : undefined],
-      ['CLIENT_ID', clientId],
-      ['BASE_URL', baseUrl || `http://localhost:${resolvedPort}`],
-      ['CALLBACK', callbackUrl],
-      ['PORT', resolvedPort],
-    ];
-
-    const match = keyPatterns.find(([pattern]) => upper.includes(pattern));
-    if (match) {
-      const [, value] = match;
-      if (value) credentialMap[key] = value;
+    const resolved = resolvePlaceholders(entry.value, placeholderMap);
+    if (resolved && !resolved.includes('%')) {
+      credentialMap[entry.name] = resolved;
     }
   }
 
   return { success: true, credentialMap, envFilePath, generated_keys };
+}
+
+/**
+ * Builds a map from placeholder token (e.g. "%AUTH0_DOMAIN%") to resolved value
+ * using the spec's placeholders definition and the resolved input values.
+ */
+function buildPlaceholderMap(
+  placeholders: Record<string, unknown>,
+  inputValues: Record<string, string | undefined>
+): Record<string, string> {
+  const map: Record<string, string> = {};
+
+  for (const [token, definition] of Object.entries(placeholders)) {
+    if (typeof definition === 'object' && definition !== null && 'inputKey' in definition) {
+      const inputKey = (definition as { inputKey: string }).inputKey;
+      const value = inputValues[inputKey];
+      if (value) map[token] = value;
+    }
+  }
+
+  return map;
+}
+
+/**
+ * Resolves all %PLACEHOLDER% tokens in a template string using the placeholder map.
+ */
+function resolvePlaceholders(template: string, placeholderMap: Record<string, string>): string {
+  return template.replace(/%[A-Z0-9_]+%/g, (token) => placeholderMap[token] ?? token);
 }
 
 /**
@@ -214,7 +245,7 @@ async function buildFallbackCredentials(
   token: string
 ): Promise<ResolvedCredentials> {
   const { client_id: clientId, project_path: projectPath, callback_url: callbackUrl } = params;
-  const envFilePath = path.join(projectPath, '.env.local');
+  const envFilePath = detectExistingEnvFile(projectPath) ?? path.join(projectPath, '.env.local');
 
   log(
     `Spec unavailable for framework "${params.framework}", falling back to hardcoded credentials`

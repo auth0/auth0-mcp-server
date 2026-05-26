@@ -103,13 +103,15 @@ export class TrackEvent {
   trackCredentialResolution(
     framework: string,
     resolution_path: 'spec' | 'fallback',
-    secret_generated: boolean
+    secret_generated: boolean,
+    keys_written: string[]
   ): void {
     const eventName = `${EVENT_NAME_PREFIX}-credential-resolution`;
     const properties = {
       framework,
       resolution_path,
       secret_generated,
+      keys_written: [...keys_written].sort().join(','),
       ...this.getCommonProperties(),
     };
     this.track(eventName, properties);
