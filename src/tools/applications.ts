@@ -274,7 +274,7 @@ export const APPLICATION_TOOLS: Tool[] = [
   {
     name: 'auth0_save_credentials_to_file',
     description:
-      "Save Auth0 application credentials to the project's environment file. Only use this when you are in a project directory. Uses the framework quickstart spec to determine env variable names and target filename. Requires an explicit project path to prevent writing credentials to unintended locations. If the file already exists, credentials are merged (existing content is preserved). Additionally, a .gitignore entry is automatically added for the target file.",
+      "Save Auth0 application credentials to the project's environment file. Only use this when you are in a project directory. Uses the framework quickstart spec to determine env variable names and target filename. Requires an explicit project path to prevent writing credentials to unintended locations. If the file already exists, conflicting keys are commented out and new credentials are appended (existing content is preserved). Additionally, a .gitignore entry is automatically added for the target file.",
     inputSchema: {
       type: 'object',
       properties: {
