@@ -72,7 +72,7 @@ export const APPLICATION_TOOLS: Tool[] = [
   {
     name: 'auth0_create_application',
     description:
-      'Create a new Auth0 application with the tenant. Prefer OIDC compliant unless otherwise specified. After creating, always explicitly tell the user that the client_secret is redacted in this response for security and provide the dashboard URL and API URL from _credentials_access so they know where to view the full secret. Also inform the user about any automatically applied settings (such as skip_non_verifiable_callback_uri_confirmation_prompt). To save credentials locally, always ask the user for a file path before calling auth0_save_credentials_to_file — never assume a default path.',
+      'Create a new Auth0 application with the tenant. Prefer OIDC compliant unless otherwise specified. After creating, always explicitly tell the user that the client_secret is redacted in this response for security and provide the dashboard URL and API URL from _credentials_access so they know where to view the full secret. Also inform the user about any automatically applied settings (such as skip_non_verifiable_callback_uri_confirmation_prompt).',
     inputSchema: {
       type: 'object',
       properties: {
