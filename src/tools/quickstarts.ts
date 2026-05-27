@@ -194,6 +194,8 @@ export const QUICKSTART_HANDLERS: Record<
       port,
       appDomain: baseUrlParsed.hostname,
       appScheme: baseUrlParsed.protocol.replace(':', ''),
+      auth0ClientSecret: "*******MASKED*********",
+      sessionCookieSecret: "*******MASKED*********",
     };
 
     for (const [key, def] of Object.entries(spec.inputs)) {
