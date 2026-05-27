@@ -5,6 +5,7 @@ import { isFrameworkSupported, FRAMEWORK_FILENAMES, type SupportedFramework } fr
 
 const CDN_BASE = 'https://cdn.auth0.com/manhattan/quickstarts';
 const QUICKSTART_RELEASE_URL = `${CDN_BASE}/releases/production.json`;
+const LLM_PROMPT_PATH_PREFIX = 'assets/llm-prompts/';
 
 const CACHE_TTL_MS = 60 * 60 * 1000;
 const FETCH_OPTIONS = { retries: 1 };
@@ -42,18 +43,22 @@ const QuickstartSpecSchema = z.object({
   callbackPath: z.string().min(1),
   logoutPath: z.string().min(1),
   llmPromptPath: z.string().min(1).optional(),
-  envSnippet: z.object({
-    type: z.string(),
-    language: z.string(),
-    fileName: z.string().min(1),
-    entries: z.array(EnvEntrySchema),
-  }).optional(),
+  envSnippet: z
+    .object({
+      type: z.string(),
+      language: z.string(),
+      fileName: z.string().min(1),
+      entries: z.array(EnvEntrySchema),
+    })
+    .optional(),
   placeholders: z.record(z.string(), z.unknown()),
   inputs: z.record(z.string(), z.unknown()),
   environment: z.record(z.string(), z.string()),
 });
 
-export type QuickstartSpec = z.infer<typeof QuickstartSpecSchema>;
+export type QuickstartSpec = z.infer<typeof QuickstartSpecSchema> & {
+  llmPromptUrl?: string;
+};
 export type QuickstartAppType = QuickstartSpec['appType'];
 export type DefaultAppOrigin = QuickstartSpec['defaultAppOrigin'];
 
@@ -67,6 +72,17 @@ class QuickstartCDNNotFoundError extends Error {
   }
 }
 
+function resolveLlmPromptUrl(version: string, llmPromptPath: string): string {
+  const versionBase = `${CDN_BASE}/versions/${version}/`;
+  const resolvedUrl = new URL(llmPromptPath, versionBase).href;
+  const expectedPromptPrefix = `${versionBase}${LLM_PROMPT_PATH_PREFIX}`;
+
+  if (!resolvedUrl.startsWith(expectedPromptPrefix)) {
+    throw new Error('Invalid llmPromptPath: resolved URL escapes LLM prompt CDN prefix');
+  }
+
+  return resolvedUrl;
+}
 
 const fetchFromCDN = async (framework: string): Promise<QuickstartSpec> => {
   const quickstartReleaseResponse = await fetchWithOptions(QUICKSTART_RELEASE_URL, FETCH_OPTIONS);
@@ -94,7 +110,13 @@ const fetchFromCDN = async (framework: string): Promise<QuickstartSpec> => {
   }
 
   const raw = await definitionResponse.json();
-  return QuickstartSpecSchema.parse(raw);
+  const spec: QuickstartSpec = QuickstartSpecSchema.parse(raw);
+
+  if (spec.llmPromptPath) {
+    spec.llmPromptUrl = resolveLlmPromptUrl(version, spec.llmPromptPath);
+  }
+
+  return spec;
 };
 
 export const fetchQuickstartSpec = async (framework: string): Promise<QuickstartSpec | null> => {
