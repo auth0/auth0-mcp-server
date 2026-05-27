@@ -1,7 +1,7 @@
 {
   "name": "@auth0/auth0-mcp-server",
   "mcpName": "com.auth0/mcp",
-  "version": "0.1.0-beta.12",
+  "version": "0.1.0-beta.13",
   "description": "Auth0 Model Context Protocol (MCP) Server (Beta) — A secure and extendable implementation of an MCP server that provides AI assistants with controlled access to the Auth0 Management API through natural language. This project is in beta and not intended for production workloads. It enables AI-assisted tenant management while enforcing best practices around security, least-privilege access, and customizable toolsets.",
   "type": "module",
   "main": "dist/index.js",
@@ -26,6 +26,9 @@
     "prebuild": "npm run format && npm run lint",
     "build": "rm -rf dist && tsc",
     "postbuild": "shx chmod +x dist/*.js",
+    "build:mcpb": "npm run build && npm prune --omit=dev && npx @anthropic-ai/mcpb pack . auth0-mcp-server.mcpb",
+    "postbuild:mcpb": "npm install",
+    "publish:smithery": "node utils/publish-smithery.js",
     "dev": "tsx src/index.ts run",
     "dev:debug": "DEBUG=auth0-mcp tsx src/index.ts run",
     "dev:inspect": "npx @modelcontextprotocol/inspector tsx src/index.ts run",
@@ -54,13 +57,13 @@
   "author": "auth0",
   "license": "MIT",
   "dependencies": {
+    "@github/keytar": "^7.10.6",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "auth0": "^4.37.0",
     "chalk": "^5.6.2",
     "commander": "^14.0.3",
     "debug": "^4.4.3",
     "jwt-decode": "^4.0.0",
-    "keytar": "^7.9.0",
     "open": "^11.0.0",
     "which": "^6.0.1"
   },

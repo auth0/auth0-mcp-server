@@ -89,13 +89,31 @@ const run = async (options: RunOptions): Promise<void> => {
       log(`Set HOME environment variable to ${process.env.HOME}`);
     }
 
+    // Honor env vars for MCPB-style installs where CLI args are not passed through
+    if (!options.readOnly && process.env.AUTH0_MCP_READ_ONLY === 'true') {
+      options.readOnly = true;
+    }
+    const defaultTools = options.tools.length === 1 && options.tools[0] === '*';
+    if (defaultTools && process.env.AUTH0_MCP_TOOLS) {
+      options.tools = process.env.AUTH0_MCP_TOOLS.split(',')
+        .map((t) => t.trim())
+        .filter(Boolean);
+      if (options.tools.length === 0) {
+        options.tools = ['*'];
+      }
+    }
+
     trackEvent.trackServerRun();
 
-    // Validate authorization before starting server
-    const isAuthorized = await validateAuthorization();
-    if (!isAuthorized) {
-      // Exit with code 1 (standard error code)
-      process.exit(1);
+    // Skip keychain-based validation when credentials are provided via env (MCPB-style launch).
+    // Startup validation in server.ts and per-tool validation still enforce correctness.
+    const envAuth = Boolean(process.env.AUTH0_TOKEN && process.env.AUTH0_DOMAIN);
+    if (!envAuth) {
+      const isAuthorized = await validateAuthorization();
+      if (!isAuthorized) {
+        // Exit with code 1 (standard error code)
+        process.exit(1);
+      }
     }
 
     if (options.readOnly && options.tools.length === 1 && options.tools[0] === '*') {

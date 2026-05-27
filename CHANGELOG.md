@@ -1,5 +1,15 @@
 # Change Log
 
+## [v0.1.0-beta.13](https://github.com/auth0/auth0-mcp-server/tree/v0.1.0-beta.13) (2026-05-21)
+[Full Changelog](https://github.com/auth0/auth0-mcp-server/compare/v0.1.0-beta.12...v0.1.0-beta.13)
+
+**Added**
+- add scripts for smithery deployment [\#164](https://github.com/auth0/auth0-mcp-server/pull/164) ([deepu105](https://github.com/deepu105))
+- feat: support  MCP bundle packaging(mcpb) for Smithery [\#157](https://github.com/auth0/auth0-mcp-server/pull/157) ([kushalshit27](https://github.com/kushalshit27))
+
+**Fixed**
+- fix: update keytar dependency [\#144](https://github.com/auth0/auth0-mcp-server/pull/144) ([kushalshit27](https://github.com/kushalshit27))
+
 ## [v0.1.0-beta.12](https://github.com/auth0/auth0-mcp-server/tree/v0.1.0-beta.12) (2026-05-05)
 
 **Added**
