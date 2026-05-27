@@ -707,7 +707,7 @@ export const APPLICATION_HANDLERS: Record<
 
           if (config.mode !== ServerMode.StreamableHttp) {
             howToAccess.unshift(
-              `To save credentials locally, you MUST first ask the user to provide a file path before calling "auth0_save_credentials_to_file" with client_id "${appData.client_id}". Do NOT assume a default path.`
+              `To save credentials locally, you MUST first ask the user to provide a project path before calling "auth0_save_credentials_to_file" with client_id "${appData.client_id}". Do NOT assume a default path.`
             );
           }
 
