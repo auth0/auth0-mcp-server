@@ -10,7 +10,7 @@ import { createErrorResponse, createSuccessResponse } from '../utils/http-utilit
 import type { Auth0Config } from '../utils/config.js';
 import { getManagementClient } from '../utils/auth0-client.js';
 import { resolveAndWriteCredentials } from '../utils/env-credentials.js';
-import { SUPPORTED_FRAMEWORKS } from '../utils/onboarding.js';
+import { hasNonVerifiableCallbacks, SUPPORTED_FRAMEWORKS } from '../utils/onboarding.js';
 import { maskSensitiveFields } from '../utils/response-masker.js';
 import type {
   ClientCreateTokenEndpointAuthMethodEnum,
@@ -72,7 +72,7 @@ export const APPLICATION_TOOLS: Tool[] = [
   {
     name: 'auth0_create_application',
     description:
-      'Create a new Auth0 application with the tenant. Prefer OIDC compliant unless otherwise specified.',
+      'Create a new Auth0 application with the tenant. Prefer OIDC compliant unless otherwise specified. After creating, always explicitly tell the user that the client_secret is redacted in this response for security and provide the dashboard URL and API URL from _credentials_access so they know where to view the full secret. Also inform the user about any automatically applied settings (such as skip_non_verifiable_callback_uri_confirmation_prompt).',
     inputSchema: {
       type: 'object',
       properties: {
@@ -163,7 +163,8 @@ export const APPLICATION_TOOLS: Tool[] = [
   },
   {
     name: 'auth0_update_application',
-    description: 'Update an existing Auth0 application',
+    description:
+      'Update an existing Auth0 application. After updating, always inform the user about any automatically applied settings (such as skip_non_verifiable_callback_uri_confirmation_prompt).',
     inputSchema: {
       type: 'object',
       properties: {
@@ -256,6 +257,11 @@ export const APPLICATION_TOOLS: Tool[] = [
         mobile: {
           type: 'object',
           description: 'Mobile app configuration settings',
+        },
+        skip_non_verifiable_callback_uri_confirmation_prompt: {
+          type: 'boolean',
+          description:
+            'Skip the non-verifiable callback URI confirmation prompt for localhost and custom scheme callbacks',
         },
       },
       required: ['client_id'],
@@ -669,6 +675,9 @@ export const APPLICATION_HANDLERS: Record<
         clientData.require_proof_of_possession = require_proof_of_possession;
       if (compliance_level !== undefined)
         clientData.compliance_level = compliance_level as ClientCreateComplianceLevelEnum;
+      if (callbacks && hasNonVerifiableCallbacks(callbacks)) {
+        clientData.skip_non_verifiable_callback_uri_confirmation_prompt = true;
+      }
 
       clientData.oidc_conformant = true;
       clientData.jwt_configuration = {
@@ -794,6 +803,7 @@ export const APPLICATION_HANDLERS: Record<
         signed_request_object,
         require_proof_of_possession,
         compliance_level,
+        skip_non_verifiable_callback_uri_confirmation_prompt,
       } = request.parameters;
 
       // Prepare update body, only including fields that are present
@@ -849,6 +859,16 @@ export const APPLICATION_HANDLERS: Record<
         updateData.require_proof_of_possession = require_proof_of_possession;
       if (compliance_level !== undefined)
         updateData.compliance_level = compliance_level as ClientCreateComplianceLevelEnum;
+      if (skip_non_verifiable_callback_uri_confirmation_prompt !== undefined)
+        updateData.skip_non_verifiable_callback_uri_confirmation_prompt =
+          skip_non_verifiable_callback_uri_confirmation_prompt;
+      if (
+        updateData.skip_non_verifiable_callback_uri_confirmation_prompt === undefined &&
+        callbacks &&
+        hasNonVerifiableCallbacks(callbacks)
+      ) {
+        updateData.skip_non_verifiable_callback_uri_confirmation_prompt = true;
+      }
 
       // Check for token
       if (!request.token) {
