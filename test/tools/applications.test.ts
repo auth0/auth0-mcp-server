@@ -246,6 +246,66 @@ describe('Applications Tool Handlers', () => {
       expect(parsedContent.name).toBe('Test App');
     });
 
+    it('should auto-set skip_non_verifiable_callback_uri_confirmation_prompt when callbacks contain localhost', async () => {
+      let capturedBody: Record<string, any> = {};
+
+      server.use(
+        http.post('https://*/api/v2/clients', async ({ request }) => {
+          capturedBody = (await request.json()) as Record<string, any>;
+          return HttpResponse.json({
+            ...capturedBody,
+            client_id: 'new-app-id',
+          });
+        })
+      );
+
+      const request = {
+        token,
+        parameters: {
+          name: 'Test App',
+          app_type: 'spa',
+          callbacks: ['http://localhost:3000/callback'],
+        },
+      };
+
+      const config = { domain };
+
+      const response = await APPLICATION_HANDLERS.auth0_create_application(request, config);
+
+      expect(response.isError).toBe(false);
+      expect(capturedBody.skip_non_verifiable_callback_uri_confirmation_prompt).toBe(true);
+    });
+
+    it('should not auto-set skip_non_verifiable_callback_uri_confirmation_prompt for verifiable callbacks', async () => {
+      let capturedBody: Record<string, any> = {};
+
+      server.use(
+        http.post('https://*/api/v2/clients', async ({ request }) => {
+          capturedBody = (await request.json()) as Record<string, any>;
+          return HttpResponse.json({
+            ...capturedBody,
+            client_id: 'new-app-id',
+          });
+        })
+      );
+
+      const request = {
+        token,
+        parameters: {
+          name: 'Test App',
+          app_type: 'spa',
+          callbacks: ['https://example.com/callback'],
+        },
+      };
+
+      const config = { domain };
+
+      const response = await APPLICATION_HANDLERS.auth0_create_application(request, config);
+
+      expect(response.isError).toBe(false);
+      expect(capturedBody.skip_non_verifiable_callback_uri_confirmation_prompt).toBeUndefined();
+    });
+
     it('should handle missing required parameters', async () => {
       const request = {
         token,
@@ -511,6 +571,97 @@ describe('Applications Tool Handlers', () => {
         expect(capturedBody!.token_endpoint_auth_method).toBeUndefined();
       }
     );
+
+    it('should auto-set skip_non_verifiable_callback_uri_confirmation_prompt when callbacks contain localhost', async () => {
+      const clientId = mockApplications[0].client_id;
+      let capturedBody: Record<string, any> = {};
+
+      server.use(
+        http.patch(`https://*/api/v2/clients/${clientId}`, async ({ request }) => {
+          capturedBody = (await request.json()) as Record<string, any>;
+          return HttpResponse.json({
+            ...mockApplications[0],
+            ...capturedBody,
+          });
+        })
+      );
+
+      const request = {
+        token,
+        parameters: {
+          client_id: clientId,
+          callbacks: ['http://localhost:3000/callback'],
+        },
+      };
+
+      const config = { domain };
+
+      const response = await APPLICATION_HANDLERS.auth0_update_application(request, config);
+
+      expect(response.isError).toBe(false);
+      expect(capturedBody.skip_non_verifiable_callback_uri_confirmation_prompt).toBe(true);
+    });
+
+    it('should not auto-set skip_non_verifiable_callback_uri_confirmation_prompt for verifiable callbacks', async () => {
+      const clientId = mockApplications[0].client_id;
+      let capturedBody: Record<string, any> = {};
+
+      server.use(
+        http.patch(`https://*/api/v2/clients/${clientId}`, async ({ request }) => {
+          capturedBody = (await request.json()) as Record<string, any>;
+          return HttpResponse.json({
+            ...mockApplications[0],
+            ...capturedBody,
+          });
+        })
+      );
+
+      const request = {
+        token,
+        parameters: {
+          client_id: clientId,
+          callbacks: ['https://example.com/callback'],
+        },
+      };
+
+      const config = { domain };
+
+      const response = await APPLICATION_HANDLERS.auth0_update_application(request, config);
+
+      expect(response.isError).toBe(false);
+      expect(capturedBody.skip_non_verifiable_callback_uri_confirmation_prompt).toBeUndefined();
+    });
+
+    it('should respect explicit skip_non_verifiable_callback_uri_confirmation_prompt value', async () => {
+      const clientId = mockApplications[0].client_id;
+      let capturedBody: Record<string, any> = {};
+
+      server.use(
+        http.patch(`https://*/api/v2/clients/${clientId}`, async ({ request }) => {
+          capturedBody = (await request.json()) as Record<string, any>;
+          return HttpResponse.json({
+            ...mockApplications[0],
+            ...capturedBody,
+          });
+        })
+      );
+
+      const request = {
+        token,
+        parameters: {
+          client_id: clientId,
+          callbacks: ['http://localhost:3000/callback'],
+          skip_non_verifiable_callback_uri_confirmation_prompt: false,
+        },
+      };
+
+      const config = { domain };
+
+      const response = await APPLICATION_HANDLERS.auth0_update_application(request, config);
+
+      expect(response.isError).toBe(false);
+      expect(capturedBody.skip_non_verifiable_callback_uri_confirmation_prompt).toBe(false);
+    });
   });
 
   describe('auth0_save_credentials_to_file', () => {
