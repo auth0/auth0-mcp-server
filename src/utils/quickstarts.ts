@@ -1,17 +1,10 @@
 import { z } from 'zod';
 import { log } from './logger.js';
 import { fetchWithOptions } from './fetch.js';
-import { isFrameworkSupported, type SupportedFramework } from './onboarding.js';
+import { isFrameworkSupported, FRAMEWORK_FILENAMES, type SupportedFramework } from './onboarding.js';
 
 const CDN_BASE = 'https://cdn.auth0.com/manhattan/quickstarts';
 const QUICKSTART_RELEASE_URL = `${CDN_BASE}/releases/production.json`;
-
-const FRAMEWORK_FILENAMES: Record<SupportedFramework, string> = {
-  react: 'react-quickstart-definition.json',
-  vue: 'vuejs-quickstart-definition.json',
-  angular: 'angular-quickstart-definition.json',
-  nextjs: 'nextjs-quickstart-definition.json',
-};
 
 const CACHE_TTL_MS = 60 * 60 * 1000;
 const FETCH_OPTIONS = { retries: 1 };

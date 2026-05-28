@@ -1,7 +1,16 @@
-import { QuickstartSpec, QuickstartAppType, DefaultAppOrigin } from './quickstarts';
+import type { QuickstartSpec, QuickstartAppType, DefaultAppOrigin } from './quickstarts';
 
-export const SUPPORTED_FRAMEWORKS = ['react', 'angular', 'vue', 'nextjs'] as const;
-export type SupportedFramework = (typeof SUPPORTED_FRAMEWORKS)[number];
+export const FRAMEWORK_FILENAMES = {
+  react: 'react-quickstart-definition.json',
+  vue: 'vuejs-quickstart-definition.json',
+  angular: 'angular-quickstart-definition.json',
+  nextjs: 'nextjs-quickstart-definition.json',
+} as const;
+
+export const SUPPORTED_FRAMEWORKS = Object.keys(FRAMEWORK_FILENAMES) as Array<
+  keyof typeof FRAMEWORK_FILENAMES
+>;
+export type SupportedFramework = keyof typeof FRAMEWORK_FILENAMES;
 
 export function isFrameworkSupported(framework: string): framework is SupportedFramework {
   return SUPPORTED_FRAMEWORKS.includes(framework.toLowerCase() as SupportedFramework);
