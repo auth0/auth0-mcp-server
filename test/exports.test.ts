@@ -9,7 +9,7 @@ describe('exports', () => {
   });
 
   it('all other tools are not marked localOnly', () => {
-    const localOnlyToolNames = ['auth0_save_credentials_to_file', 'auth0_get_quickstart_guide'];
+    const localOnlyToolNames = ['auth0_save_credentials_to_file', 'auth0_get_quickstart_guide', 'auth0_onboarding'];
     const localOnlyTools = TOOLS.filter(
       (t) => !localOnlyToolNames.includes(t.name) && t._meta?.localOnly
     );
