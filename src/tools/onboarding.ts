@@ -165,7 +165,10 @@ export const ONBOARDING_HANDLERS: Record<
     );
 
     if (saveResponse.isError) {
-      return saveResponse;
+      const saveError = saveResponse.content[0]?.text ?? 'Unknown error';
+      return createErrorResponse(
+        `Error: Application "${resolvedAppName}" was created (client_id: ${clientId}) but credentials could not be saved. ${saveError}`
+      );
     }
 
     // Parse save response
@@ -182,8 +185,8 @@ export const ONBOARDING_HANDLERS: Record<
       domain: config.domain,
       app_type: mappedAppType,
       framework,
-      credentials_saved_to: saveData.credentials_saved_to,
-      keys_written: saveData.keys_written,
+      credentials_saved_to: saveData.credentials_saved_to ?? null,
+      keys_written: saveData.keys_written ?? [],
       next_steps: ['auth0_get_quickstart_guide'],
     });
   },
