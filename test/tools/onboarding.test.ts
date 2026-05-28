@@ -396,7 +396,7 @@ describe('auth0_onboarding', () => {
       expect(response.content[0].text).toBe('Error: Unauthorized');
     });
 
-    it('should propagate save_credentials error', async () => {
+    it('should return error with client_id context when save_credentials fails', async () => {
       mockSaveCredentials.mockResolvedValue({
         isError: true,
         content: [{ type: 'text', text: 'Error: Permission denied' }],
@@ -414,7 +414,9 @@ describe('auth0_onboarding', () => {
         config
       );
       expect(response.isError).toBe(true);
-      expect(response.content[0].text).toBe('Error: Permission denied');
+      expect(response.content[0].text).toContain('client_id: new-client-id');
+      expect(response.content[0].text).toContain('credentials could not be saved');
+      expect(response.content[0].text).toContain('Permission denied');
     });
 
     it('should return error when create_application response is not valid JSON', async () => {
@@ -571,6 +573,42 @@ describe('auth0_onboarding', () => {
         expect.objectContaining({ token }),
         config
       );
+    });
+
+    it('should use resolved project_path when passing to save_credentials', async () => {
+      await ONBOARDING_HANDLERS.auth0_onboarding(
+        {
+          token,
+          parameters: {
+            app_name: 'My App',
+            framework: 'react',
+            project_path: '/tmp/./project',
+          },
+        },
+        config
+      );
+
+      expect(mockSaveCredentials).toHaveBeenCalledWith(
+        expect.objectContaining({
+          parameters: expect.objectContaining({ project_path: '/tmp/project' }),
+        }),
+        config
+      );
+    });
+
+    it('should accept framework in any case', async () => {
+      const response = await ONBOARDING_HANDLERS.auth0_onboarding(
+        {
+          token,
+          parameters: {
+            app_name: 'My App',
+            framework: 'React',
+            project_path: '/tmp/project',
+          },
+        },
+        config
+      );
+      expect(response.isError).toBe(false);
     });
   });
 });
