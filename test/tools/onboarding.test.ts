@@ -507,6 +507,71 @@ describe('auth0_onboarding', () => {
       expect(data.credentials_saved_to).toBe('/project/.env');
       expect(data.keys_written).toEqual(['VITE_AUTH0_DOMAIN', 'VITE_AUTH0_CLIENT_ID']);
       expect(data.next_steps).toEqual(['auth0_get_quickstart_guide']);
+      expect(data.instructions).toContain('auth0_get_quickstart_guide');
+      expect(data.instructions).toContain('onboarding is not yet complete');
+    });
+
+    it('should propagate _credentials_access and skip prompt flag from the create response', async () => {
+      mockCreateApplication.mockResolvedValue({
+        isError: false,
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({
+              client_id: 'new-client-id',
+              name: 'My App',
+              app_type: 'regular_web',
+              client_secret: '[REDACTED]',
+              skip_non_verifiable_callback_uri_confirmation_prompt: true,
+              _credentials_access: {
+                note: 'Credentials are masked for security',
+                how_to_access: ['View in Auth0 Dashboard: https://manage.auth0.com/...'],
+              },
+            }),
+          },
+        ],
+      });
+
+      const response = await ONBOARDING_HANDLERS.auth0_onboarding(
+        {
+          token,
+          parameters: {
+            app_name: 'My App',
+            framework: 'nextjs',
+            project_path: '/tmp/project',
+          },
+        },
+        config
+      );
+
+      expect(response.isError).toBe(false);
+      const data = JSON.parse(response.content[0].text);
+      expect(data._credentials_access).toBeDefined();
+      expect(data._credentials_access.how_to_access).toBeDefined();
+      expect(data.skip_non_verifiable_callback_uri_confirmation_prompt).toBe(true);
+      expect(data.instructions).toContain('client_secret is redacted');
+      expect(data.instructions).toContain(
+        'skip_non_verifiable_callback_uri_confirmation_prompt was automatically enabled'
+      );
+    });
+
+    it('should not include credential/skip notes when the create response omits them', async () => {
+      const response = await ONBOARDING_HANDLERS.auth0_onboarding(
+        {
+          token,
+          parameters: {
+            app_name: 'My App',
+            framework: 'react',
+            project_path: '/tmp/project',
+          },
+        },
+        config
+      );
+
+      const data = JSON.parse(response.content[0].text);
+      expect(data._credentials_access).toBeUndefined();
+      expect(data.skip_non_verifiable_callback_uri_confirmation_prompt).toBeUndefined();
+      expect(data.instructions).not.toContain('client_secret is redacted');
     });
 
     it('should default app_name to "My App" when empty', async () => {

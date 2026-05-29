@@ -181,6 +181,14 @@ export const ONBOARDING_HANDLERS: Record<
       return createErrorResponse('Error: Failed to parse credentials save response');
     }
 
+    const credentialsAccessNote = appData._credentials_access
+      ? `Tell the user the client_secret is redacted in this response for security, and share the ` +
+        `dashboard and API URLs from _credentials_access so they know where to view the full secret. `
+      : '';
+    const skipPromptNote = appData.skip_non_verifiable_callback_uri_confirmation_prompt
+      ? `Also inform the user that skip_non_verifiable_callback_uri_confirmation_prompt was automatically enabled. `
+      : '';
+
     return createSuccessResponse({
       success: true,
       client_id: clientId,
@@ -189,7 +197,18 @@ export const ONBOARDING_HANDLERS: Record<
       framework,
       credentials_saved_to: saveData.credentials_saved_to ?? null,
       keys_written: saveData.keys_written ?? [],
+      ...(appData._credentials_access ? { _credentials_access: appData._credentials_access } : {}),
+      ...(appData.skip_non_verifiable_callback_uri_confirmation_prompt
+        ? { skip_non_verifiable_callback_uri_confirmation_prompt: true }
+        : {}),
       next_steps: ['auth0_get_quickstart_guide'],
+      instructions:
+        `The Auth0 application has been created, but onboarding is not yet complete. ` +
+        `This is the first of two steps. ${credentialsAccessNote}${skipPromptNote}` +
+        `Immediately call the auth0_get_quickstart_guide tool with ` +
+        `client_id "${clientId}", framework "${framework}", and project_path "${resolvedProjectPath}" ` +
+        `to perform the SDK integration. Do not wait for the user to ask, and do not tell the user ` +
+        `onboarding is complete until after auth0_get_quickstart_guide has finished.`,
     });
   },
 };
