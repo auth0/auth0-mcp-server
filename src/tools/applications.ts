@@ -10,9 +10,8 @@ import { createErrorResponse, createSuccessResponse } from '../utils/http-utilit
 import type { Auth0Config } from '../utils/config.js';
 import { getManagementClient } from '../utils/auth0-client.js';
 import { resolveAndWriteCredentials } from '../utils/env-credentials.js';
-import { SUPPORTED_FRAMEWORKS } from '../utils/onboarding.js';
+import { SUPPORTED_FRAMEWORKS, hasNonVerifiableCallbacks } from '../utils/onboarding.js';
 import { maskSensitiveFields } from '../utils/response-masker.js';
-import { hasNonVerifiableCallbacks } from '../utils/onboarding.js';
 import type {
   ClientCreateTokenEndpointAuthMethodEnum,
   ClientCreateAppTypeEnum,
