@@ -288,8 +288,30 @@ describe('auth0_get_quickstart_guide', () => {
         config
       );
       expect(response.isError).toBe(true);
-      expect(response.content[0].text).toContain('Environment file not found');
+      expect(response.content[0].text).toContain('No environment file found');
       expect(response.content[0].text).toContain('auth0_save_credentials_to_file');
+    });
+
+    it('should reject a spec whose envSnippet.fileName contains a path', async () => {
+      mockFetchQuickstartSpec.mockResolvedValue(
+        makeMockSpec({
+          envSnippet: { ...makeMockSpec().envSnippet, fileName: '../../escape.env' },
+        })
+      );
+
+      const response = await QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
+        {
+          token,
+          parameters: {
+            client_id: 'test-client-id',
+            framework: 'react',
+            project_path: '/tmp/project',
+          },
+        },
+        config
+      );
+      expect(response.isError).toBe(true);
+      expect(response.content[0].text).toContain('invalid env file name');
     });
 
     it('should skip .env check when spec has no envSnippet', async () => {

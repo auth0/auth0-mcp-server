@@ -7,6 +7,7 @@ import { fetchQuickstartSpec } from '../utils/quickstarts.js';
 import { resolveCallbackUrls } from '../utils/onboarding.js';
 import { fetchWithOptions } from '../utils/fetch.js';
 import { calculateUrlUpdates, resolvePlaceholders } from '../utils/quickstart-guide.js';
+import { detectExistingEnvFile } from '../utils/credentials-writer.js';
 import { APPLICATION_HANDLERS } from './applications.js';
 
 const VALID_FRAMEWORKS = ['react', 'vue', 'angular', 'nextjs'];
@@ -140,12 +141,26 @@ export const QUICKSTART_HANDLERS: Record<
       return createErrorResponse('Error: Failed to parse application data');
     }
 
-    // Step 3: Check .env file exists (only when spec has envSnippet)
+    // Step 3: Check .env file exists (only when spec has envSnippet).
+    // Credentials may have been saved to any pre-existing env file (e.g. .env.development),
+    // so detect an existing file before falling back to the spec's preferred filename.
+    let envFilePath: string | null = null;
     if (spec.envSnippet) {
-      const envFilePath = path.join(resolvedProjectPath, spec.envSnippet.fileName);
-      if (!fs.existsSync(envFilePath)) {
+      const snippetFileName = spec.envSnippet.fileName;
+      if (snippetFileName !== path.basename(snippetFileName)) {
         return createErrorResponse(
-          `Error: Environment file not found at "${envFilePath}". ` +
+          `Error: Quickstart spec for "${framework}" has an invalid env file name "${snippetFileName}". ` +
+            'The file name must not contain a path.'
+        );
+      }
+      envFilePath =
+        detectExistingEnvFile(resolvedProjectPath) ??
+        (fs.existsSync(path.join(resolvedProjectPath, snippetFileName))
+          ? path.join(resolvedProjectPath, snippetFileName)
+          : null);
+      if (!envFilePath) {
+        return createErrorResponse(
+          `Error: No environment file found in "${resolvedProjectPath}". ` +
             'Please call auth0_save_credentials_to_file first to set up your environment file.'
         );
       }
@@ -253,6 +268,11 @@ export const QUICKSTART_HANDLERS: Record<
     }
     actionsTaken.push(`Fetched quickstart guide for ${framework}`);
 
+    const credentialsNote = envFilePath
+      ? ` Auth0 credentials are already saved to "${envFilePath}". Use that file as-is and skip ` +
+        `any environment-variable or .env setup steps in the quickstart_prompt; do not create or copy a new .env file.`
+      : '';
+
     return createSuccessResponse({
       success: true,
       client_id: clientId,
@@ -264,12 +284,14 @@ export const QUICKSTART_HANDLERS: Record<
       urls_updated: updatePayload !== null,
       url_source: resolvedUrls.url_source,
       actions_taken: actionsTaken,
+      credentials_file: envFilePath,
       instructions:
         `First, summarize actions_taken to the user so they know what was configured on their Auth0 application. ` +
         `Then implement the code from quickstart_prompt in the user's project at project_path. ` +
         `If you have file-write capabilities, create and modify files directly. ` +
         `If you do not have file-write capabilities, present each code block to the user ` +
-        `with the file path where it should be created or modified.`,
+        `with the file path where it should be created or modified.${credentialsNote} ` +
+        `Once the integration code is in place, the onboarding is complete — let the user know.`,
     });
   },
 };
