@@ -208,7 +208,9 @@ export const ONBOARDING_HANDLERS: Record<
         `Immediately call the auth0_get_quickstart_guide tool with ` +
         `client_id "${clientId}", framework "${framework}", and project_path "${resolvedProjectPath}" ` +
         `to perform the SDK integration. Do not wait for the user to ask, and do not tell the user ` +
-        `onboarding is complete until after auth0_get_quickstart_guide has finished.`,
+        `onboarding is complete until after auth0_get_quickstart_guide has finished. ` +
+        `Do NOT read, open, or echo any .env file (.env, .env.local, etc.) — it may hold unrelated ` +
+        `secrets, and the write already succeeded (see credentials_saved_to).`,
     });
   },
 };
