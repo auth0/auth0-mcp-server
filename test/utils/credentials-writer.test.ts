@@ -180,6 +180,40 @@ describe('credentials-writer', () => {
       expect(fs.existsSync(path.join(subDir, '.env'))).toBe(true);
     });
 
+    it('should write to a project path outside the current working directory when allowedDir is set', async () => {
+      // Simulate the real MCP flow: server cwd (testDir) differs from the user's project dir.
+      const projectDir = path.join(__dirname, 'project-outside-cwd');
+      fs.mkdirSync(projectDir, { recursive: true });
+      const projectEnvPath = path.join(projectDir, '.env.local');
+
+      try {
+        expect(path.resolve(projectDir).startsWith(process.cwd() + path.sep)).toBe(false);
+
+        const result = await writeCredentialsToEnv(
+          { AUTH0_CLIENT_ID: 'test_client_id' },
+          { filePath: projectEnvPath, allowedDir: projectDir }
+        );
+
+        expect(result.file_created).toBe(true);
+        expect(result.file_path).toBe(projectEnvPath);
+        expect(fs.existsSync(projectEnvPath)).toBe(true);
+      } finally {
+        fs.rmSync(projectDir, { recursive: true, force: true });
+      }
+    });
+
+    it('should reject paths outside allowedDir even when within the working directory', async () => {
+      const projectDir = path.join(testDir, 'project');
+      fs.mkdirSync(projectDir, { recursive: true });
+
+      await expect(
+        writeCredentialsToEnv(
+          { AUTH0_DOMAIN: 'test.auth0.com' },
+          { filePath: path.join(testDir, '.env.local'), allowedDir: projectDir }
+        )
+      ).rejects.toThrow('Security error: file path');
+    });
+
     it('should set chmod 600 on the env file', async () => {
       await writeCredentialsToEnv({ AUTH0_DOMAIN: 'test.auth0.com' });
 
