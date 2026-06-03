@@ -19,6 +19,8 @@ export interface WriteCredentialsOptions {
   filePath?: string;
   /** Whether to add the env file to .gitignore. Defaults to true. */
   createGitignore?: boolean;
+  /** Directory the resolved file path must stay within. Defaults to the current working directory. */
+  allowedDir?: string;
 }
 
 /**
@@ -43,15 +45,15 @@ export async function writeCredentialsToEnv(
   credentials: Record<string, string>,
   options?: WriteCredentialsOptions
 ): Promise<CredentialsWriteResult> {
-  const cwd = process.cwd();
-  const envFile = options?.filePath || path.join(cwd, '.env.local');
+  const allowedDir = path.resolve(options?.allowedDir ?? process.cwd());
+  const envFile = options?.filePath || path.join(allowedDir, '.env.local');
 
-  // Path traversal protection: ensure the resolved file path is within the current working directory
-  const resolvedPath = path.resolve(cwd, envFile);
-  if (!resolvedPath.startsWith(cwd + path.sep) && resolvedPath !== cwd) {
+  // Path traversal protection: ensure the resolved file path is within the allowed directory
+  const resolvedPath = path.resolve(allowedDir, envFile);
+  if (!resolvedPath.startsWith(allowedDir + path.sep) && resolvedPath !== allowedDir) {
     throw new Error(
-      `Security error: file path "${envFile}" resolves outside the current working directory. ` +
-        `Resolved path: "${resolvedPath}", allowed directory: "${cwd}"`
+      `Security error: file path "${envFile}" resolves outside the allowed directory. ` +
+        `Resolved path: "${resolvedPath}", allowed directory: "${allowedDir}"`
     );
   }
 

@@ -219,7 +219,7 @@ describe('resolveAndWriteCredentials — fallback path (unsupported framework)',
         AUTH0_CLIENT_SECRET: mockApplication.client_secret,
         AUTH0_CALLBACK_URL: 'http://localhost:3000/callback',
       }),
-      expect.any(Object)
+      expect.objectContaining({ allowedDir: fallbackParams.project_path })
     );
   });
 

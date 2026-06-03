@@ -90,6 +90,7 @@ export async function resolveAndWriteCredentials(
 
   const credentialsInfo = await writeCredentialsToEnv(resolved.credentialMap, {
     filePath: resolved.envFilePath,
+    allowedDir: projectPath,
   });
   log(`Credentials saved to: ${credentialsInfo.file_path}`);
 
