@@ -1,4 +1,4 @@
-import { ResolvedCallbackUrls } from './onboarding.js';
+import { ResolvedCallbackUrls, hasNonVerifiableCallbacks } from './onboarding.js';
 
 export interface UrlUpdatePayload {
   callbacks?: string[];
@@ -17,24 +17,6 @@ export interface ConfiguredUrls {
 export interface UrlUpdateResult {
   updatePayload: UrlUpdatePayload | null;
   finalUrls: ConfiguredUrls;
-}
-
-// TODO: Replace with hasNonVerifiableCallbacks from src/utils/onboarding.ts
-// when https://github.com/auth0/auth0-mcp-server/pull/162 is merged
-export function hasNonVerifiableCallbacks(urls: string[]): boolean {
-  return urls.some((url) => {
-    try {
-      const parsed = new URL(url);
-      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return true;
-      const host = parsed.hostname.toLowerCase();
-      if (host === 'localhost' || host === '[::1]' || host === '::1') return true;
-      if (host === '0.0.0.0') return true;
-      if (/^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(host)) return true;
-      return false;
-    } catch {
-      return true;
-    }
-  });
 }
 
 export function resolvePlaceholders(

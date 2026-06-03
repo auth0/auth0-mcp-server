@@ -1,68 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import {
-  hasNonVerifiableCallbacks,
-  resolvePlaceholders,
-  calculateUrlUpdates,
-} from '../../src/utils/quickstart-guide';
+import { resolvePlaceholders, calculateUrlUpdates } from '../../src/utils/quickstart-guide';
 import { UrlSource } from '../../src/utils/onboarding';
-
-describe('hasNonVerifiableCallbacks', () => {
-  it('should return true for localhost', () => {
-    expect(hasNonVerifiableCallbacks(['http://localhost:3000/callback'])).toBe(true);
-  });
-
-  it('should return true for 127.0.0.1', () => {
-    expect(hasNonVerifiableCallbacks(['http://127.0.0.1:3000/callback'])).toBe(true);
-  });
-
-  it('should return true for 127.x.x.x variants', () => {
-    expect(hasNonVerifiableCallbacks(['http://127.0.0.2:8080/callback'])).toBe(true);
-    expect(hasNonVerifiableCallbacks(['http://127.255.255.255/callback'])).toBe(true);
-  });
-
-  it('should return true for [::1]', () => {
-    expect(hasNonVerifiableCallbacks(['http://[::1]:3000/callback'])).toBe(true);
-  });
-
-  it('should return true for custom URI schemes', () => {
-    expect(hasNonVerifiableCallbacks(['myapp://callback'])).toBe(true);
-    expect(hasNonVerifiableCallbacks(['exp://192.168.1.1:8081'])).toBe(true);
-  });
-
-  it('should return false for HTTPS production URLs', () => {
-    expect(hasNonVerifiableCallbacks(['https://myapp.com/callback'])).toBe(false);
-    expect(hasNonVerifiableCallbacks(['https://app.example.com/auth/callback'])).toBe(false);
-  });
-
-  it('should return false for HTTP non-loopback URLs', () => {
-    expect(hasNonVerifiableCallbacks(['http://myapp.com/callback'])).toBe(false);
-  });
-
-  it('should return true if any URL is non-verifiable', () => {
-    expect(
-      hasNonVerifiableCallbacks([
-        'https://prod.example.com/callback',
-        'http://localhost:3000/callback',
-      ])
-    ).toBe(true);
-  });
-
-  it('should return false for empty array', () => {
-    expect(hasNonVerifiableCallbacks([])).toBe(false);
-  });
-
-  it('should return true for unparseable URLs', () => {
-    expect(hasNonVerifiableCallbacks(['not-a-url'])).toBe(true);
-  });
-
-  it('should return true for 0.0.0.0', () => {
-    expect(hasNonVerifiableCallbacks(['http://0.0.0.0:3000/callback'])).toBe(true);
-  });
-
-  it('should return true for [::1] with different ports', () => {
-    expect(hasNonVerifiableCallbacks(['http://[::1]:8080/callback'])).toBe(true);
-  });
-});
 
 describe('resolvePlaceholders', () => {
   const placeholders = {
