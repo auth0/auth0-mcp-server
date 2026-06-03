@@ -78,6 +78,9 @@ describe('Client Implementations', () => {
 
       expect(clients.vscode).toHaveProperty('getConfigPath');
       expect(clients.vscode).toHaveProperty('configure');
+
+      expect(clients['claude-code']).toHaveProperty('getConfigPath');
+      expect(clients['claude-code']).toHaveProperty('configure');
     });
 
     it('should initialize with correct client types and display names', () => {
@@ -93,6 +96,9 @@ describe('Client Implementations', () => {
 
       expect(clients.vscode).toHaveProperty('clientType', 'vscode');
       expect(clients.vscode).toHaveProperty('displayName', 'VS Code');
+
+      expect(clients['claude-code']).toHaveProperty('clientType', 'claude-code');
+      expect(clients['claude-code']).toHaveProperty('displayName', 'Claude Code');
     });
   });
 
@@ -147,6 +153,14 @@ describe('Client Implementations', () => {
         })
       );
       expect(ensureDir).toHaveBeenCalled();
+    });
+
+    it('should resolve user-scope config path for Claude Code', () => {
+      // Act: defaults to user scope (~/.claude.json)
+      const configPath = clients['claude-code'].getConfigPath();
+
+      // Assert
+      expect(configPath).toContain('.claude.json');
     });
   });
 
