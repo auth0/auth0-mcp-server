@@ -1199,10 +1199,10 @@ describe('auth0_get_quickstart_guide', () => {
       );
       expect(response.isError).toBe(true);
       expect(response.content[0].text).toContain('Unsupported framework');
-      expect(response.content[0].text).toContain('react, vue, angular, nextjs');
+      expect(response.content[0].text).toContain('react, angular, vue, nextjs');
     });
 
-    it('should reject mixed-case framework values', async () => {
+    it('should accept mixed-case framework values', async () => {
       const response = await QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
         {
           token,
@@ -1214,9 +1214,7 @@ describe('auth0_get_quickstart_guide', () => {
         },
         config
       );
-      expect(response.isError).toBe(true);
-      expect(response.content[0].text).toContain('Unsupported framework');
-      expect(response.content[0].text).toContain('React');
+      expect(response.isError).toBeFalsy();
     });
   });
 

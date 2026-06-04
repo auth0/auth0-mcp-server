@@ -4,13 +4,15 @@ import type { HandlerConfig, HandlerRequest, HandlerResponse, Tool } from '../ut
 import { log } from '../utils/logger.js';
 import { createErrorResponse, createSuccessResponse } from '../utils/http-utility.js';
 import { fetchQuickstartSpec } from '../utils/quickstarts.js';
-import { resolveCallbackUrls } from '../utils/onboarding.js';
+import {
+  resolveCallbackUrls,
+  isFrameworkSupported,
+  SUPPORTED_FRAMEWORKS,
+} from '../utils/onboarding.js';
 import { fetchWithOptions } from '../utils/fetch.js';
 import { calculateUrlUpdates, resolvePlaceholders } from '../utils/quickstart-guide.js';
 import { detectExistingEnvFile } from '../utils/credentials-writer.js';
 import { APPLICATION_HANDLERS } from './applications.js';
-
-const VALID_FRAMEWORKS = ['react', 'vue', 'angular', 'nextjs'];
 
 export const QUICKSTART_TOOLS: Tool[] = [
   {
@@ -33,7 +35,7 @@ export const QUICKSTART_TOOLS: Tool[] = [
         },
         framework: {
           type: 'string',
-          enum: VALID_FRAMEWORKS,
+          enum: SUPPORTED_FRAMEWORKS,
           description: 'JavaScript framework for the quickstart',
         },
         project_path: {
@@ -84,9 +86,9 @@ export const QUICKSTART_HANDLERS: Record<
     if (!framework) {
       return createErrorResponse('Error: framework is required');
     }
-    if (!VALID_FRAMEWORKS.includes(framework)) {
+    if (!isFrameworkSupported(framework)) {
       return createErrorResponse(
-        `Error: Unsupported framework "${framework}". Must be one of: ${VALID_FRAMEWORKS.join(', ')}`
+        `Error: Unsupported framework "${framework}". Must be one of: ${SUPPORTED_FRAMEWORKS.join(', ')}`
       );
     }
 
