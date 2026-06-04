@@ -1,7 +1,11 @@
 import { z } from 'zod';
 import { log } from './logger.js';
 import { fetchWithOptions } from './fetch.js';
-import { isFrameworkSupported, FRAMEWORK_FILENAMES, type SupportedFramework } from './onboarding.js';
+import {
+  isFrameworkSupported,
+  FRAMEWORK_FILENAMES,
+  type SupportedFramework,
+} from './onboarding.js';
 
 const CDN_BASE = 'https://cdn.auth0.com/manhattan/quickstarts';
 const QUICKSTART_RELEASE_URL = `${CDN_BASE}/releases/production.json`;
