@@ -4,10 +4,12 @@ import { randomBytes } from 'crypto';
 import { log } from './logger.js';
 import { fetchQuickstartSpec } from './quickstarts.js';
 import type { QuickstartSpec, DefaultAppOrigin } from './quickstarts.js';
+import { isFrameworkSupported } from './onboarding.js';
 import { getManagementClient } from './auth0-client.js';
 import { writeCredentialsToEnv, parseEnvFile, detectExistingEnvFile } from './credentials-writer.js';
 import type { HandlerConfig } from './types.js';
 import trackEvent from './analytics.js';
+import type { CredentialResolutionFallbackReason } from './analytics.js';
 
 type EnvSnippet = NonNullable<QuickstartSpec['envSnippet']>;
 
@@ -24,7 +26,7 @@ export type EnvCredentialsResult =
   | {
       success: true;
       client_id: string;
-      credentials_saved_to: string;
+      credentials_saved_to?: string;
       keys_written: string[];
       generated_keys: string[];
       file_created: boolean;
@@ -70,10 +72,9 @@ export async function resolveAndWriteCredentials(
   const spec = await fetchQuickstartSpec(framework);
 
   if (spec !== null && !spec.envSnippet) {
-    return { 
+    return {
       success: true,
       client_id: params.client_id,
-      credentials_saved_to: '',
       keys_written: [],
       generated_keys: [],
       file_created: false,
@@ -82,6 +83,14 @@ export async function resolveAndWriteCredentials(
   }
 
   const resolutionPath: 'spec' | 'fallback' = spec?.envSnippet ? 'spec' : 'fallback';
+  // spec is null whenever we reach the fallback path (the no-envSnippet case returns early above),
+  // so a supported framework here means its spec couldn't be fetched rather than being unsupported.
+  const fallbackReason: CredentialResolutionFallbackReason | undefined =
+    resolutionPath === 'fallback'
+      ? isFrameworkSupported(framework)
+        ? 'cdn_unavailable'
+        : 'unsupported'
+      : undefined;
   const resolved = spec?.envSnippet
     ? await buildSpecCredentials(params, spec.envSnippet, spec.defaultAppOrigin, config, token, spec.placeholders)
     : await buildFallbackCredentials(params, config, token);
@@ -100,7 +109,8 @@ export async function resolveAndWriteCredentials(
     framework,
     resolutionPath,
     generatedKeys.includes('AUTH0_SECRET'),
-    credentialsInfo.keys_written
+    credentialsInfo.keys_written,
+    fallbackReason
   );
 
   return {
@@ -165,10 +175,22 @@ async function buildSpecCredentials(
     }
   }
 
+  let parsedBaseUrl: URL | undefined;
+  if (baseUrl) {
+    try {
+      parsedBaseUrl = new URL(baseUrl);
+    } catch {
+      return {
+        success: false,
+        error: `Invalid base_url "${baseUrl}". Expected a full URL including scheme, e.g. "http://localhost:3000".`,
+      };
+    }
+  }
+
   const resolvedPort = port
     ? String(port)
-    : baseUrl
-      ? new URL(baseUrl).port || String(defaultAppOrigin.port ?? 3000)
+    : parsedBaseUrl
+      ? parsedBaseUrl.port || String(defaultAppOrigin.port ?? 3000)
       : String(defaultAppOrigin.port ?? 3000);
 
   const inputValues: Record<string, string | undefined> = {
@@ -176,8 +198,8 @@ async function buildSpecCredentials(
     auth0ClientId: clientId,
     auth0ClientSecret: clientSecret,
     port: resolvedPort,
-    appDomain: baseUrl ? new URL(baseUrl).hostname : (defaultAppOrigin.domain ?? 'localhost'),
-    appScheme: baseUrl ? new URL(baseUrl).protocol.replace(':', '') : (defaultAppOrigin.scheme ?? 'http'),
+    appDomain: parsedBaseUrl ? parsedBaseUrl.hostname : (defaultAppOrigin.domain ?? 'localhost'),
+    appScheme: parsedBaseUrl ? parsedBaseUrl.protocol.replace(':', '') : (defaultAppOrigin.scheme ?? 'http'),
   };
 
   if (callbackUrl) {

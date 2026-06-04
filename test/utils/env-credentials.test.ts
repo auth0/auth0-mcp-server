@@ -21,6 +21,7 @@ vi.mock('fs');
 
 import { resolveAndWriteCredentials } from '../../src/utils/env-credentials.js';
 import { fetchQuickstartSpec } from '../../src/utils/quickstarts.js';
+import trackEvent from '../../src/utils/analytics.js';
 
 const mockFetchQuickstartSpec = vi.mocked(fetchQuickstartSpec);
 
@@ -252,6 +253,41 @@ describe('resolveAndWriteCredentials — fallback path (unsupported framework)',
   });
 });
 
+describe('resolveAndWriteCredentials — fallback_reason tracking', () => {
+  beforeEach(() => {
+    server.use(
+      http.get('https://*/api/v2/clients/:clientId', () => HttpResponse.json(mockApplication))
+    );
+  });
+
+  it('tracks fallback_reason "unsupported" for a framework with no spec', async () => {
+    const spy = vi.spyOn(trackEvent, 'trackCredentialResolution');
+    mockFetchQuickstartSpec.mockResolvedValue(null);
+
+    await resolveAndWriteCredentials({ ...fallbackParams, framework: 'sveltekit' }, config, token);
+
+    expect(spy).toHaveBeenCalledWith('sveltekit', 'fallback', expect.any(Boolean), expect.any(Array), 'unsupported');
+  });
+
+  it('tracks fallback_reason "cdn_unavailable" when a supported framework has no spec', async () => {
+    const spy = vi.spyOn(trackEvent, 'trackCredentialResolution');
+    mockFetchQuickstartSpec.mockResolvedValue(null);
+
+    await resolveAndWriteCredentials({ ...fallbackParams, framework: 'react' }, config, token);
+
+    expect(spy).toHaveBeenCalledWith('react', 'fallback', expect.any(Boolean), expect.any(Array), 'cdn_unavailable');
+  });
+
+  it('does not set a fallback_reason on the spec path', async () => {
+    const spy = vi.spyOn(trackEvent, 'trackCredentialResolution');
+    mockFetchQuickstartSpec.mockResolvedValue(specWithSecret);
+
+    await resolveAndWriteCredentials({ ...fallbackParams, framework: 'react' }, config, token);
+
+    expect(spy).toHaveBeenCalledWith('react', 'spec', expect.any(Boolean), expect.any(Array), undefined);
+  });
+});
+
 describe('resolveAndWriteCredentials — spec path (supported framework)', () => {
   const specParams = { ...fallbackParams, framework: 'react' };
 
@@ -351,6 +387,23 @@ describe('resolveAndWriteCredentials — spec path (supported framework)', () =>
 
     const credentialMap = mockWriteCredentialsToEnv.mock.calls[0][0];
     expect(credentialMap).not.toHaveProperty('AUTH0_SECRET');
+  });
+
+  it('returns a helpful error when base_url is malformed', async () => {
+    mockFetchQuickstartSpec.mockResolvedValue(specSpaNoSecret);
+
+    const result = await resolveAndWriteCredentials(
+      { ...specParams, base_url: 'not a url' },
+      config,
+      token
+    );
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toContain('Invalid base_url');
+      expect(result.error).toContain('not a url');
+    }
+    expect(mockWriteCredentialsToEnv).not.toHaveBeenCalled();
   });
 
   it('uses provided base_url over the framework default', async () => {

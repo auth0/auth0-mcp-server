@@ -778,7 +778,6 @@ describe('Applications Tool Handlers', () => {
       mockResolveAndWrite.mockResolvedValueOnce({
         success: true,
         client_id: 'some-id',
-        credentials_saved_to: '',
         keys_written: [],
         generated_keys: [],
         file_created: false,

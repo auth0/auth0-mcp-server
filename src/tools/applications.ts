@@ -949,11 +949,11 @@ export const APPLICATION_HANDLERS: Record<
       if (!clientId) {
         return createErrorResponse('Error: client_id is required');
       }
-      if (!framework) { 
+      if (!framework) {
         return createErrorResponse('Error: framework is required');
       }
 
-      if (!projectPath) { 
+      if (!projectPath) {
         return createErrorResponse('Error: project_path is required');
       }
 

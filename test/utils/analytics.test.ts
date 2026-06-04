@@ -170,6 +170,29 @@ describe('TrackEvent', () => {
       );
     });
 
+    it('should include fallback_reason when provided', () => {
+      const spy = vi.spyOn(trackEvent as any, 'track');
+
+      trackEvent.trackCredentialResolution('react', 'fallback', false, ['AUTH0_DOMAIN'], 'cdn_unavailable');
+
+      expect(spy).toHaveBeenCalledWith(
+        'auth0-mcp-server-credential-resolution',
+        expect.objectContaining({
+          resolution_path: 'fallback',
+          fallback_reason: 'cdn_unavailable',
+        })
+      );
+    });
+
+    it('should omit fallback_reason on the spec path', () => {
+      const spy = vi.spyOn(trackEvent as any, 'track');
+
+      trackEvent.trackCredentialResolution('nextjs', 'spec', true, ['AUTH0_DOMAIN']);
+
+      const properties = spy.mock.calls[0][1];
+      expect(properties).not.toHaveProperty('fallback_reason');
+    });
+
     it('should not send event when tracking is disabled', () => {
       const originalEnv = process.env.AUTH0_MCP_ANALYTICS;
       process.env.AUTH0_MCP_ANALYTICS = 'false';
