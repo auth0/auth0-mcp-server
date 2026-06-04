@@ -20,7 +20,7 @@ export const ONBOARDING_TOOLS: Tool[] = [
       'Onboard a project with Auth0. Creates an Auth0 application with the correct ' +
       'configuration for the specified framework and saves credentials to a .env file. ' +
       'Returns next_steps pointing to auth0_get_quickstart_guide tool to complete the integration. ' +
-      'Only supports frameworks listed in the enum. If the user\'s framework is not supported, ' +
+      "Only supports frameworks listed in the enum. If the user's framework is not supported, " +
       'inform them that their framework is not yet supported and do NOT proceed with onboarding.',
     inputSchema: {
       type: 'object',
