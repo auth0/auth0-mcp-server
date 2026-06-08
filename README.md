@@ -74,6 +74,19 @@ You can also explicitly select read-only tools:
 npx @auth0/auth0-mcp-server init --tools 'auth0_list_*,auth0_get_*'
 ```
 
+**Claude Code**
+
+Initialize the Auth0 MCP server for Claude Code
+
+```bash
+npx @auth0/auth0-mcp-server init --client claude-code
+```
+
+You will be prompted to choose a configuration scope:
+
+- **User** — written to `~/.claude.json` and available across all your projects.
+- **Project** — written to `.mcp.json` at a project folder you specify, intended to be checked into version control and shared with your team.
+
 **Windsurf**
 
 ```bash

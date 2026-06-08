@@ -8,6 +8,7 @@
 
 // Import client classes
 import { ClaudeClientManager } from './claude.js';
+import { ClaudeCodeClientManager } from './claude-code.js';
 import { CursorClientManager } from './cursor.js';
 import { WindsurfClientManager } from './windsurf.js';
 import { VSCodeClientManager } from './vscode.js';
@@ -15,6 +16,7 @@ import { GeminiClientManager } from './gemini.js';
 
 // Create client manager instances
 const claude = new ClaudeClientManager();
+const claudeCode = new ClaudeCodeClientManager();
 const cursor = new CursorClientManager();
 const windsurf = new WindsurfClientManager();
 const vscode = new VSCodeClientManager();
@@ -26,12 +28,14 @@ const gemini = new GeminiClientManager();
  * Each property corresponds to a supported client application.
  *
  * @property {ClaudeClientManager} claude - Manager for Claude Desktop.
+ * @property {ClaudeCodeClientManager} 'claude-code' - Manager for the Claude Code CLI.
  * @property {CursorClientManager} cursor - Manager for Cursor code editor.
  * @property {WindsurfClientManager} windsurf - Manager for Windsurf editor.
  * @property {VSCodeClientManager} vscode - Manager for Visual Studio Code.
  * @property {GeminiClientManager} gemini - Manager for the Gemini CLI.
  *
  * @see {@link https://claude.ai/download | Claude Desktop}
+ * @see {@link https://claude.ai/download | Claude Code}
  * @see {@link https://www.cursor.com/ | Cursor Code Editor}
  * @see {@link https://windsurf.com/editor | Windsurf Editor}
  * @see {@link https://code.visualstudio.com/ | Visual Studio Code}
@@ -39,6 +43,7 @@ const gemini = new GeminiClientManager();
  */
 export const clients = {
   claude,
+  'claude-code': claudeCode,
   cursor,
   windsurf,
   vscode,
