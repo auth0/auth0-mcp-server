@@ -21,6 +21,14 @@ const ARCH_KEY = 'arch';
 const NODE_VERSION = 'node_version';
 const APP_NAME = 'app_name';
 
+/**
+ * Why credential resolution fell back to generic Auth0 vars instead of the framework spec.
+ * 'unsupported': the framework has no quickstart spec.
+ * 'cdn_unavailable': a supported framework's spec couldn't be fetched (e.g. CDN outage),
+ *   so a supported user silently got generic vars — worth surfacing in analytics.
+ */
+export type CredentialResolutionFallbackReason = 'unsupported' | 'cdn_unavailable';
+
 interface HeapEvent {
   app_id: string;
   identity?: string;
@@ -88,6 +96,34 @@ export class TrackEvent {
     const eventName = `${EVENT_NAME_PREFIX}-tool-${toolName}`;
     const properties = {
       success,
+      ...this.getCommonProperties(),
+    };
+    this.track(eventName, properties);
+  }
+
+  /**
+   * Track credential resolution event
+   *
+   * @param framework - The framework used for credential resolution
+   * @param resolution_path - Whether the spec or fallback path was used
+   * @param secret_generated - Whether AUTH0_SECRET was auto-generated
+   * @param keys_written - The env keys written to the file
+   * @param fallback_reason - Why the fallback path was taken (only set when resolution_path is 'fallback')
+   */
+  trackCredentialResolution(
+    framework: string,
+    resolution_path: 'spec' | 'fallback',
+    secret_generated: boolean,
+    keys_written: string[],
+    fallback_reason?: CredentialResolutionFallbackReason
+  ): void {
+    const eventName = `${EVENT_NAME_PREFIX}-credential-resolution`;
+    const properties = {
+      framework,
+      resolution_path,
+      secret_generated,
+      keys_written: [...keys_written].sort().join(','),
+      ...(fallback_reason ? { fallback_reason } : {}),
       ...this.getCommonProperties(),
     };
     this.track(eventName, properties);

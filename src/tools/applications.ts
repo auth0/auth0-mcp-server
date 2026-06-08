@@ -9,9 +9,9 @@ import { log } from '../utils/logger.js';
 import { createErrorResponse, createSuccessResponse } from '../utils/http-utility.js';
 import type { Auth0Config } from '../utils/config.js';
 import { getManagementClient } from '../utils/auth0-client.js';
-import { writeCredentialsToEnv } from '../utils/credentials-writer.js';
+import { resolveAndWriteCredentials } from '../utils/env-credentials.js';
+import { hasNonVerifiableCallbacks, SUPPORTED_FRAMEWORKS } from '../utils/onboarding.js';
 import { maskSensitiveFields } from '../utils/response-masker.js';
-import { hasNonVerifiableCallbacks } from '../utils/onboarding.js';
 import type {
   ClientCreateTokenEndpointAuthMethodEnum,
   ClientCreateAppTypeEnum,
@@ -280,7 +280,7 @@ export const APPLICATION_TOOLS: Tool[] = [
   {
     name: 'auth0_save_credentials_to_file',
     description:
-      'Save Auth0 application credentials to a file. Only use this when you are in a project directory. This retrieves the client_secret from Auth0 and saves it locally. Requires explicit file path to prevent accidental file creation. If the file already exists, credentials are appended (existing content is preserved). Additionally, .gitignore entry is automatically added for the target file.',
+      "Save Auth0 application credentials to the project's environment file. Only use this when you are in a project directory. Uses the framework quickstart spec to determine env variable names and target filename. Requires an explicit project path to prevent writing credentials to unintended locations. If the file already exists, conflicting keys are commented out and new credentials are appended (existing content is preserved). Additionally, a .gitignore entry is automatically added for the target file. Do NOT read, open, or echo any .env file (.env, .env.local, etc.) before or after writing — it may hold unrelated secrets, and the returned keys_written confirms success.",
     inputSchema: {
       type: 'object',
       properties: {
@@ -288,13 +288,30 @@ export const APPLICATION_TOOLS: Tool[] = [
           type: 'string',
           description: 'Client ID of the application whose credentials should be saved',
         },
-        file_path: {
+        framework: {
+          type: 'string',
+          description: `The framework the project uses. Pass the exact framework name (e.g. "svelte", "express", "flask"). Only these have optimized env specs: ${SUPPORTED_FRAMEWORKS.join(', ')}. All other frameworks use a generic fallback with standard Auth0 env variables.`,
+        },
+        project_path: {
+          type: 'string',
+          description: 'Absolute path to the project root directory. The env file is written here.',
+        },
+        base_url: {
           type: 'string',
           description:
-            'Required: Full or relative path to save credentials (e.g., ".env.local", "config/.env.development"). User must explicitly specify where to save credentials. If the file exists, credentials will be appended to it; otherwise a new file will be created with chmod 600 permissions.',
+            'Application base URL (e.g. http://localhost:3000). Used for BASE_URL env keys.',
+        },
+        callback_url: {
+          type: 'string',
+          description: 'Primary callback URL. Used for CALLBACK env keys.',
+        },
+        port: {
+          type: 'number',
+          description:
+            'Dev server port. Infer this from the project (e.g. vite.config.ts, package.json scripts) before calling this tool. Used for PORT env keys.',
         },
       },
-      required: ['client_id', 'file_path'],
+      required: ['client_id', 'framework', 'project_path'],
     },
     _meta: {
       requiredScopes: ['read:clients', 'read:client_credentials'],
@@ -699,7 +716,7 @@ export const APPLICATION_HANDLERS: Record<
 
           if (config.mode !== ServerMode.StreamableHttp) {
             howToAccess.unshift(
-              `To save credentials locally, you MUST first ask the user to provide a file path before calling "auth0_save_credentials_to_file" with client_id "${appData.client_id}". Do NOT assume a default path.`
+              `To save credentials locally, you MUST first ask the user to provide a project path before calling "auth0_save_credentials_to_file" with client_id "${appData.client_id}". Do NOT assume a default path.`
             );
           }
 
@@ -920,17 +937,24 @@ export const APPLICATION_HANDLERS: Record<
     config: HandlerConfig
   ): Promise<HandlerResponse> => {
     try {
-      const clientId = request.parameters.client_id;
-      const filePath = request.parameters.file_path;
+      const {
+        client_id: clientId,
+        framework,
+        project_path: projectPath,
+        base_url: baseUrl,
+        callback_url: callbackUrl,
+        port,
+      } = request.parameters;
 
       if (!clientId) {
         return createErrorResponse('Error: client_id is required');
       }
+      if (!framework) {
+        return createErrorResponse('Error: framework is required');
+      }
 
-      if (!filePath) {
-        return createErrorResponse(
-          'Error: file_path is required. Please specify where to save credentials (e.g., ".env.local")'
-        );
+      if (!projectPath) {
+        return createErrorResponse('Error: project_path is required');
       }
 
       // Check for token
@@ -945,64 +969,30 @@ export const APPLICATION_HANDLERS: Record<
         return createErrorResponse('Error: Auth0 domain is not configured');
       }
 
-      try {
-        const managementClientConfig: Auth0Config = {
-          domain: config.domain,
-          token: request.token,
-        };
-        const managementClient = await getManagementClient(managementClientConfig, config.headers);
+      const result = await resolveAndWriteCredentials(
+        {
+          client_id: clientId,
+          framework,
+          project_path: projectPath,
+          base_url: baseUrl,
+          callback_url: callbackUrl,
+          port,
+        },
+        config,
+        request.token
+      );
 
-        log(`Fetching credentials for client: ${clientId}`);
-
-        // Retrieve the full application with client_secret
-        const { data: application } = await managementClient.clients.get({ client_id: clientId });
-        const appData = application as any;
-
-        if (!appData.client_secret) {
-          return createErrorResponse(
-            `Application ${clientId} does not have a client_secret (may be a public client type)`
-          );
-        }
-
-        // Write credentials to file
-        const credentialsInfo = await writeCredentialsToEnv(
-          {
-            client_id: appData.client_id,
-            client_secret: appData.client_secret,
-            domain: config.domain,
-            callback_url: appData.callbacks?.[0],
-          },
-          {
-            filePath: filePath,
-          }
-        );
-
-        log(
-          `Credentials saved to: ${credentialsInfo.file_path} (${credentialsInfo.file_created ? 'created' : 'appended'})`
-        );
-
-        // Return success response with file info (no secrets)
-        return createSuccessResponse({
-          client_id: appData.client_id,
-          name: appData.name,
-          credentials_saved_to: credentialsInfo.file_path,
-          env_vars: credentialsInfo.env_var_names,
-          message: `Credentials saved securely to ${credentialsInfo.file_path}. The file has been ${credentialsInfo.file_created ? 'created' : 'updated'}.`,
-        });
-      } catch (sdkError: any) {
-        log('Auth0 SDK error');
-
-        let errorMessage = `Failed to retrieve application credentials: ${sdkError.message || 'Unknown error'}`;
-
-        if (sdkError.statusCode === 404) {
-          errorMessage = `Application with client_id '${clientId}' not found.`;
-        } else if (sdkError.statusCode === 401) {
-          errorMessage +=
-            '\nError: Unauthorized. Your token might be expired or invalid or missing read:clients scope.';
-        }
-
-        return createErrorResponse(errorMessage);
+      if (!result.success) {
+        return createErrorResponse(`Error: ${result.error}`);
       }
+      return createSuccessResponse({
+        client_id: result.client_id,
+        credentials_saved_to: result.credentials_saved_to,
+        keys_written: result.keys_written,
+        generated_keys: result.generated_keys,
+        file_created: result.file_created,
+        message: result.message,
+      });
     } catch (error: any) {
       log('Error processing request');
 

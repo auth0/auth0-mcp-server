@@ -3,22 +3,11 @@ import * as path from 'path';
 import { log } from './logger.js';
 
 /**
- * Credentials to be written to environment file
- */
-export interface Credentials {
-  client_id: string;
-  client_secret?: string;
-  domain: string;
-  callback_url?: string;
-  [key: string]: string | undefined;
-}
-
-/**
  * Result of writing credentials to file
  */
 export interface CredentialsWriteResult {
   file_path: string;
-  env_var_names: string[];
+  keys_written: string[];
   file_created: boolean;
 }
 
@@ -30,6 +19,8 @@ export interface WriteCredentialsOptions {
   filePath?: string;
   /** Whether to add the env file to .gitignore. Defaults to true. */
   createGitignore?: boolean;
+  /** Directory the resolved file path must stay within. Defaults to the current working directory. */
+  allowedDir?: string;
 }
 
 /**
@@ -37,10 +28,9 @@ export interface WriteCredentialsOptions {
  *
  * File behavior:
  * - If the file does NOT exist: creates a new file with the credentials
- * - If the file DOES exist: appends credentials to the end of the file,
- *   preserving all existing content. Existing variables are NOT overwritten
- *   or deduplicated — duplicate entries may result if called multiple times
- *   for the same application.
+ * - If the file DOES exist: comments out any lines whose keys conflict with
+ *   the incoming credentials, preserves all other content (comments, blank
+ *   lines, unrelated variables), and appends the new credentials at the end.
  *
  * Additional behavior:
  * - Sets restrictive file permissions (chmod 600 — owner read/write only)
@@ -48,59 +38,53 @@ export interface WriteCredentialsOptions {
  * - Prevents credentials from appearing in MCP client logs
  *
  * @param credentials - The credentials to write
- * @param options - Optional configuration for file path, gitignore creation, etc.
- * @returns Information about where credentials were written, including whether the file was created or appended to
+ * @param options - Optional configuration for file path and gitignore creation
+ * @returns Information about where credentials were written, including whether the file was created or updated
  */
 export async function writeCredentialsToEnv(
-  credentials: Credentials,
+  credentials: Record<string, string>,
   options?: WriteCredentialsOptions
 ): Promise<CredentialsWriteResult> {
-  const cwd = process.cwd();
-  const envFile = options?.filePath || path.join(cwd, '.env.local');
+  const allowedDir = path.resolve(options?.allowedDir ?? process.cwd());
+  const envFile = options?.filePath || path.join(allowedDir, '.env.local');
 
-  // Path traversal protection: ensure the resolved file path is within the current working directory
-  const resolvedPath = path.resolve(cwd, envFile);
-  if (!resolvedPath.startsWith(cwd + path.sep) && resolvedPath !== cwd) {
+  // Path traversal protection: ensure the resolved file path is within the allowed directory
+  const resolvedPath = path.resolve(allowedDir, envFile);
+  if (!resolvedPath.startsWith(allowedDir + path.sep) && resolvedPath !== allowedDir) {
     throw new Error(
-      `Security error: file path "${envFile}" resolves outside the current working directory. ` +
-        `Resolved path: "${resolvedPath}", allowed directory: "${cwd}"`
+      `Security error: file path "${envFile}" resolves outside the allowed directory. ` +
+        `Resolved path: "${resolvedPath}", allowed directory: "${allowedDir}"`
     );
   }
 
   const fileExisted = fs.existsSync(envFile);
+  const incomingKeys = new Set(Object.keys(credentials));
 
-  // Prepare environment variables
-  const envVars: Record<string, string> = {
-    AUTH0_CLIENT_ID: credentials.client_id,
-    AUTH0_DOMAIN: credentials.domain,
-  };
+  let content: string;
 
-  if (credentials.client_secret) {
-    envVars.AUTH0_CLIENT_SECRET = credentials.client_secret;
-  }
-
-  if (credentials.callback_url) {
-    envVars.AUTH0_CALLBACK_URL = credentials.callback_url;
-  }
-
-  // Format as .env content
-  const timestamp = new Date().toISOString();
-  const header = `\n# Auth0 Credentials (Generated: ${timestamp})\n`;
-  const content =
-    header +
-    Object.entries(envVars)
-      .map(([key, value]) => `${key}=${value}`)
-      .join('\n') +
-    '\n';
-
-  // Always append if file exists to preserve existing environment variables
   if (fileExisted) {
+    const existingContent = fs.readFileSync(envFile, 'utf-8');
+    const updatedLines = commentOutConflictingKeys(existingContent, incomingKeys);
+    const newSection =
+      `\n# Auth0 Credentials (Generated: ${new Date().toISOString()})\n` +
+      Object.entries(credentials)
+        .map(([key, value]) => `${key}=${value}`)
+        .join('\n') +
+      '\n';
+    content = updatedLines + newSection;
     log(`Appending credentials to existing file: ${envFile}`);
-    fs.appendFileSync(envFile, content, 'utf-8');
   } else {
+    const header = `# Auth0 Credentials (Generated: ${new Date().toISOString()})\n`;
+    content =
+      header +
+      Object.entries(credentials)
+        .map(([key, value]) => `${key}=${value}`)
+        .join('\n') +
+      '\n';
     log(`Creating new file with credentials: ${envFile}`);
-    fs.writeFileSync(envFile, content, 'utf-8');
   }
+
+  fs.writeFileSync(envFile, content, 'utf-8');
 
   // Set restrictive permissions (owner read/write only)
   try {
@@ -119,9 +103,25 @@ export async function writeCredentialsToEnv(
 
   return {
     file_path: envFile,
-    env_var_names: Object.keys(envVars),
+    keys_written: Object.keys(credentials),
     file_created: !fileExisted,
   };
+}
+
+/**
+ * Comments out lines in existing env content whose keys conflict with incoming credentials.
+ * Preserves all other content (comments, blank lines, unrelated variables) as-is.
+ */
+function commentOutConflictingKeys(existingContent: string, incomingKeys: Set<string>): string {
+  const lines = existingContent.split('\n');
+  const result = lines.map((line) => {
+    const match = line.match(/^([A-Za-z_][A-Za-z0-9_]*)=/);
+    if (match && incomingKeys.has(match[1])) {
+      return `# ${line}`;
+    }
+    return line;
+  });
+  return result.join('\n');
 }
 
 /**
@@ -154,16 +154,32 @@ function ensureGitignore(cwd: string, envFileName: string): void {
 }
 
 /**
+ * Parses an env file into a key/value map.
+ *
+ * @param filePath - Path to the env file
+ * @returns Map of key/value pairs from the file, or an empty object if the file does not exist
+ */
+export function parseEnvFile(filePath: string): Record<string, string> {
+  if (!fs.existsSync(filePath)) return {};
+  const result: Record<string, string> = {};
+  for (const line of fs.readFileSync(filePath, 'utf-8').split('\n')) {
+    const match = line.match(/^([A-Za-z_][A-Za-z0-9_]*)=(.*)/);
+    if (match) result[match[1]] = match[2];
+  }
+  return result;
+}
+
+/**
  * Detects existing environment files in the current directory
  *
  * @returns Path to the first found env file, or null if none exist
  */
-export function detectExistingEnvFile(): string | null {
-  const cwd = process.cwd();
+export function detectExistingEnvFile(dir?: string): string | null {
+  const baseDir = dir ?? process.cwd();
   const envFileNames = ['.env.local', '.env', '.env.development.local', '.env.development'];
 
   for (const fileName of envFileNames) {
-    const filePath = path.join(cwd, fileName);
+    const filePath = path.join(baseDir, fileName);
     if (fs.existsSync(filePath)) {
       log(`Detected existing env file: ${filePath}`);
       return filePath;
