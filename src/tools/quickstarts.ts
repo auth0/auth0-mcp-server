@@ -16,7 +16,7 @@ import { APPLICATION_HANDLERS } from './applications.js';
 
 export const QUICKSTART_TOOLS: Tool[] = [
   {
-    name: 'auth0_get_quickstart_guide',
+    name: 'auth0_configure_and_get_quickstart_guide',
     description:
       'Fetch and return the Auth0 quickstart implementation prompt for a specific framework. ' +
       'Resolves callback URLs from the project configuration and updates them on the Auth0 ' +
@@ -70,7 +70,7 @@ export const QUICKSTART_HANDLERS: Record<
   string,
   (request: HandlerRequest, config: HandlerConfig) => Promise<HandlerResponse>
 > = {
-  auth0_get_quickstart_guide: async (
+  auth0_configure_and_get_quickstart_guide: async (
     request: HandlerRequest,
     config: HandlerConfig
   ): Promise<HandlerResponse> => {
