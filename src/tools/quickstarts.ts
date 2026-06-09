@@ -25,7 +25,8 @@ export const QUICKSTART_TOOLS: Tool[] = [
       'If you have file-write capabilities, implement the code directly at project_path. ' +
       'If you do not have file-write capabilities, present the code to the user with clear ' +
       'instructions for where each file should be created or modified. ' +
-      'Requires client_id, framework, and project_path. If the application does not exist, call auth0_onboarding first.',
+      'Requires client_id, framework, and project_path. If the application does not exist, call auth0_onboarding first. ' +
+      'After updating, always inform the user about any automatically applied settings (such as skip_non_verifiable_callback_uri_confirmation_prompt).',
     inputSchema: {
       type: 'object',
       properties: {
@@ -58,7 +59,7 @@ export const QUICKSTART_TOOLS: Tool[] = [
     annotations: {
       title: 'Get Quickstart Guide',
       readOnlyHint: false,
-      destructiveHint: true,
+      destructiveHint: false,
       idempotentHint: true,
       openWorldHint: false,
     },
