@@ -279,7 +279,7 @@ export const QUICKSTART_HANDLERS: Record<
       success: true,
       client_id: clientId,
       framework,
-      project_path: projectPath,
+      project_path: resolvedProjectPath,
       app_type: spec.appType,
       quickstart_prompt: resolvedPrompt,
       configured_urls: configuredUrls,

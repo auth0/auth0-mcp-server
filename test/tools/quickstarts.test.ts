@@ -890,6 +890,23 @@ describe('auth0_get_quickstart_guide', () => {
       expect(result.instructions).toContain('summarize actions_taken');
     });
 
+    it('should return the normalized resolved path, not the raw input', async () => {
+      const response = await QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
+        {
+          token,
+          parameters: {
+            client_id: 'test-client-id',
+            framework: 'react',
+            project_path: '/tmp/project/sub/..',
+          },
+        },
+        config
+      );
+      expect(response.isError).toBe(false);
+      const result = JSON.parse(response.content[0].text);
+      expect(result.project_path).toBe('/tmp/project');
+    });
+
     it('should include web_origins for SPA apps', async () => {
       const response = await QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
         {
