@@ -55,8 +55,9 @@ const createHandlersWithAnalytics = (): Record<
         // Execute the original handler
         const result = await handler(request, config);
 
-        // Track the tool usage
-        trackEvent.trackTool(name);
+        // Track the tool usage. Handlers signal failure by returning a response
+        // with isError set rather than throwing, so treat those as failures too.
+        trackEvent.trackTool(name, !result?.isError);
 
         return result;
       } catch (error) {
