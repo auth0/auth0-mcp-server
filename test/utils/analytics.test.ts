@@ -137,6 +137,54 @@ describe('TrackEvent', () => {
     });
   });
 
+  describe('identity', () => {
+    it('should generate the identity once in the constructor', () => {
+      expect((trackEvent as any).identity).toBe('mock-uuid');
+    });
+
+    it('should reuse the same identity across multiple events', () => {
+      const event1 = (trackEvent as any).createEvent('event-one');
+      const event2 = (trackEvent as any).createEvent('event-two');
+
+      expect(event1.identity).toBe(event2.identity);
+    });
+  });
+
+  describe('trackOnboardingStep', () => {
+    it('should track an onboarding step with framework and success outcome', () => {
+      const spy = vi.spyOn(trackEvent as any, 'track');
+
+      trackEvent.trackOnboardingStep('create_application', 'react', 'success');
+
+      expect(spy).toHaveBeenCalledWith(
+        'auth0-mcp-server-onboarding-create_application',
+        expect.objectContaining({
+          step: 'create_application',
+          framework: 'react',
+          success: true,
+        })
+      );
+    });
+
+    it('should track a failure outcome and include extra properties', () => {
+      const spy = vi.spyOn(trackEvent as any, 'track');
+
+      trackEvent.trackOnboardingStep('quickstart_guide', 'nextjs', 'failure', {
+        failure_stage: 'update_callback_urls',
+      });
+
+      expect(spy).toHaveBeenCalledWith(
+        'auth0-mcp-server-onboarding-quickstart_guide',
+        expect.objectContaining({
+          step: 'quickstart_guide',
+          framework: 'nextjs',
+          success: false,
+          failure_stage: 'update_callback_urls',
+        })
+      );
+    });
+  });
+
   describe('trackCredentialResolution', () => {
     it('should track credential resolution with framework, resolution path, and secret generated', () => {
       const spy = vi.spyOn(trackEvent as any, 'track');
@@ -343,6 +391,7 @@ describe('TrackEvent', () => {
         expect(result).toEqual({
           app_name: 'auth0-mcp-server',
           version: expect.any(String),
+          analytics_version: expect.stringMatching(/^\d+\.\d+\.\d+$/),
           os: expect.any(String),
           arch: expect.any(String),
           node_version: expect.any(String),

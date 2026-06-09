@@ -13,6 +13,7 @@ import { fetchWithOptions } from '../utils/fetch.js';
 import { calculateUrlUpdates, resolvePlaceholders } from '../utils/quickstart-guide.js';
 import { detectExistingEnvFile } from '../utils/credentials-writer.js';
 import { APPLICATION_HANDLERS } from './applications.js';
+import trackEvent from '../utils/analytics.js';
 
 export const QUICKSTART_TOOLS: Tool[] = [
   {
@@ -237,6 +238,9 @@ export const QUICKSTART_HANDLERS: Record<
         config
       );
       if (updateResponse.isError) {
+        trackEvent.trackOnboardingStep('quickstart_guide', framework, 'failure', {
+          failure_stage: 'update_callback_urls',
+        });
         const errorDetail = updateResponse.content?.[0]?.text || 'Unknown error';
         return createErrorResponse(
           `Error: Failed to update application callback URLs. ${errorDetail}`
@@ -274,6 +278,10 @@ export const QUICKSTART_HANDLERS: Record<
       ? ` Auth0 credentials are already saved to "${envFilePath}". Use that file as-is and skip ` +
         `any environment-variable or .env setup steps in the quickstart_prompt; do not create or copy a new .env file.`
       : '';
+
+    trackEvent.trackOnboardingStep('quickstart_guide', framework, 'success', {
+      urls_updated: updatePayload !== null,
+    });
 
     return createSuccessResponse({
       success: true,
