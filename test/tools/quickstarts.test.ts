@@ -1094,8 +1094,8 @@ describe('auth0_get_quickstart_guide', () => {
     });
   });
 
-  describe('path traversal protection', () => {
-    it('should reject project_path containing traversal sequences', async () => {
+  describe('absolute path enforcement', () => {
+    it('should reject relative project_path', async () => {
       const response = await QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
         {
           token,
@@ -1108,23 +1108,23 @@ describe('auth0_get_quickstart_guide', () => {
         config
       );
       expect(response.isError).toBe(true);
-      expect(response.content[0].text).toContain('path traversal');
+      expect(response.content[0].text).toContain('must be an absolute path');
     });
 
-    it('should reject deeply nested traversal', async () => {
+    it('should reject a bare relative directory name', async () => {
       const response = await QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
         {
           token,
           parameters: {
             client_id: 'test-client-id',
             framework: 'react',
-            project_path: '/tmp/project/../../../etc/passwd',
+            project_path: 'myapp',
           },
         },
         config
       );
       expect(response.isError).toBe(true);
-      expect(response.content[0].text).toContain('path traversal');
+      expect(response.content[0].text).toContain('must be an absolute path');
     });
   });
 

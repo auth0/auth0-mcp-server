@@ -62,6 +62,13 @@ export async function resolveAndWriteCredentials(
 ): Promise<EnvCredentialsResult> {
   const { client_id: clientId, framework, project_path: projectPath } = params;
 
+  if (!path.isAbsolute(projectPath)) {
+    return {
+      success: false,
+      error: `project_path "${projectPath}" must be an absolute path`,
+    };
+  }
+
   if (!fs.existsSync(projectPath) || !fs.statSync(projectPath).isDirectory()) {
     return {
       success: false,

@@ -36,12 +36,12 @@ export const QUICKSTART_TOOLS: Tool[] = [
         framework: {
           type: 'string',
           enum: SUPPORTED_FRAMEWORKS,
-          description: 'JavaScript framework for the quickstart',
+          description: 'Supported framework for the quickstart',
         },
         project_path: {
           type: 'string',
           description:
-            'Path to the project directory. Used for .env file check and project config port detection.',
+            'Absolute path to the project directory. Used for .env file check and project config port detection.',
         },
         base_url: {
           type: 'string',
@@ -95,10 +95,10 @@ export const QUICKSTART_HANDLERS: Record<
     if (!projectPath) {
       return createErrorResponse('Error: project_path is required');
     }
-    const resolvedProjectPath = path.resolve(projectPath);
-    if (resolvedProjectPath !== projectPath && projectPath.includes('..')) {
-      return createErrorResponse('Error: project_path must not contain path traversal sequences');
+    if (!path.isAbsolute(projectPath)) {
+      return createErrorResponse('Error: project_path must be an absolute path');
     }
+    const resolvedProjectPath = path.resolve(projectPath);
     if (!fs.statSync(resolvedProjectPath, { throwIfNoEntry: false })?.isDirectory()) {
       return createErrorResponse('Error: project_path must be an existing directory');
     }
