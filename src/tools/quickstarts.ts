@@ -269,6 +269,11 @@ export const QUICKSTART_HANDLERS: Record<
       if (finalUrls.web_origins?.length) {
         actionsTaken.push(`Set allowed web origin(s): ${finalUrls.web_origins.join(', ')}`);
       }
+      if (finalUrls.skip_non_verifiable_callback_uri_confirmation_prompt) {
+        actionsTaken.push(
+          'Enabled skip_non_verifiable_callback_uri_confirmation_prompt because a non-verifiable (custom scheme or localhost) callback URL was configured'
+        );
+      }
     }
     actionsTaken.push(`Fetched quickstart guide for ${framework}`);
 

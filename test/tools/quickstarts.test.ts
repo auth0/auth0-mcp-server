@@ -1015,6 +1015,9 @@ describe('auth0_get_quickstart_guide', () => {
       expect(result.configured_urls.skip_non_verifiable_callback_uri_confirmation_prompt).toBe(
         true
       );
+      expect(result.actions_taken).toContain(
+        'Enabled skip_non_verifiable_callback_uri_confirmation_prompt because a non-verifiable (custom scheme or localhost) callback URL was configured'
+      );
     });
 
     it('should not include skip flag when only HTTPS production URLs exist', async () => {
@@ -1050,6 +1053,11 @@ describe('auth0_get_quickstart_guide', () => {
       expect(
         result.configured_urls.skip_non_verifiable_callback_uri_confirmation_prompt
       ).toBeUndefined();
+      expect(
+        result.actions_taken.some((a: string) =>
+          a.includes('skip_non_verifiable_callback_uri_confirmation_prompt')
+        )
+      ).toBe(false);
     });
   });
 
