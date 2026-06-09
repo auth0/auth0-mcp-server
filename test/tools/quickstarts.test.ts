@@ -289,6 +289,7 @@ describe('auth0_get_quickstart_guide', () => {
       );
       expect(response.isError).toBe(true);
       expect(response.content[0].text).toContain('No environment file found');
+      expect(response.content[0].text).toContain('Expected one of: .env.local, .env');
       expect(response.content[0].text).toContain('auth0_save_credentials_to_file');
     });
 

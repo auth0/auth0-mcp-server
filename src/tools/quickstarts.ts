@@ -164,6 +164,7 @@ export const QUICKSTART_HANDLERS: Record<
       if (!envFilePath) {
         return createErrorResponse(
           `Error: No environment file found in "${resolvedProjectPath}". ` +
+            `Expected one of: .env.local, .env, .env.development.local, .env.development, or ${snippetFileName}. ` +
             'Please call auth0_save_credentials_to_file first to set up your environment file.'
         );
       }
