@@ -278,7 +278,7 @@ export const QUICKSTART_HANDLERS: Record<
     actionsTaken.push(`Fetched quickstart guide for ${framework}`);
 
     const credentialsNote = envFilePath
-      ? ` Auth0 credentials are already saved to "${envFilePath}". Use that file as-is and skip ` +
+      ? `An existing environment file was detected at "${envFilePath}"; use it as-is and skip ` +
         `any environment-variable or .env setup steps in the quickstart_prompt; do not create or copy a new .env file.`
       : '';
 
