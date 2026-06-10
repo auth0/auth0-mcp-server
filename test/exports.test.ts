@@ -12,6 +12,7 @@ describe('exports', () => {
     const localOnlyToolNames = [
       'auth0_save_credentials_to_file',
       'auth0_configure_and_get_quickstart_guide',
+      'auth0_onboarding',
     ];
     const localOnlyTools = TOOLS.filter(
       (t) => !localOnlyToolNames.includes(t.name) && t._meta?.localOnly
