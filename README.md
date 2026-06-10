@@ -132,6 +132,34 @@ gemini extensions install https://github.com/auth0/auth0-mcp-server
 
 ```
 
+**Codex CLI**
+
+Authenticate once with Auth0:
+
+```bash
+npx @auth0/auth0-mcp-server init
+```
+
+Then add the Auth0 MCP server to Codex:
+
+```bash
+codex mcp add auth0 --env DEBUG=auth0-mcp --env DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus -- npx -y @auth0/auth0-mcp-server run
+```
+
+You can also add it directly to `~/.codex/config.toml`:
+
+```toml
+[mcp_servers.auth0]
+command = "npx"
+args = ["-y", "@auth0/auth0-mcp-server", "run"]
+
+[mcp_servers.auth0.env]
+DEBUG = "auth0-mcp"
+DBUS_SESSION_BUS_ADDRESS = "unix:path=/run/user/1000/bus"
+```
+
+Restart Codex after updating the configuration.
+
 **Other MCP Clients**
 
 To use Auth0 MCP Server with any other MCP Client, you can manually add this configuration to the client and restart for changes to take effect:

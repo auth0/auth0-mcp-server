@@ -94,6 +94,12 @@ describe('Server', () => {
       );
     });
 
+    it('should not emit MCP logging notifications during startup', async () => {
+      await startServer();
+
+      expect(mockSendLoggingMessage).not.toHaveBeenCalled();
+    });
+
     it('should initialize the server with filtered tools', async () => {
       const options = { tools: ['auth0_list_applications'] };
       const server = await startServer(options);

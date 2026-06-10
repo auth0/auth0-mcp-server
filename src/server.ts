@@ -158,7 +158,6 @@ export async function startServer(options?: ServerOptions) {
       const logMsg = `Auth0 MCP Server version ${packageVersion} running on stdio with ${enabledToolsCount}/${totalToolsCount} tools available`;
       logInfo(logMsg);
       log(logMsg);
-      server.sendLoggingMessage({ level: 'info', data: logMsg });
 
       return server;
     } catch (connectError) {
