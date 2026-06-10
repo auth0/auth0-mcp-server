@@ -1,5 +1,21 @@
 # Change Log
 
+## [v0.1.0-beta.14](https://github.com/auth0/auth0-mcp-server/tree/v0.1.0-beta.14) (2026-06-10)
+[Full Changelog](https://github.com/auth0/auth0-mcp-server/compare/v0.1.0-beta.13...v0.1.0-beta.14)
+
+**Added**
+- feat: add Claude Code as a supported MCP client [\#172](https://github.com/auth0/auth0-mcp-server/pull/172) ([GilbertLS](https://github.com/GilbertLS))
+
+**Changed**
+- Enhance auth0_save_credentials_to_file with framework aware credential writing [\#170](https://github.com/auth0/auth0-mcp-server/pull/170) ([wdaimee](https://github.com/wdaimee))
+- Feat/dxaa 596 set skip non verifiable uri confirmation prompt [\#162](https://github.com/auth0/auth0-mcp-server/pull/162) ([wdaimee](https://github.com/wdaimee))
+
+**Fixed**
+- [codex] Fix startup logging notification [\#163](https://github.com/auth0/auth0-mcp-server/pull/163) ([a1sats](https://github.com/a1sats))
+
+**Security**
+- chore(security): uses pinned versions of actions [\#176](https://github.com/auth0/auth0-mcp-server/pull/176) ([jcchavezs](https://github.com/jcchavezs))
+
 ## [v0.1.0-beta.13](https://github.com/auth0/auth0-mcp-server/tree/v0.1.0-beta.13) (2026-05-21)
 [Full Changelog](https://github.com/auth0/auth0-mcp-server/compare/v0.1.0-beta.12...v0.1.0-beta.13)
 
