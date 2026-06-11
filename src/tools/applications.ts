@@ -310,6 +310,18 @@ export const APPLICATION_TOOLS: Tool[] = [
           description:
             'Dev server port. Infer this from the project (e.g. vite.config.ts, package.json scripts) before calling this tool. Used for PORT env keys.',
         },
+        force: {
+          type: 'boolean',
+          description:
+            'Override the write-guard if credentials were already written to this project recently. ' +
+            'Only pass this when the developer has explicitly requested overwriting existing credentials.',
+        },
+        dry_run: {
+          type: 'boolean',
+          description:
+            'If true, computes and returns the proposed credential key names without writing to disk. ' +
+            'Use this to confirm what would be written before committing.',
+        },
       },
       required: ['client_id', 'framework', 'project_path'],
     },
@@ -944,6 +956,8 @@ export const APPLICATION_HANDLERS: Record<
         base_url: baseUrl,
         callback_url: callbackUrl,
         port,
+        force,
+        dry_run: dryRun,
       } = request.parameters;
 
       if (!clientId) {
@@ -977,6 +991,8 @@ export const APPLICATION_HANDLERS: Record<
           base_url: baseUrl,
           callback_url: callbackUrl,
           port,
+          force,
+          dry_run: dryRun,
         },
         config,
         request.token

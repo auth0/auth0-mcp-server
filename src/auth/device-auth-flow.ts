@@ -20,9 +20,9 @@ function getConfig(selectedScopes?: string[]) {
       : DEFAULT_SCOPES.join(' ');
 
   return {
-    tenant: 'auth0.auth0.com',
-    clientId: '2lhnuYMRQ8IpR5hNsOhDFQqrGQUQMRm5',
-    audience: 'https://*.auth0.com/api/v2/',
+    tenant: 'auth0-tus1.tus.auth0.com',
+    clientId: 'axnLcAzRhzNzGVVAEK1eKO8m9ssD0Fcp',
+    audience: 'https://*.tus.auth0.com/api/v2/',
     scopes,
   };
 }

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
@@ -52,7 +52,8 @@ describe('credentials-writer', () => {
         'AUTH0_DOMAIN',
         'AUTH0_CALLBACK_URL',
       ]);
-
+      expect(result.permissions_set).toBe(true);
+      expect(result.gitignore_updated).toBe(true);
       // Verify file content
       const content = fs.readFileSync(envFilePath, 'utf-8');
       expect(content).toContain('AUTH0_CLIENT_ID=test_client_id');
@@ -132,6 +133,32 @@ describe('credentials-writer', () => {
       expect(gitignoreContent.match(/\.env\.local/g)?.length).toBe(1);
     });
 
+    it('should not duplicate the # Auth0 credentials comment when ensureGitignore is called multiple times', async () => {
+      // Simulate the three calls that happen on a first write:
+      // writeCredentialsToEnv adds .env.local, then env-credentials adds state/audit files.
+      const { ensureGitignore } = await import('../../src/utils/credentials-writer.js');
+      ensureGitignore(testDir, '.env.local');
+      ensureGitignore(testDir, '.auth0-mcp-state.json');
+      ensureGitignore(testDir, '.auth0-mcp-writes.log');
+
+      const gitignoreContent = fs.readFileSync(gitignorePath, 'utf-8');
+      expect(gitignoreContent.match(/# Auth0 credentials/g)?.length).toBe(1);
+      expect(gitignoreContent).toContain('.env.local');
+      expect(gitignoreContent).toContain('.auth0-mcp-state.json');
+      expect(gitignoreContent).toContain('.auth0-mcp-writes.log');
+    });
+
+    it('should return gitignore_updated=true when .gitignore is newly created', async () => {
+      const result = await writeCredentialsToEnv({ AUTH0_DOMAIN: 'test.auth0.com' });
+      expect(result.gitignore_updated).toBe(true);
+    });
+
+    it('should return gitignore_updated=false when entry already exists in .gitignore', async () => {
+      fs.writeFileSync(gitignorePath, 'node_modules/\n.env.local\n', 'utf-8');
+      const result = await writeCredentialsToEnv({ AUTH0_DOMAIN: 'test.auth0.com' });
+      expect(result.gitignore_updated).toBe(false);
+    });
+
     it('should write only the keys provided', async () => {
       const result = await writeCredentialsToEnv({ AUTH0_CLIENT_ID: 'test_client_id' });
 
@@ -155,16 +182,46 @@ describe('credentials-writer', () => {
     });
 
     it('should reject file paths that traverse outside the working directory', async () => {
-      await expect(
-        writeCredentialsToEnv(
+      let thrownError: Error | undefined;
+      try {
+        await writeCredentialsToEnv(
           { AUTH0_DOMAIN: 'test.auth0.com' },
           { filePath: '../../etc/evil-file' }
-        )
-      ).rejects.toThrow('Security error: file path');
+        );
+      } catch (e) {
+        thrownError = e as Error;
+      }
+      expect(thrownError).toBeDefined();
+      expect(thrownError!.message).toContain('Security error: file path');
+      expect(thrownError!.message).not.toContain('evil-file');
+      expect(thrownError!.message).not.toContain(testDir);
 
       await expect(
         writeCredentialsToEnv({ AUTH0_DOMAIN: 'test.auth0.com' }, { filePath: '/tmp/evil-file' })
       ).rejects.toThrow('Security error: file path');
+    });
+
+    it('should throw a generic error when reading existing env file fails', async () => {
+      fs.writeFileSync(envFilePath, 'EXISTING=value\n', 'utf-8');
+      fs.chmodSync(envFilePath, 0o000);
+      try {
+        await expect(
+          writeCredentialsToEnv({ AUTH0_DOMAIN: 'test.auth0.com' })
+        ).rejects.toThrow('Failed to read existing env file');
+      } finally {
+        fs.chmodSync(envFilePath, 0o600);
+      }
+    });
+
+    it('should throw a generic error when writing env file fails', async () => {
+      fs.chmodSync(testDir, 0o555);
+      try {
+        await expect(
+          writeCredentialsToEnv({ AUTH0_DOMAIN: 'test.auth0.com' })
+        ).rejects.toThrow('Failed to write env file');
+      } finally {
+        fs.chmodSync(testDir, 0o755);
+      }
     });
 
     it('should allow file paths within the working directory', async () => {
@@ -214,6 +271,13 @@ describe('credentials-writer', () => {
       ).rejects.toThrow('Security error: file path');
     });
 
+    it('should not leave a .tmp file after a successful write', async () => {
+      await writeCredentialsToEnv({ AUTH0_DOMAIN: 'test.auth0.com' });
+
+      expect(fs.existsSync(envFilePath)).toBe(true);
+      expect(fs.existsSync(envFilePath + '.tmp')).toBe(false);
+    });
+
     it('should set chmod 600 on the env file', async () => {
       await writeCredentialsToEnv({ AUTH0_DOMAIN: 'test.auth0.com' });
 
@@ -251,6 +315,28 @@ describe('credentials-writer', () => {
       const result = parseEnvFile(envFilePath);
 
       expect(result).toEqual({ FOO: 'bar=baz' });
+    });
+
+    it('should return empty object when readFileSync throws', () => {
+      fs.writeFileSync(envFilePath, 'FOO=bar\n', 'utf-8');
+      fs.chmodSync(envFilePath, 0o000);
+      try {
+        expect(parseEnvFile(envFilePath)).toEqual({});
+      } finally {
+        fs.chmodSync(envFilePath, 0o600);
+      }
+    });
+
+    it('should strip surrounding quotes from values', () => {
+      fs.writeFileSync(envFilePath, 'FOO="hello world"\nBAR=\'single\'\n', 'utf-8');
+
+      expect(parseEnvFile(envFilePath)).toEqual({ FOO: 'hello world', BAR: 'single' });
+    });
+
+    it('should ignore inline comments after unquoted values', () => {
+      fs.writeFileSync(envFilePath, 'FOO=bar # a comment\n', 'utf-8');
+
+      expect(parseEnvFile(envFilePath)).toEqual({ FOO: 'bar' });
     });
   });
 
