@@ -6,7 +6,7 @@ import { fetchQuickstartSpec } from './quickstarts.js';
 import type { QuickstartSpec, DefaultAppOrigin } from './quickstarts.js';
 import { isFrameworkSupported } from './onboarding.js';
 import { getManagementClient } from './auth0-client.js';
-import { writeCredentialsToEnv, parseEnvFile, detectExistingEnvFile } from './credentials-writer.js';
+import { writeCredentialsToEnv, parseEnvFile, detectExistingEnvFile, ensureGitignore } from './credentials-writer.js';
 import type { HandlerConfig } from './types.js';
 import trackEvent from './analytics.js';
 import type { CredentialResolutionFallbackReason } from './analytics.js';
@@ -20,6 +20,8 @@ export interface EnvCredentialsParams {
   base_url?: string;
   callback_url?: string;
   port?: number;
+  force?: boolean;
+  dry_run?: boolean;
 }
 
 export type EnvCredentialsResult =
@@ -55,6 +57,23 @@ type ResolvedCredentials =
  * @param token - Auth0 Management API access token
  * @returns Result indicating success (with file metadata) or failure (with error message)
  */
+function validateProjectPath(projectPath: string): string | null {
+  if (projectPath.includes('..')) {
+    return 'project_path must not contain path traversal sequences';
+  }
+  const resolved = path.resolve(projectPath);
+  const allowedRoot = process.cwd();
+
+  if (!fs.existsSync(resolved) || !fs.statSync(resolved).isDirectory()) {
+    return 'project_path does not exist or is not a directory';
+  }
+  if (!resolved.startsWith(allowedRoot + path.sep) && resolved !== allowedRoot) {
+    return 'project_path must be within the current working directory';
+  }
+  
+  return null;
+}
+
 export async function resolveAndWriteCredentials(
   params: EnvCredentialsParams,
   config: HandlerConfig,
@@ -62,19 +81,10 @@ export async function resolveAndWriteCredentials(
 ): Promise<EnvCredentialsResult> {
   const { client_id: clientId, framework, project_path: projectPath } = params;
 
-  if (!path.isAbsolute(projectPath)) {
-    return {
-      success: false,
-      error: `project_path "${projectPath}" must be an absolute path`,
-    };
-  }
-
-  if (!fs.existsSync(projectPath) || !fs.statSync(projectPath).isDirectory()) {
-    return {
-      success: false,
-      error: `project_path "${projectPath}" does not exist or is not a directory`,
-    };
-  }
+  // Validation: ensure projectPath is a valid directory within the current working directory, with no path traversal
+  const projectPathError = validateProjectPath(projectPath);
+  if (projectPathError) return { success: false, error: projectPathError };
+  const resolvedProjectPath = path.resolve(projectPath);
 
   const spec = await fetchQuickstartSpec(framework);
 
@@ -89,26 +99,58 @@ export async function resolveAndWriteCredentials(
     };
   }
 
+  // For supported frameworks, a null spec means CDN failed with no cache — surface the error
+  if (spec === null && isFrameworkSupported(framework)) {
+    return {
+      success: false,
+      error:
+        `Could not fetch quickstart spec for "${framework}". ` +
+        'Please check your network connection and try again.',
+    };
+  }
+
   const resolutionPath: 'spec' | 'fallback' = spec?.envSnippet ? 'spec' : 'fallback';
-  // spec is null whenever we reach the fallback path (the no-envSnippet case returns early above),
-  // so a supported framework here means its spec couldn't be fetched rather than being unsupported.
+  
+  // After the guard above, the only remaining fallback case is an unsupported framework.
   const fallbackReason: CredentialResolutionFallbackReason | undefined =
-    resolutionPath === 'fallback'
-      ? isFrameworkSupported(framework)
-        ? 'cdn_unavailable'
-        : 'unsupported'
-      : undefined;
+    resolutionPath === 'fallback' ? 'unsupported' : undefined;
+  const resolvedParams = { ...params, project_path: resolvedProjectPath };
   const resolved = spec?.envSnippet
-    ? await buildSpecCredentials(params, spec.envSnippet, spec.defaultAppOrigin, config, token, spec.placeholders)
-    : await buildFallbackCredentials(params, config, token);
+    ? await buildSpecCredentials(resolvedParams, spec.envSnippet, spec.defaultAppOrigin, config, token, spec.placeholders)
+    : await buildFallbackCredentials(resolvedParams, config, token);
 
   if (!resolved.success) return resolved;
 
+  if (params.dry_run) {
+    return {
+      success: true,
+      client_id: clientId,
+      keys_written: Object.keys(resolved.credentialMap),
+      generated_keys: resolved.generated_keys,
+      file_created: false,
+      message:
+        `Dry run: would write ${Object.keys(resolved.credentialMap).length} key(s) to ${resolved.envFilePath}. ` +
+        'Pass dry_run: false (or omit) to write.',
+    };
+  }
+
+  // Guard against accidental double-writes within the same session. 
+  // Pass force: true only when the developer has explicitly requested an overwrite.
+  if (!params.force) {
+    const guardError = checkWriteGuard(resolvedProjectPath, Object.keys(resolved.credentialMap));
+    if (guardError) return { success: false, error: guardError };
+  }
+
   const credentialsInfo = await writeCredentialsToEnv(resolved.credentialMap, {
     filePath: resolved.envFilePath,
-    allowedDir: projectPath,
+    allowedDir: resolvedProjectPath,
   });
   log(`Credentials saved to: ${credentialsInfo.file_path}`);
+
+  updateWriteGuard(resolvedProjectPath, credentialsInfo.keys_written, framework);
+  appendAuditLog(resolvedProjectPath, framework, credentialsInfo);
+  ensureGitignore(resolvedProjectPath, WRITE_GUARD_FILE);
+  ensureGitignore(resolvedProjectPath, AUDIT_LOG_FILE);
 
   const generatedKeys = resolved.generated_keys;
 
@@ -120,6 +162,25 @@ export async function resolveAndWriteCredentials(
     fallbackReason
   );
 
+  const securityNotices: string[] = [];
+  if (!credentialsInfo.permissions_set) {
+    securityNotices.push(
+      'Warning: file permissions could not be set to 600 on this platform. ' +
+        'Ensure the file is not readable by other users.'
+    );
+  }
+  securityNotices.push(
+    `Verify that ${path.basename(credentialsInfo.file_path)} is listed in .gitignore ` +
+      'before committing this project to version control.'
+  );
+  const auditLogPath = path.join(resolvedProjectPath, AUDIT_LOG_FILE);
+  const securityNotice = securityNotices.join(' ');
+
+  const baseMessage =
+    generatedKeys.length > 0
+      ? `Credentials saved securely to ${credentialsInfo.file_path}. ${generatedKeys.join(', ')} was generated automatically and saved to the file. You can rotate it at any time by replacing the value with a new 32-byte hex string.`
+      : `Credentials saved securely to ${credentialsInfo.file_path}`;
+
   return {
     success: true,
     client_id: clientId,
@@ -127,10 +188,7 @@ export async function resolveAndWriteCredentials(
     keys_written: credentialsInfo.keys_written,
     generated_keys: generatedKeys,
     file_created: credentialsInfo.file_created,
-    message:
-      generatedKeys.length > 0
-        ? `Credentials saved securely to ${credentialsInfo.file_path}. ${generatedKeys.join(', ')} was generated automatically and saved to the file. You can rotate it at any time by replacing the value with a new 32-byte hex string.`
-        : `Credentials saved securely to ${credentialsInfo.file_path}`,
+    message: `${baseMessage} A write audit log is available at ${auditLogPath}. ${securityNotice}`,
   };
 }
 
@@ -158,7 +216,11 @@ async function buildSpecCredentials(
     callback_url: callbackUrl,
     port,
   } = params;
-  const envFilePath = detectExistingEnvFile(projectPath) ?? path.join(projectPath, envSnippet.fileName);
+  const fileName = envSnippet.fileName;
+  if (fileName !== path.basename(fileName) || fileName.includes('..')) {
+    return { success: false, error: 'Quickstart spec contained an invalid env file name' };
+  }
+  const envFilePath = detectExistingEnvFile(projectPath) ?? path.join(projectPath, fileName);
 
   const varEntries = envSnippet.entries.filter((e) => e.type === 'var') as {
     type: 'var'; name: string; value: string; comment?: string; sensitive?: boolean;
@@ -310,5 +372,89 @@ async function buildFallbackCredentials(
       error += '\nYour token may be expired or missing read:clients scope. Try running "npx @auth0/auth0-mcp-server init" to refresh your token.';
     }
     return { success: false, error };
+  }
+}
+
+// ── Write guard ──────────────────────────────────────────────────────────────
+
+const WRITE_GUARD_FILE = '.auth0-mcp-state.json';
+// 2 minutes: long enough to catch rapid double-invocations in a multi-step AI
+// flow, short enough not to block an intentional re-run after a failed attempt.
+const WRITE_GUARD_WINDOW_MS = 2 * 60 * 1000;
+
+interface WriteGuardState {
+  lastWrittenAt: string;
+  keysWritten: string[];
+  framework: string;
+}
+
+function checkWriteGuard(projectPath: string, incomingKeys: string[]): string | null {
+  const statePath = path.join(projectPath, WRITE_GUARD_FILE);
+  if (!fs.existsSync(statePath)) return null;
+  try {
+    const state: WriteGuardState = JSON.parse(fs.readFileSync(statePath, 'utf-8'));
+    const elapsed = Date.now() - new Date(state.lastWrittenAt).getTime();
+    if (elapsed < WRITE_GUARD_WINDOW_MS) {
+      const overlap = incomingKeys.filter((k) => state.keysWritten.includes(k));
+      if (overlap.length > 0) {
+        const minutesAgo = Math.round(elapsed / 60_000);
+        const timeAgo = minutesAgo < 1 ? 'less than a minute' : `${minutesAgo} minute(s)`;
+        return (
+          `Credentials were already written to this project ${timeAgo} ago ` +
+          `(keys: ${overlap.join(', ')}). Pass force: true to overwrite.`
+        );
+      }
+    }
+  } catch {
+    // Corrupt state file — allow the write to proceed
+  }
+  return null;
+}
+
+function updateWriteGuard(projectPath: string, keysWritten: string[], framework: string): void {
+  const statePath = path.join(projectPath, WRITE_GUARD_FILE);
+  const state: WriteGuardState = { lastWrittenAt: new Date().toISOString(), keysWritten, framework };
+  try {
+    fs.writeFileSync(statePath, JSON.stringify(state, null, 2), 'utf-8');
+  } catch (error) {
+    log(`Warning: could not save write guard state to ${WRITE_GUARD_FILE}: ${error}`);
+  }
+}
+
+// ── Audit log ────────────────────────────────────────────────────────────────
+
+const AUDIT_LOG_FILE = '.auth0-mcp-writes.log';
+// Cap log size
+const MAX_AUDIT_LOG_LINES = 200;
+
+function appendAuditLog(
+  projectPath: string,
+  framework: string,
+  info: { file_path: string; keys_written: string[] }
+): void {
+  const logPath = path.join(projectPath, AUDIT_LOG_FILE);
+  const entry =
+    `${new Date().toISOString()} | WRITE | framework=${framework} | ` +
+    `keys=${info.keys_written.join(',')} | file=${path.basename(info.file_path)}\n`;
+  try {
+    let lines: string[] = [];
+    if (fs.existsSync(logPath)) {
+      lines = fs.readFileSync(logPath, 'utf-8').split('\n').filter(Boolean);
+    }
+    if (lines.length >= MAX_AUDIT_LOG_LINES) {
+      // Keep only the most recent entries so the file stays bounded
+      lines = lines.slice(lines.length - (MAX_AUDIT_LOG_LINES - 1));
+    }
+    const content = (lines.length > 0 ? lines.join('\n') + '\n' : '') + entry;
+    const tmpPath = logPath + '.tmp';
+    try {
+      fs.writeFileSync(tmpPath, content, 'utf-8');
+      fs.renameSync(tmpPath, logPath);
+    } catch (writeErr) {
+      try { fs.unlinkSync(tmpPath); } catch { /* ignore */ }
+      throw writeErr;
+    }
+  } catch (error) {
+    log(`Warning: could not write to audit log ${AUDIT_LOG_FILE}: ${error}`);
   }
 }

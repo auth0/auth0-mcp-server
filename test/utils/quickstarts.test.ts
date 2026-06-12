@@ -471,4 +471,40 @@ describe('fetchQuickstartSpec', () => {
     await fetchQuickstartSpec('react');
     expect(latestCalls).toBe(1);
   });
+
+  describe('envSnippet.fileName validation', () => {
+    it('returns null when fileName contains path traversal (../../.bashrc)', async () => {
+      server.use(
+        mockLatest(),
+        http.get(defUrl('react'), () =>
+          HttpResponse.json({ ...makeMockRawSpec('react'), envSnippet: { ...makeMockRawSpec('react').envSnippet, fileName: '../../.bashrc' } })
+        )
+      );
+      const result = await fetchQuickstartSpec('react');
+      expect(result).toBeNull();
+    });
+
+    it('returns null when fileName is an absolute path (/etc/passwd)', async () => {
+      server.use(
+        mockLatest(),
+        http.get(defUrl('react'), () =>
+          HttpResponse.json({ ...makeMockRawSpec('react'), envSnippet: { ...makeMockRawSpec('react').envSnippet, fileName: '/etc/passwd' } })
+        )
+      );
+      const result = await fetchQuickstartSpec('react');
+      expect(result).toBeNull();
+    });
+
+    it('accepts a valid plain fileName (.env.local)', async () => {
+      server.use(
+        mockLatest(),
+        http.get(defUrl('react'), () =>
+          HttpResponse.json({ ...makeMockRawSpec('react'), envSnippet: { ...makeMockRawSpec('react').envSnippet, fileName: '.env.local' } })
+        )
+      );
+      const result = await fetchQuickstartSpec('react');
+      expect(result).not.toBeNull();
+      expect(result!.envSnippet!.fileName).toBe('.env.local');
+    });
+  });
 });
