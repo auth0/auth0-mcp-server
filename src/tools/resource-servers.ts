@@ -123,6 +123,10 @@ export const RESOURCE_SERVER_TOOLS: Tool[] = [
           type: 'boolean',
           description: 'Whether to enforce authorization policies.',
         },
+        client: {
+          type: 'object',
+          description: 'Client-related configuration for the resource server.',
+        },
         token_encryption: {
           type: 'object',
           description: 'Token encryption configuration.',
@@ -217,6 +221,10 @@ export const RESOURCE_SERVER_TOOLS: Tool[] = [
         enforce_policies: {
           type: 'boolean',
           description: 'Whether to enforce authorization policies.',
+        },
+        client: {
+          type: 'object',
+          description: 'Client-related configuration for the resource server.',
         },
         token_encryption: {
           type: 'object',
