@@ -63,12 +63,14 @@ function validateProjectPath(projectPath: string): string | null {
   }
   const resolved = path.resolve(projectPath);
   const allowedRoot = process.cwd();
-  if (!resolved.startsWith(allowedRoot + path.sep) && resolved !== allowedRoot) {
-    return 'project_path must be within the current working directory';
-  }
+
   if (!fs.existsSync(resolved) || !fs.statSync(resolved).isDirectory()) {
     return 'project_path does not exist or is not a directory';
   }
+  if (!resolved.startsWith(allowedRoot + path.sep) && resolved !== allowedRoot) {
+    return 'project_path must be within the current working directory';
+  }
+  
   return null;
 }
 
@@ -98,17 +100,17 @@ export async function resolveAndWriteCredentials(
   }
 
   // For supported frameworks, a null spec means CDN failed with no cache — surface the error
-  // rather than writing incorrect fallback var names.
   if (spec === null && isFrameworkSupported(framework)) {
     return {
       success: false,
       error:
-        `Could not fetch quickstart spec for "${framework}" from CDN. ` +
+        `Could not fetch quickstart spec for "${framework}". ` +
         'Please check your network connection and try again.',
     };
   }
 
   const resolutionPath: 'spec' | 'fallback' = spec?.envSnippet ? 'spec' : 'fallback';
+  
   // After the guard above, the only remaining fallback case is an unsupported framework.
   const fallbackReason: CredentialResolutionFallbackReason | undefined =
     resolutionPath === 'fallback' ? 'unsupported' : undefined;
@@ -132,6 +134,8 @@ export async function resolveAndWriteCredentials(
     };
   }
 
+  // Guard against accidental double-writes within the same session. 
+  // Pass force: true only when the developer has explicitly requested an overwrite.
   if (!params.force) {
     const guardError = checkWriteGuard(resolvedProjectPath, Object.keys(resolved.credentialMap));
     if (guardError) return { success: false, error: guardError };
@@ -374,6 +378,8 @@ async function buildFallbackCredentials(
 // ── Write guard ──────────────────────────────────────────────────────────────
 
 const WRITE_GUARD_FILE = '.auth0-mcp-state.json';
+// 2 minutes: long enough to catch rapid double-invocations in a multi-step AI
+// flow, short enough not to block an intentional re-run after a failed attempt.
 const WRITE_GUARD_WINDOW_MS = 2 * 60 * 1000;
 
 interface WriteGuardState {
@@ -418,17 +424,36 @@ function updateWriteGuard(projectPath: string, keysWritten: string[], framework:
 // ── Audit log ────────────────────────────────────────────────────────────────
 
 const AUDIT_LOG_FILE = '.auth0-mcp-writes.log';
+// Cap log size
+const MAX_AUDIT_LOG_LINES = 200;
 
 function appendAuditLog(
   projectPath: string,
   framework: string,
   info: { file_path: string; keys_written: string[] }
 ): void {
+  const logPath = path.join(projectPath, AUDIT_LOG_FILE);
   const entry =
     `${new Date().toISOString()} | WRITE | framework=${framework} | ` +
     `keys=${info.keys_written.join(',')} | file=${path.basename(info.file_path)}\n`;
   try {
-    fs.appendFileSync(path.join(projectPath, AUDIT_LOG_FILE), entry, 'utf-8');
+    let lines: string[] = [];
+    if (fs.existsSync(logPath)) {
+      lines = fs.readFileSync(logPath, 'utf-8').split('\n').filter(Boolean);
+    }
+    if (lines.length >= MAX_AUDIT_LOG_LINES) {
+      // Keep only the most recent entries so the file stays bounded
+      lines = lines.slice(lines.length - (MAX_AUDIT_LOG_LINES - 1));
+    }
+    const content = (lines.length > 0 ? lines.join('\n') + '\n' : '') + entry;
+    const tmpPath = logPath + '.tmp';
+    try {
+      fs.writeFileSync(tmpPath, content, 'utf-8');
+      fs.renameSync(tmpPath, logPath);
+    } catch (writeErr) {
+      try { fs.unlinkSync(tmpPath); } catch { /* ignore */ }
+      throw writeErr;
+    }
   } catch (error) {
     log(`Warning: could not write to audit log ${AUDIT_LOG_FILE}: ${error}`);
   }

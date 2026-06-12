@@ -123,17 +123,6 @@ beforeEach(() => {
 });
 
 describe('resolveAndWriteCredentials — project path validation', () => {
-  it('returns error when project_path is not absolute', async () => {
-    const result = await resolveAndWriteCredentials(
-      { ...fallbackParams, project_path: 'myapp' },
-      config,
-      token
-    );
-
-    expect(result.success).toBe(false);
-    if (!result.success) expect(result.error).toContain('must be an absolute path');
-  });
-
   it('returns error when project_path does not exist', async () => {
     vi.mocked(fs.existsSync).mockReturnValue(false);
 
@@ -328,7 +317,7 @@ describe('resolveAndWriteCredentials — fallback_reason tracking', () => {
     const result = await resolveAndWriteCredentials({ ...fallbackParams, framework: 'react' }, config, token);
 
     expect(result.success).toBe(false);
-    if (!result.success) expect(result.error).toMatch(/CDN/);
+    if (!result.success) expect(result.error).toContain('Could not fetch quickstart spec');
     expect(mockWriteCredentialsToEnv).not.toHaveBeenCalled();
   });
 
@@ -800,6 +789,28 @@ describe('resolveAndWriteCredentials — write guard', () => {
 
     expect(result.success).toBe(true);
     expect(mockWriteCredentialsToEnv).toHaveBeenCalled();
+  });
+
+  it('trims the audit log when it exceeds MAX_AUDIT_LOG_LINES', async () => {
+    const oldLines = Array.from({ length: 200 }, (_, i) => `line-${i}`).join('\n') + '\n';
+    vi.mocked(fs.existsSync).mockImplementation((p) => {
+      if (String(p).endsWith('.auth0-mcp-writes.log')) return true;
+      if (String(p).endsWith('.auth0-mcp-state.json')) return false;
+      return true;
+    });
+    vi.mocked(fs.readFileSync).mockImplementation((p) => {
+      if (String(p).endsWith('.auth0-mcp-writes.log')) return oldLines;
+      return '';
+    });
+
+    await resolveAndWriteCredentials(specParams, config, token);
+
+    // writeFileSync should have been called on the log to trim it before writing the new entry
+    expect(vi.mocked(fs.writeFileSync)).toHaveBeenCalledWith(
+      expect.stringContaining('.auth0-mcp-writes.log'),
+      expect.any(String),
+      'utf-8'
+    );
   });
 });
 

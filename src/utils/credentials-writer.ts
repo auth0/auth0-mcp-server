@@ -96,8 +96,7 @@ export async function writeCredentialsToEnv(
     // appears or doesn't, preventing a half-written .env file on crash
     fs.renameSync(tmpFile, envFile);
   } catch {
-    // Best-effort cleanup: tmpFile may or may not exist at this point
-    // (writeFileSync could have failed before creating it, or partway through).
+    // tmpFile may or may not exist at this point (writeFileSync could have failed before creating it, or partway through)
     // Suppress cleanup errors so they don't shadow the original write failure.
     try { fs.unlinkSync(tmpFile); } catch { /* ignore */ }
     throw new Error('Failed to write env file');
