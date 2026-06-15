@@ -33,7 +33,7 @@ const makeMockRawSpec = (framework: string) => ({
   defaultAppOrigin: { scheme: 'http', domain: 'localhost', port: 3000 },
   callbackPath: '/callback',
   logoutPath: '/logout',
-  llmPromptPath: `https://example.com/${framework}-prompt`,
+  llmPromptPath: `assets/llm-prompts/${framework}-llm-prompt.md`,
   envSnippet: {
     type: 'env',
     language: 'shell',
@@ -57,7 +57,8 @@ const makeExpectedSpec = (framework: string) => ({
   defaultAppOrigin: { scheme: 'http', domain: 'localhost', port: 3000 },
   callbackPath: '/callback',
   logoutPath: '/logout',
-  llmPromptPath: `https://example.com/${framework}-prompt`,
+  llmPromptPath: `assets/llm-prompts/${framework}-llm-prompt.md`,
+  llmPromptUrl: `${CDN_BASE}/versions/${MOCK_VERSION}/assets/llm-prompts/${framework}-llm-prompt.md`,
   envSnippet: {
     type: 'env',
     language: 'shell',
@@ -98,6 +99,62 @@ describe('fetchQuickstartSpec', () => {
     expect(spec).toEqual(makeExpectedSpec('react'));
   });
 
+  it('ignores raw absolute llmPromptUrl and derives the prompt URL from llmPromptPath', async () => {
+    server.use(
+      mockLatest(),
+      http.get(defUrl('react'), () =>
+        HttpResponse.json({
+          ...makeMockRawSpec('react'),
+          llmPromptUrl: 'https://attacker.example/prompt.md',
+        })
+      )
+    );
+
+    const spec = await fetchQuickstartSpec('react');
+    expect(spec?.llmPromptUrl).toBe(
+      `${CDN_BASE}/versions/${MOCK_VERSION}/assets/llm-prompts/react-llm-prompt.md`
+    );
+  });
+
+  it('does not create a prompt URL from raw llmPromptUrl when llmPromptPath is absent', async () => {
+    server.use(
+      mockLatest(),
+      http.get(defUrl('react'), () =>
+        HttpResponse.json({
+          ...makeMockRawSpec('react'),
+          llmPromptPath: undefined,
+          llmPromptUrl: 'https://attacker.example/prompt.md',
+        })
+      )
+    );
+
+    const spec = await fetchQuickstartSpec('react');
+    expect(spec).not.toBeNull();
+    expect(spec?.llmPromptUrl).toBeUndefined();
+  });
+
+  it.each([
+    ['absolute URL', 'https://attacker.example/prompt.md'],
+    ['protocol-relative URL', '//attacker.example/prompt.md'],
+    ['absolute path', '/assets/llm-prompts/react-llm-prompt.md'],
+    ['path traversal', 'assets/llm-prompts/../definitions/react.md'],
+    ['encoded path traversal', 'assets/llm-prompts/%2e%2e/definitions/react.md'],
+    ['wrong prefix', 'assets/definitions/en/react.md'],
+  ])('returns null when llmPromptPath is an invalid %s', async (_caseName, llmPromptPath) => {
+    server.use(
+      mockLatest(),
+      http.get(defUrl('react'), () =>
+        HttpResponse.json({
+          ...makeMockRawSpec('react'),
+          llmPromptPath,
+        })
+      )
+    );
+
+    const spec = await fetchQuickstartSpec('react');
+    expect(spec).toBeNull();
+  });
+
   it('resolves URLs in two steps: production.json then versioned definition', async () => {
     const urls: string[] = [];
     server.use(
@@ -123,13 +180,10 @@ describe('fetchQuickstartSpec', () => {
     let capturedUrl = '';
     server.use(
       mockLatest(),
-      http.get(
-        defUrl(framework),
-        ({ request }) => {
-          capturedUrl = request.url;
-          return HttpResponse.json(makeMockRawSpec(framework));
-        }
-      )
+      http.get(defUrl(framework), ({ request }) => {
+        capturedUrl = request.url;
+        return HttpResponse.json(makeMockRawSpec(framework));
+      })
     );
     await fetchQuickstartSpec(framework);
     expect(capturedUrl).toContain(expectedFilename);

@@ -904,6 +904,20 @@ describe('Applications Tool Handlers', () => {
       expect(response.content[0].text).toContain('does not exist or is not a directory');
     });
 
+    it('should propagate absolute-path error for a relative project_path', async () => {
+      mockResolveAndWrite.mockResolvedValueOnce({
+        success: false,
+        error: 'project_path "myapp" must be an absolute path',
+      });
+
+      const response = await APPLICATION_HANDLERS.auth0_save_credentials_to_file(
+        { token, parameters: { client_id: 'some-id', framework: 'react', project_path: 'myapp' } },
+        { domain }
+      );
+      expect(response.isError).toBe(true);
+      expect(response.content[0].text).toContain('must be an absolute path');
+    });
+
     it('should return success with no keys written when quickstart spec has no envSnippet', async () => {
       mockResolveAndWrite.mockResolvedValueOnce({
         success: true,
