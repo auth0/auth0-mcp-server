@@ -37,6 +37,15 @@ vi.mock('../../src/clients/vscode.js', () => ({
   }),
 }));
 
+vi.mock('../../src/clients/claude-code.js', () => ({
+  ClaudeCodeClientManager: vi.fn(function () {
+    return {
+      getConfigPath: vi.fn(),
+      configure: vi.fn(),
+    };
+  }),
+}));
+
 // Act: Import the module under test after mocking dependencies
 import * as clientsIndex from '../../src/clients/index.js';
 
@@ -52,6 +61,7 @@ describe('Client Module Index', () => {
     expect(clientsIndex.clients).toHaveProperty('cursor');
     expect(clientsIndex.clients).toHaveProperty('windsurf');
     expect(clientsIndex.clients).toHaveProperty('vscode');
+    expect(clientsIndex.clients).toHaveProperty('claude-code');
 
     // Assert: Verify that each client manager instance has the expected methods
     expect(clientsIndex.clients.claude).toHaveProperty('getConfigPath');
@@ -62,5 +72,7 @@ describe('Client Module Index', () => {
     expect(clientsIndex.clients.windsurf).toHaveProperty('configure');
     expect(clientsIndex.clients.vscode).toHaveProperty('getConfigPath');
     expect(clientsIndex.clients.vscode).toHaveProperty('configure');
+    expect(clientsIndex.clients['claude-code']).toHaveProperty('getConfigPath');
+    expect(clientsIndex.clients['claude-code']).toHaveProperty('configure');
   });
 });

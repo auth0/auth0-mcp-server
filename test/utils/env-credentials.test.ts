@@ -123,6 +123,17 @@ beforeEach(() => {
 });
 
 describe('resolveAndWriteCredentials — project path validation', () => {
+  it('returns error when project_path is not absolute', async () => {
+    const result = await resolveAndWriteCredentials(
+      { ...fallbackParams, project_path: 'myapp' },
+      config,
+      token
+    );
+
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error).toContain('must be an absolute path');
+  });
+
   it('returns error when project_path does not exist', async () => {
     vi.mocked(fs.existsSync).mockReturnValue(false);
 

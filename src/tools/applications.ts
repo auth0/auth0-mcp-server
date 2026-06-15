@@ -17,7 +17,6 @@ import type {
   ClientCreateAppTypeEnum,
   ClientCreateOrganizationUsageEnum,
   ClientCreateOrganizationRequireBehaviorEnum,
-  ClientCreateComplianceLevelEnum,
   ClientCreate,
   ClientUpdate,
 } from 'auth0';
@@ -147,6 +146,49 @@ export const APPLICATION_TOOLS: Tool[] = [
             'Token endpoint authentication method. When creating, defaults based on app_type: "none" for SPA/Native (public clients), "client_secret_post" for Regular Web/M2M (confidential clients).',
           enum: ['none', 'client_secret_post', 'client_secret_basic'],
         },
+        grant_types: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'List of grant types for this client',
+        },
+        jwt_configuration: {
+          type: 'object',
+          description: 'JWT configuration settings',
+        },
+        refresh_token: {
+          type: 'object',
+          description: 'Refresh token configuration',
+        },
+        mobile: {
+          type: 'object',
+          description: 'Mobile app configuration settings',
+        },
+        web_origins: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'URLs allowed to make cross-origin (CORS) requests to Auth0 from JavaScript.',
+        },
+        client_aliases: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'List of audiences or client identifiers used for SAML or delegation.',
+        },
+        cross_origin_loc: {
+          type: 'string',
+          description: 'URL of the location in your site where the cross-origin verification takes place for cross-origin authentication.',
+        },
+        oidc_logout: {
+          type: 'object',
+          description: 'Configuration for OIDC back-channel logout.',
+        },
+        sso: {
+          type: 'boolean',
+          description: 'Whether Single Sign On is enabled for this client.',
+        },
+        native_social_login: {
+          type: 'object',
+          description: 'Configuration for native social login (e.g. Apple, Facebook).',
+        },
       },
       required: ['name'],
     },
@@ -257,6 +299,32 @@ export const APPLICATION_TOOLS: Tool[] = [
         mobile: {
           type: 'object',
           description: 'Mobile app configuration settings',
+        },
+        web_origins: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'URLs allowed to make cross-origin (CORS) requests to Auth0 from JavaScript.',
+        },
+        client_aliases: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'List of audiences or client identifiers used for SAML or delegation.',
+        },
+        cross_origin_loc: {
+          type: 'string',
+          description: 'URL of the location in your site where the cross-origin verification takes place for cross-origin authentication.',
+        },
+        oidc_logout: {
+          type: 'object',
+          description: 'Configuration for OIDC back-channel logout.',
+        },
+        sso: {
+          type: 'boolean',
+          description: 'Whether Single Sign On is enabled for this client.',
+        },
+        native_social_login: {
+          type: 'object',
+          description: 'Configuration for native social login (e.g. Apple, Facebook).',
         },
         skip_non_verifiable_callback_uri_confirmation_prompt: {
           type: 'boolean',
@@ -584,28 +652,15 @@ export const APPLICATION_HANDLERS: Record<
         is_first_party,
         oidc_conformant,
         jwt_configuration,
-        encryption_key,
         sso,
         cross_origin_authentication,
         cross_origin_loc,
         sso_disabled,
-        custom_login_page_on,
-        custom_login_page,
-        custom_login_page_preview,
-        form_template,
-        addons,
-        client_metadata,
         mobile,
-        initiate_login_uri,
         native_social_login,
         refresh_token,
         organization_usage,
         organization_require_behavior,
-        client_authentication_methods,
-        require_pushed_authorization_requests,
-        signed_request_object,
-        require_proof_of_possession,
-        compliance_level,
       } = request.parameters;
 
       if (!name) {
@@ -654,22 +709,12 @@ export const APPLICATION_HANDLERS: Record<
       if (is_first_party !== undefined) clientData.is_first_party = is_first_party;
       if (oidc_conformant !== undefined) clientData.oidc_conformant = oidc_conformant;
       if (jwt_configuration !== undefined) clientData.jwt_configuration = jwt_configuration;
-      if (encryption_key !== undefined) clientData.encryption_key = encryption_key;
       if (sso !== undefined) clientData.sso = sso;
       if (cross_origin_authentication !== undefined)
         clientData.cross_origin_authentication = cross_origin_authentication;
       if (cross_origin_loc !== undefined) clientData.cross_origin_loc = cross_origin_loc;
       if (sso_disabled !== undefined) clientData.sso_disabled = sso_disabled;
-      if (custom_login_page_on !== undefined)
-        clientData.custom_login_page_on = custom_login_page_on;
-      if (custom_login_page !== undefined) clientData.custom_login_page = custom_login_page;
-      if (custom_login_page_preview !== undefined)
-        clientData.custom_login_page_preview = custom_login_page_preview;
-      if (form_template !== undefined) clientData.form_template = form_template;
-      if (addons !== undefined) clientData.addons = addons;
-      if (client_metadata !== undefined) clientData.client_metadata = client_metadata;
       if (mobile !== undefined) clientData.mobile = mobile;
-      if (initiate_login_uri !== undefined) clientData.initiate_login_uri = initiate_login_uri;
       if (native_social_login !== undefined) clientData.native_social_login = native_social_login;
       if (refresh_token !== undefined) clientData.refresh_token = refresh_token;
       if (organization_usage !== undefined)
@@ -677,16 +722,6 @@ export const APPLICATION_HANDLERS: Record<
       if (organization_require_behavior !== undefined)
         clientData.organization_require_behavior =
           organization_require_behavior as ClientCreateOrganizationRequireBehaviorEnum;
-      if (client_authentication_methods !== undefined)
-        clientData.client_authentication_methods = client_authentication_methods;
-      if (require_pushed_authorization_requests !== undefined)
-        clientData.require_pushed_authorization_requests = require_pushed_authorization_requests;
-      if (signed_request_object !== undefined)
-        clientData.signed_request_object = signed_request_object;
-      if (require_proof_of_possession !== undefined)
-        clientData.require_proof_of_possession = require_proof_of_possession;
-      if (compliance_level !== undefined)
-        clientData.compliance_level = compliance_level as ClientCreateComplianceLevelEnum;
       if (callbacks && hasNonVerifiableCallbacks(callbacks)) {
         clientData.skip_non_verifiable_callback_uri_confirmation_prompt = true;
       }
@@ -793,28 +828,15 @@ export const APPLICATION_HANDLERS: Record<
         is_first_party,
         oidc_conformant,
         jwt_configuration,
-        encryption_key,
         sso,
         cross_origin_authentication,
         cross_origin_loc,
         sso_disabled,
-        custom_login_page_on,
-        custom_login_page,
-        custom_login_page_preview,
-        form_template,
-        addons,
-        client_metadata,
         mobile,
-        initiate_login_uri,
         native_social_login,
         refresh_token,
         organization_usage,
         organization_require_behavior,
-        client_authentication_methods,
-        require_pushed_authorization_requests,
-        signed_request_object,
-        require_proof_of_possession,
-        compliance_level,
         skip_non_verifiable_callback_uri_confirmation_prompt,
       } = request.parameters;
 
@@ -838,22 +860,12 @@ export const APPLICATION_HANDLERS: Record<
       if (is_first_party !== undefined) updateData.is_first_party = is_first_party;
       if (oidc_conformant !== undefined) updateData.oidc_conformant = oidc_conformant;
       if (jwt_configuration !== undefined) updateData.jwt_configuration = jwt_configuration;
-      if (encryption_key !== undefined) updateData.encryption_key = encryption_key;
       if (sso !== undefined) updateData.sso = sso;
       if (cross_origin_authentication !== undefined)
         updateData.cross_origin_authentication = cross_origin_authentication;
       if (cross_origin_loc !== undefined) updateData.cross_origin_loc = cross_origin_loc;
       if (sso_disabled !== undefined) updateData.sso_disabled = sso_disabled;
-      if (custom_login_page_on !== undefined)
-        updateData.custom_login_page_on = custom_login_page_on;
-      if (custom_login_page !== undefined) updateData.custom_login_page = custom_login_page;
-      if (custom_login_page_preview !== undefined)
-        updateData.custom_login_page_preview = custom_login_page_preview;
-      if (form_template !== undefined) updateData.form_template = form_template;
-      if (addons !== undefined) updateData.addons = addons;
-      if (client_metadata !== undefined) updateData.client_metadata = client_metadata;
       if (mobile !== undefined) updateData.mobile = mobile;
-      if (initiate_login_uri !== undefined) updateData.initiate_login_uri = initiate_login_uri;
       if (native_social_login !== undefined) updateData.native_social_login = native_social_login;
       if (refresh_token !== undefined) updateData.refresh_token = refresh_token;
       if (organization_usage !== undefined)
@@ -861,16 +873,6 @@ export const APPLICATION_HANDLERS: Record<
       if (organization_require_behavior !== undefined)
         updateData.organization_require_behavior =
           organization_require_behavior as ClientCreateOrganizationRequireBehaviorEnum;
-      if (client_authentication_methods !== undefined)
-        updateData.client_authentication_methods = client_authentication_methods;
-      if (require_pushed_authorization_requests !== undefined)
-        updateData.require_pushed_authorization_requests = require_pushed_authorization_requests;
-      if (signed_request_object !== undefined)
-        updateData.signed_request_object = signed_request_object;
-      if (require_proof_of_possession !== undefined)
-        updateData.require_proof_of_possession = require_proof_of_possession;
-      if (compliance_level !== undefined)
-        updateData.compliance_level = compliance_level as ClientCreateComplianceLevelEnum;
       if (skip_non_verifiable_callback_uri_confirmation_prompt !== undefined)
         updateData.skip_non_verifiable_callback_uri_confirmation_prompt =
           skip_non_verifiable_callback_uri_confirmation_prompt;

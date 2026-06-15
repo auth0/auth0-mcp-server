@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { http, HttpResponse } from 'msw';
-import { APPLICATION_HANDLERS } from '../../src/tools/applications';
+import { APPLICATION_HANDLERS, APPLICATION_TOOLS } from '../../src/tools/applications';
 import { ServerMode } from '../../src/utils/types';
 import { mockConfig } from '../mocks/config';
 import { mockApplications } from '../mocks/auth0/applications';
@@ -526,6 +526,71 @@ describe('Applications Tool Handlers', () => {
         }
       });
     });
+
+    describe('parameter hardening', () => {
+      const createTool = APPLICATION_TOOLS.find((t) => t.name === 'auth0_create_application');
+      const declaredParams = Object.keys(createTool?.inputSchema?.properties ?? {});
+
+      async function captureBody(parameters: Record<string, any>) {
+        let capturedBody: Record<string, any> | undefined;
+        server.use(
+          http.post('https://*/api/v2/clients', async ({ request }) => {
+            capturedBody = (await request.json()) as Record<string, any>;
+            return HttpResponse.json({ ...capturedBody, client_id: 'test-app-id' });
+          })
+        );
+
+        const response = await APPLICATION_HANDLERS.auth0_create_application(
+          { token, parameters },
+          { domain }
+        );
+
+        expect(response.isError).toBe(false);
+        expect(capturedBody).toBeDefined();
+        return capturedBody!;
+      }
+
+      it('should not forward parameters that are not declared in the inputSchema', async () => {
+        // Undeclared fields (e.g. arriving via prompt injection) must never reach
+        // the Auth0 API, regardless of which specific fields they are.
+        const undeclared = {
+          custom_login_page: '<script>steal()</script>',
+          encryption_key: 'injected',
+          addons: { samlp: {} },
+          compliance_level: 'fapi',
+          some_future_unsupported_field: 'injected',
+        };
+
+        const capturedBody = await captureBody({ name: 'Test App', app_type: 'spa', ...undeclared });
+
+        for (const key of Object.keys(capturedBody)) {
+          expect(declaredParams).toContain(key);
+        }
+        for (const key of Object.keys(undeclared)) {
+          expect(capturedBody[key]).toBeUndefined();
+        }
+      });
+
+      it('should forward declared configuration parameters to the Auth0 API', async () => {
+        const declared = {
+          web_origins: ['https://example.com'],
+          client_aliases: ['urn:example'],
+          cross_origin_loc: 'https://example.com/cross-origin',
+          oidc_logout: { backchannel_logout_urls: ['https://example.com/logout'] },
+          sso: true,
+          native_social_login: { apple: { enabled: true } },
+          grant_types: ['authorization_code'],
+          mobile: { ios: { team_id: 'TEAM' } },
+          refresh_token: { rotation_type: 'rotating' },
+        };
+
+        const capturedBody = await captureBody({ name: 'Test App', app_type: 'spa', ...declared });
+
+        for (const [key, value] of Object.entries(declared)) {
+          expect(capturedBody[key]).toEqual(value);
+        }
+      });
+    });
   });
 
   describe('auth0_update_application', () => {
@@ -677,6 +742,71 @@ describe('Applications Tool Handlers', () => {
 
       expect(response.isError).toBe(false);
       expect(capturedBody.skip_non_verifiable_callback_uri_confirmation_prompt).toBe(false);
+    });
+
+    describe('parameter hardening', () => {
+      const updateTool = APPLICATION_TOOLS.find((t) => t.name === 'auth0_update_application');
+      const declaredParams = Object.keys(updateTool?.inputSchema?.properties ?? {});
+
+      async function captureBody(parameters: Record<string, any>) {
+        const clientId = mockApplications[0].client_id;
+        let capturedBody: Record<string, any> | undefined;
+        server.use(
+          http.patch(`https://*/api/v2/clients/${clientId}`, async ({ request }) => {
+            capturedBody = (await request.json()) as Record<string, any>;
+            return HttpResponse.json({ ...mockApplications[0], ...capturedBody });
+          })
+        );
+
+        const response = await APPLICATION_HANDLERS.auth0_update_application(
+          { token, parameters: { client_id: clientId, ...parameters } },
+          { domain }
+        );
+
+        expect(response.isError).toBe(false);
+        expect(capturedBody).toBeDefined();
+        return capturedBody!;
+      }
+
+      it('should not forward parameters that are not declared in the inputSchema', async () => {
+        const undeclared = {
+          custom_login_page: '<script>steal()</script>',
+          encryption_key: 'injected',
+          addons: { samlp: {} },
+          compliance_level: 'fapi',
+          some_future_unsupported_field: 'injected',
+        };
+
+        const capturedBody = await captureBody(undeclared);
+
+        for (const key of Object.keys(capturedBody)) {
+          expect(declaredParams).toContain(key);
+        }
+        for (const key of Object.keys(undeclared)) {
+          expect(capturedBody[key]).toBeUndefined();
+        }
+      });
+
+      it('should forward declared configuration parameters to the Auth0 API', async () => {
+        const declared = {
+          web_origins: ['https://example.com'],
+          client_aliases: ['urn:example'],
+          cross_origin_loc: 'https://example.com/cross-origin',
+          oidc_logout: { backchannel_logout_urls: ['https://example.com/logout'] },
+          sso: true,
+          native_social_login: { apple: { enabled: true } },
+          grant_types: ['authorization_code'],
+          mobile: { ios: { team_id: 'TEAM' } },
+          refresh_token: { rotation_type: 'rotating' },
+          jwt_configuration: { alg: 'RS256' },
+        };
+
+        const capturedBody = await captureBody(declared);
+
+        for (const [key, value] of Object.entries(declared)) {
+          expect(capturedBody[key]).toEqual(value);
+        }
+      });
     });
   });
 

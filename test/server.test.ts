@@ -64,9 +64,27 @@ vi.mock('../src/tools/index.js', () => {
   });
 
   return {
-    TOOLS: [{ name: 'test_tool', description: 'Test tool', inputSchema: {} }],
+    TOOLS: [
+      { name: 'test_tool', description: 'Test tool', inputSchema: {} },
+      {
+        name: 'schema_tool',
+        description: 'Tool with a declared input schema',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            name: { type: 'string' },
+            client_id: { type: 'string' },
+          },
+          required: ['name'],
+        },
+      },
+    ],
     HANDLERS: {
       test_tool: mockHandler,
+      schema_tool: vi.fn().mockResolvedValue({
+        content: [{ type: 'text', text: 'Success' }],
+        isError: false,
+      }),
     },
   };
 });
@@ -100,6 +118,12 @@ describe('Server', () => {
         { name: 'auth0', version: '0.1.0-beta.1' },
         { capabilities: { tools: {}, logging: {} } }
       );
+    });
+
+    it('should not emit MCP logging notifications during startup', async () => {
+      await startServer();
+
+      expect(mockSendLoggingMessage).not.toHaveBeenCalled();
     });
 
     it('should initialize the server with filtered tools', async () => {
@@ -334,6 +358,79 @@ describe('Server', () => {
       // Verify the error response
       expect(result).toHaveProperty('isError', true);
       expect(result.content[0].text).toContain('Error: Tool execution failed');
+    });
+
+    it('should reject arguments not declared in the tool inputSchema', async () => {
+      await startServer();
+
+      const handlerFn = getCallToolHandler();
+
+      // custom_login_page is a security-critical Auth0 param that is NOT declared
+      // in schema_tool's inputSchema, so it must be rejected before reaching the handler.
+      const request = {
+        params: {
+          name: 'schema_tool',
+          arguments: {
+            name: 'My App',
+            custom_login_page_on: true,
+            custom_login_page: '<script>steal()</script>',
+          },
+        },
+      };
+
+      const result = await handlerFn(request);
+
+      expect(result).toHaveProperty('isError', true);
+      expect(result.content[0].text).toContain('Rejected undeclared parameters');
+      expect(result.content[0].text).toContain('custom_login_page_on');
+      expect(result.content[0].text).toContain('custom_login_page');
+      expect(HANDLERS.schema_tool).not.toHaveBeenCalled();
+    });
+
+    it('should allow arguments that are all declared in the tool inputSchema', async () => {
+      await startServer();
+
+      const handlerFn = getCallToolHandler();
+
+      const request = {
+        params: {
+          name: 'schema_tool',
+          arguments: {
+            name: 'My App',
+            client_id: 'abc123',
+          },
+        },
+      };
+
+      const result = await handlerFn(request);
+
+      expect(result).toHaveProperty('isError', false);
+      expect(HANDLERS.schema_tool).toHaveBeenCalledWith(
+        {
+          token: mockConfig.token,
+          parameters: { name: 'My App', client_id: 'abc123' },
+        },
+        { domain: mockConfig.domain }
+      );
+    });
+
+    it('should not enforce an allowlist when the tool declares no schema properties', async () => {
+      await startServer();
+
+      const handlerFn = getCallToolHandler();
+
+      // test_tool has an empty inputSchema (no properties), so validation is skipped.
+      const request = {
+        params: {
+          name: 'test_tool',
+          arguments: { anything: 'goes' },
+        },
+      };
+
+      const result = await handlerFn(request);
+
+      expect(result).toHaveProperty('isError', false);
+      expect(HANDLERS.test_tool).toHaveBeenCalled();
     });
   });
 });

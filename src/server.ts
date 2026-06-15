@@ -88,9 +88,27 @@ export async function startServer(options?: ServerOptions) {
 
       try {
         // Check available (filtered) tools, not all handlers
-        const isToolAvailable = availableTools.some((t) => t.name === toolName);
-        if (!isToolAvailable || !HANDLERS[toolName]) {
+        const tool = availableTools.find((t) => t.name === toolName);
+        if (!tool || !HANDLERS[toolName]) {
           throw new Error(`Unknown or restricted tool: ${toolName}`);
+        }
+
+        // Reject any argument not declared in the tool's inputSchema.
+        // MCP clients only surface schema-declared parameters for human approval,
+        // so forwarding undeclared parameters to the Auth0 Management API would let
+        // a prompt-injection attacker smuggle security-critical fields (e.g.
+        // custom_login_page, addons, client_authentication_methods) past the
+        // human-in-the-loop confirmation. Enforcing the schema as an allowlist
+        // closes that LLM-to-tool trust boundary gap.
+        const declaredParameters = tool.inputSchema?.properties;
+        if (declaredParameters) {
+          const allowedKeys = new Set(Object.keys(declaredParameters));
+          const undeclaredKeys = Object.keys(request.params.arguments || {}).filter(
+            (key) => !allowedKeys.has(key)
+          );
+          if (undeclaredKeys.length > 0) {
+            throw new Error(`Rejected undeclared parameters: ${undeclaredKeys.join(', ')}`);
+          }
         }
 
         // Check if config is still valid, reload if needed
@@ -160,7 +178,6 @@ export async function startServer(options?: ServerOptions) {
       const logMsg = `Auth0 MCP Server version ${packageVersion} running on stdio with ${enabledToolsCount}/${totalToolsCount} tools available`;
       logInfo(logMsg);
       log(logMsg);
-      server.sendLoggingMessage({ level: 'info', data: logMsg });
 
       return server;
     } catch (connectError) {

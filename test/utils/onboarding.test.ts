@@ -229,19 +229,13 @@ describe('hasNonVerifiableCallbacks', () => {
 
   it('returns true if any callback is non-verifiable', () => {
     expect(
-      hasNonVerifiableCallbacks([
-        'https://example.com/callback',
-        'http://localhost:3000/callback',
-      ])
+      hasNonVerifiableCallbacks(['https://example.com/callback', 'http://localhost:3000/callback'])
     ).toBe(true);
   });
 
   it('returns false when all callbacks are verifiable', () => {
     expect(
-      hasNonVerifiableCallbacks([
-        'https://example.com/callback',
-        'https://app.example.com/auth',
-      ])
+      hasNonVerifiableCallbacks(['https://example.com/callback', 'https://app.example.com/auth'])
     ).toBe(false);
   });
 });

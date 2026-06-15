@@ -43,6 +43,10 @@ vi.mock('../../src/clients/index', () => ({
       displayName: 'Cursor',
       configure: vi.fn().mockResolvedValue(undefined),
     },
+    'claude-code': {
+      displayName: 'Claude Code',
+      configure: vi.fn().mockResolvedValue(undefined),
+    },
   },
 }));
 

@@ -26,11 +26,17 @@ vi.mock('../../src/clients/index.js', () => {
     configure: vi.fn().mockResolvedValue(undefined),
   };
 
+  const mockClaudeCodeManager = {
+    getConfigPath: vi.fn(),
+    configure: vi.fn().mockResolvedValue(undefined),
+  };
+
   return {
     clients: {
       claude: mockClaudeManager,
       cursor: mockCursorManager,
       windsurf: mockWindsurfManager,
+      'claude-code': mockClaudeCodeManager,
     },
   };
 });
@@ -60,6 +66,7 @@ describe('Init Module', () => {
   const mockedClaudeConfigure = vi.mocked(clients.claude.configure);
   const mockedWindsurfConfigure = vi.mocked(clients.windsurf.configure);
   const mockedCursorConfigure = vi.mocked(clients.cursor.configure);
+  const mockedClaudeCodeConfigure = vi.mocked(clients['claude-code'].configure);
   const mockedLog = vi.mocked(log);
   const mockedPromptForScopeSelection = vi.mocked(promptForScopeSelection);
 
@@ -142,6 +149,7 @@ describe('Init Module', () => {
     it.each([
       ['windsurf', mockedWindsurfConfigure],
       ['cursor', mockedCursorConfigure],
+      ['claude-code', mockedClaudeCodeConfigure],
     ])('should initialize %s client when specified', async (clientType, configMock) => {
       // Act
       await init({ client: clientType as ClientType, tools: ['*'] });
@@ -155,6 +163,7 @@ describe('Init Module', () => {
         mockedClaudeConfigure,
         mockedWindsurfConfigure,
         mockedCursorConfigure,
+        mockedClaudeCodeConfigure,
       ];
       const otherMocks = allClientMocks.filter((mock) => mock !== configMock);
       otherMocks.forEach((mock) => {

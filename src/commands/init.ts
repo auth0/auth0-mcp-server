@@ -107,10 +107,10 @@ async function configureClient(clientType: ClientType, options: InitOptions): Pr
  * This function orchestrates the complete initialization process by:
  * 1. Resolving and validating requested scopes
  * 2. Obtaining authorization through the device flow
- * 3. Configuring the selected client (Claude, Windsurf, Cursor, VS Code or Gemini CLI)
+ * 3. Configuring the selected client (Claude, Claude Code, Windsurf, Cursor, VS Code or Gemini CLI)
  *
  * @param {InitOptions} options - Configuration options including:
- *   - client: The target client type to configure ('claude', 'windsurf', 'cursor', 'vscode' or 'gemini)
+ *   - client: The target client type to configure ('claude', 'claude-code', 'windsurf', 'cursor', 'vscode' or 'gemini')
  *   - scopes: Optional scope patterns for authorization (will prompt if omitted)
  *   - tools: Tool patterns to enable (e.g., ['auth0_list_*'])
  *   - (no-)interaction: Should the CLI prompt the user to press return to open the browser
