@@ -71,7 +71,7 @@ const mockAppData = {
   web_origins: ['https://example.com'],
 };
 
-describe('auth0_configure_and_get_quickstart_guide', () => {
+describe('auth0_get_quickstart_guide', () => {
   let QUICKSTART_HANDLERS: typeof import('../../src/tools/quickstarts').QUICKSTART_HANDLERS;
   let QUICKSTART_TOOLS: typeof import('../../src/tools/quickstarts').QUICKSTART_TOOLS;
 
@@ -121,9 +121,7 @@ describe('auth0_configure_and_get_quickstart_guide', () => {
 
   describe('tool metadata', () => {
     it('should mark the tool as non-read-only and non-destructive (URL updates are additive)', () => {
-      const tool = QUICKSTART_TOOLS.find(
-        (t) => t.name === 'auth0_configure_and_get_quickstart_guide'
-      );
+      const tool = QUICKSTART_TOOLS.find((t) => t.name === 'auth0_get_quickstart_guide');
       expect(tool?.annotations?.readOnlyHint).toBe(false);
       expect(tool?.annotations?.destructiveHint).toBe(false);
     });
@@ -131,7 +129,7 @@ describe('auth0_configure_and_get_quickstart_guide', () => {
 
   describe('parameter validation', () => {
     it('should return error when client_id is missing', async () => {
-      const response = await QUICKSTART_HANDLERS.auth0_configure_and_get_quickstart_guide(
+      const response = await QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
         { token, parameters: { framework: 'react', project_path: '/tmp/project' } },
         config
       );
@@ -140,7 +138,7 @@ describe('auth0_configure_and_get_quickstart_guide', () => {
     });
 
     it('should return error when framework is missing', async () => {
-      const response = await QUICKSTART_HANDLERS.auth0_configure_and_get_quickstart_guide(
+      const response = await QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
         { token, parameters: { client_id: 'test-client-id', project_path: '/tmp/project' } },
         config
       );
@@ -149,7 +147,7 @@ describe('auth0_configure_and_get_quickstart_guide', () => {
     });
 
     it('should return error when project_path is missing', async () => {
-      const response = await QUICKSTART_HANDLERS.auth0_configure_and_get_quickstart_guide(
+      const response = await QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
         { token, parameters: { client_id: 'test-client-id', framework: 'react' } },
         config
       );
@@ -158,7 +156,7 @@ describe('auth0_configure_and_get_quickstart_guide', () => {
     });
 
     it('should return error when token is missing', async () => {
-      const response = await QUICKSTART_HANDLERS.auth0_configure_and_get_quickstart_guide(
+      const response = await QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
         {
           token: '',
           parameters: {
@@ -174,7 +172,7 @@ describe('auth0_configure_and_get_quickstart_guide', () => {
     });
 
     it('should return error when domain is not configured', async () => {
-      const response = await QUICKSTART_HANDLERS.auth0_configure_and_get_quickstart_guide(
+      const response = await QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
         {
           token,
           parameters: {
@@ -194,7 +192,7 @@ describe('auth0_configure_and_get_quickstart_guide', () => {
     it('should return error when spec is unavailable', async () => {
       mockFetchQuickstartSpec.mockResolvedValue(null);
 
-      const response = await QUICKSTART_HANDLERS.auth0_configure_and_get_quickstart_guide(
+      const response = await QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
         {
           token,
           parameters: {
@@ -215,7 +213,7 @@ describe('auth0_configure_and_get_quickstart_guide', () => {
         makeMockSpec({ llmPromptPath: undefined, llmPromptUrl: undefined })
       );
 
-      const response = await QUICKSTART_HANDLERS.auth0_configure_and_get_quickstart_guide(
+      const response = await QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
         {
           token,
           parameters: {
@@ -233,7 +231,7 @@ describe('auth0_configure_and_get_quickstart_guide', () => {
 
   describe('application validation', () => {
     it('should return error when application is not found', async () => {
-      const response = await QUICKSTART_HANDLERS.auth0_configure_and_get_quickstart_guide(
+      const response = await QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
         {
           token,
           parameters: {
@@ -258,7 +256,7 @@ describe('auth0_configure_and_get_quickstart_guide', () => {
         })
       );
 
-      const response = await QUICKSTART_HANDLERS.auth0_configure_and_get_quickstart_guide(
+      const response = await QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
         {
           token,
           parameters: {
@@ -278,7 +276,7 @@ describe('auth0_configure_and_get_quickstart_guide', () => {
     it('should return error when .env file is missing', async () => {
       mockExistsSync.mockReturnValue(false);
 
-      const response = await QUICKSTART_HANDLERS.auth0_configure_and_get_quickstart_guide(
+      const response = await QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
         {
           token,
           parameters: {
@@ -302,7 +300,7 @@ describe('auth0_configure_and_get_quickstart_guide', () => {
         })
       );
 
-      const response = await QUICKSTART_HANDLERS.auth0_configure_and_get_quickstart_guide(
+      const response = await QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
         {
           token,
           parameters: {
@@ -321,7 +319,7 @@ describe('auth0_configure_and_get_quickstart_guide', () => {
       mockFetchQuickstartSpec.mockResolvedValue(makeMockSpec({ envSnippet: undefined }));
       mockExistsSync.mockReturnValue(false);
 
-      const response = await QUICKSTART_HANDLERS.auth0_configure_and_get_quickstart_guide(
+      const response = await QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
         {
           token,
           parameters: {
@@ -365,7 +363,7 @@ describe('auth0_configure_and_get_quickstart_guide', () => {
         })
       );
 
-      const response = await QUICKSTART_HANDLERS.auth0_configure_and_get_quickstart_guide(
+      const response = await QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
         {
           token,
           parameters: {
@@ -394,7 +392,7 @@ describe('auth0_configure_and_get_quickstart_guide', () => {
         })
       );
 
-      const response = await QUICKSTART_HANDLERS.auth0_configure_and_get_quickstart_guide(
+      const response = await QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
         {
           token,
           parameters: {
@@ -423,7 +421,7 @@ describe('auth0_configure_and_get_quickstart_guide', () => {
         })
       );
 
-      const response = await QUICKSTART_HANDLERS.auth0_configure_and_get_quickstart_guide(
+      const response = await QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
         {
           token,
           parameters: {
@@ -456,7 +454,7 @@ describe('auth0_configure_and_get_quickstart_guide', () => {
         })
       );
 
-      const response = await QUICKSTART_HANDLERS.auth0_configure_and_get_quickstart_guide(
+      const response = await QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
         {
           token,
           parameters: {
@@ -486,7 +484,7 @@ describe('auth0_configure_and_get_quickstart_guide', () => {
         })
       );
 
-      const response = await QUICKSTART_HANDLERS.auth0_configure_and_get_quickstart_guide(
+      const response = await QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
         {
           token,
           parameters: {
@@ -523,7 +521,7 @@ describe('auth0_configure_and_get_quickstart_guide', () => {
         })
       );
 
-      const response = await QUICKSTART_HANDLERS.auth0_configure_and_get_quickstart_guide(
+      const response = await QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
         {
           token,
           parameters: {
@@ -558,7 +556,7 @@ describe('auth0_configure_and_get_quickstart_guide', () => {
         })
       );
 
-      const response = await QUICKSTART_HANDLERS.auth0_configure_and_get_quickstart_guide(
+      const response = await QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
         {
           token,
           parameters: {
@@ -589,7 +587,7 @@ describe('auth0_configure_and_get_quickstart_guide', () => {
         })
       );
 
-      const response = await QUICKSTART_HANDLERS.auth0_configure_and_get_quickstart_guide(
+      const response = await QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
         {
           token,
           parameters: {
@@ -623,7 +621,7 @@ describe('auth0_configure_and_get_quickstart_guide', () => {
         })
       );
 
-      const response = await QUICKSTART_HANDLERS.auth0_configure_and_get_quickstart_guide(
+      const response = await QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
         {
           token,
           parameters: {
@@ -667,7 +665,7 @@ describe('auth0_configure_and_get_quickstart_guide', () => {
         })
       );
 
-      const response = await QUICKSTART_HANDLERS.auth0_configure_and_get_quickstart_guide(
+      const response = await QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
         {
           token,
           parameters: {
@@ -700,7 +698,7 @@ describe('auth0_configure_and_get_quickstart_guide', () => {
         })
       );
 
-      const response = await QUICKSTART_HANDLERS.auth0_configure_and_get_quickstart_guide(
+      const response = await QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
         {
           token,
           parameters: {
@@ -731,7 +729,7 @@ describe('auth0_configure_and_get_quickstart_guide', () => {
         })
       );
 
-      const response = await QUICKSTART_HANDLERS.auth0_configure_and_get_quickstart_guide(
+      const response = await QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
         {
           token,
           parameters: {
@@ -759,7 +757,7 @@ describe('auth0_configure_and_get_quickstart_guide', () => {
         })
       );
 
-      const response = await QUICKSTART_HANDLERS.auth0_configure_and_get_quickstart_guide(
+      const response = await QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
         {
           token,
           parameters: {
@@ -787,7 +785,7 @@ describe('auth0_configure_and_get_quickstart_guide', () => {
         })
       );
 
-      const response = await QUICKSTART_HANDLERS.auth0_configure_and_get_quickstart_guide(
+      const response = await QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
         {
           token,
           parameters: {
@@ -806,7 +804,7 @@ describe('auth0_configure_and_get_quickstart_guide', () => {
 
   describe('placeholder injection', () => {
     it('should inject domain and client_id placeholders', async () => {
-      const response = await QUICKSTART_HANDLERS.auth0_configure_and_get_quickstart_guide(
+      const response = await QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
         {
           token,
           parameters: {
@@ -843,7 +841,7 @@ describe('auth0_configure_and_get_quickstart_guide', () => {
         })
       );
 
-      const response = await QUICKSTART_HANDLERS.auth0_configure_and_get_quickstart_guide(
+      const response = await QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
         {
           token,
           parameters: {
@@ -863,7 +861,7 @@ describe('auth0_configure_and_get_quickstart_guide', () => {
 
   describe('success response', () => {
     it('should return complete success response with all fields', async () => {
-      const response = await QUICKSTART_HANDLERS.auth0_configure_and_get_quickstart_guide(
+      const response = await QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
         {
           token,
           parameters: {
@@ -894,7 +892,7 @@ describe('auth0_configure_and_get_quickstart_guide', () => {
     });
 
     it('should return the normalized resolved path, not the raw input', async () => {
-      const response = await QUICKSTART_HANDLERS.auth0_configure_and_get_quickstart_guide(
+      const response = await QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
         {
           token,
           parameters: {
@@ -911,7 +909,7 @@ describe('auth0_configure_and_get_quickstart_guide', () => {
     });
 
     it('should include web_origins for SPA apps', async () => {
-      const response = await QUICKSTART_HANDLERS.auth0_configure_and_get_quickstart_guide(
+      const response = await QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
         {
           token,
           parameters: {
@@ -929,7 +927,7 @@ describe('auth0_configure_and_get_quickstart_guide', () => {
     it('should omit web_origins for webapp apps', async () => {
       mockFetchQuickstartSpec.mockResolvedValue(makeMockSpec({ appType: 'webapp' }));
 
-      const response = await QUICKSTART_HANDLERS.auth0_configure_and_get_quickstart_guide(
+      const response = await QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
         {
           token,
           parameters: {
@@ -945,7 +943,7 @@ describe('auth0_configure_and_get_quickstart_guide', () => {
     });
 
     it('should set url_source to framework_default when no base_url provided', async () => {
-      const response = await QUICKSTART_HANDLERS.auth0_configure_and_get_quickstart_guide(
+      const response = await QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
         {
           token,
           parameters: {
@@ -972,7 +970,7 @@ describe('auth0_configure_and_get_quickstart_guide', () => {
         })
       );
 
-      const response = await QUICKSTART_HANDLERS.auth0_configure_and_get_quickstart_guide(
+      const response = await QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
         {
           token,
           parameters: {
@@ -1002,7 +1000,7 @@ describe('auth0_configure_and_get_quickstart_guide', () => {
         })
       );
 
-      const response = await QUICKSTART_HANDLERS.auth0_configure_and_get_quickstart_guide(
+      const response = await QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
         {
           token,
           parameters: {
@@ -1040,7 +1038,7 @@ describe('auth0_configure_and_get_quickstart_guide', () => {
         })
       );
 
-      const response = await QUICKSTART_HANDLERS.auth0_configure_and_get_quickstart_guide(
+      const response = await QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
         {
           token,
           parameters: {
@@ -1076,7 +1074,7 @@ describe('auth0_configure_and_get_quickstart_guide', () => {
         })
       );
 
-      const response = await QUICKSTART_HANDLERS.auth0_configure_and_get_quickstart_guide(
+      const response = await QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
         {
           token,
           parameters: {
@@ -1106,7 +1104,7 @@ describe('auth0_configure_and_get_quickstart_guide', () => {
         })
       );
 
-      const response = await QUICKSTART_HANDLERS.auth0_configure_and_get_quickstart_guide(
+      const response = await QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
         {
           token,
           parameters: {
@@ -1124,7 +1122,7 @@ describe('auth0_configure_and_get_quickstart_guide', () => {
 
   describe('absolute path enforcement', () => {
     it('should reject relative project_path', async () => {
-      const response = await QUICKSTART_HANDLERS.auth0_configure_and_get_quickstart_guide(
+      const response = await QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
         {
           token,
           parameters: {
@@ -1140,7 +1138,7 @@ describe('auth0_configure_and_get_quickstart_guide', () => {
     });
 
     it('should reject a bare relative directory name', async () => {
-      const response = await QUICKSTART_HANDLERS.auth0_configure_and_get_quickstart_guide(
+      const response = await QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
         {
           token,
           parameters: {
@@ -1160,7 +1158,7 @@ describe('auth0_configure_and_get_quickstart_guide', () => {
     it('should reject project_path that is not an existing directory', async () => {
       mockStatSync.mockReturnValue(null);
 
-      const response = await QUICKSTART_HANDLERS.auth0_configure_and_get_quickstart_guide(
+      const response = await QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
         {
           token,
           parameters: {
@@ -1178,7 +1176,7 @@ describe('auth0_configure_and_get_quickstart_guide', () => {
     it('should reject project_path that is a file', async () => {
       mockStatSync.mockReturnValue({ isDirectory: () => false });
 
-      const response = await QUICKSTART_HANDLERS.auth0_configure_and_get_quickstart_guide(
+      const response = await QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
         {
           token,
           parameters: {
@@ -1196,7 +1194,7 @@ describe('auth0_configure_and_get_quickstart_guide', () => {
     it('should reject project_path when statSync returns undefined (throwIfNoEntry: false)', async () => {
       mockStatSync.mockReturnValue(undefined);
 
-      const response = await QUICKSTART_HANDLERS.auth0_configure_and_get_quickstart_guide(
+      const response = await QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
         {
           token,
           parameters: {
@@ -1214,7 +1212,7 @@ describe('auth0_configure_and_get_quickstart_guide', () => {
 
   describe('framework validation', () => {
     it('should reject unsupported framework values', async () => {
-      const response = await QUICKSTART_HANDLERS.auth0_configure_and_get_quickstart_guide(
+      const response = await QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
         {
           token,
           parameters: {
@@ -1231,7 +1229,7 @@ describe('auth0_configure_and_get_quickstart_guide', () => {
     });
 
     it('should accept mixed-case framework values', async () => {
-      const response = await QUICKSTART_HANDLERS.auth0_configure_and_get_quickstart_guide(
+      const response = await QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
         {
           token,
           parameters: {
@@ -1263,7 +1261,7 @@ describe('auth0_configure_and_get_quickstart_guide', () => {
         })
       );
 
-      const response = await QUICKSTART_HANDLERS.auth0_configure_and_get_quickstart_guide(
+      const response = await QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
         {
           token,
           parameters: {
@@ -1296,7 +1294,7 @@ describe('auth0_configure_and_get_quickstart_guide', () => {
         })
       );
 
-      const response = await QUICKSTART_HANDLERS.auth0_configure_and_get_quickstart_guide(
+      const response = await QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
         {
           token,
           parameters: {
@@ -1324,7 +1322,7 @@ describe('auth0_configure_and_get_quickstart_guide', () => {
         })
       );
 
-      const response = await QUICKSTART_HANDLERS.auth0_configure_and_get_quickstart_guide(
+      const response = await QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
         {
           token,
           parameters: {
@@ -1357,7 +1355,7 @@ describe('auth0_configure_and_get_quickstart_guide', () => {
         })
       );
 
-      const response = await QUICKSTART_HANDLERS.auth0_configure_and_get_quickstart_guide(
+      const response = await QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
         {
           token,
           parameters: {
