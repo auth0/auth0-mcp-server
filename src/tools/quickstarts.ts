@@ -59,7 +59,7 @@ export const QUICKSTART_TOOLS: Tool[] = [
     annotations: {
       title: 'Get Quickstart Guide',
       readOnlyHint: false,
-      destructiveHint: false,
+      destructiveHint: true,
       idempotentHint: true,
       openWorldHint: true,
     },

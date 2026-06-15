@@ -120,10 +120,10 @@ describe('auth0_get_quickstart_guide', () => {
   });
 
   describe('tool metadata', () => {
-    it('should mark the tool as non-read-only and non-destructive (URL updates are additive)', () => {
+    it('should mark the tool as non-read-only and destructive (it updates the Auth0 application)', () => {
       const tool = QUICKSTART_TOOLS.find((t) => t.name === 'auth0_get_quickstart_guide');
       expect(tool?.annotations?.readOnlyHint).toBe(false);
-      expect(tool?.annotations?.destructiveHint).toBe(false);
+      expect(tool?.annotations?.destructiveHint).toBe(true);
     });
   });
 
