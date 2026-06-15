@@ -1,4 +1,15 @@
+import * as fs from 'fs';
+import * as path from 'path';
 import type { QuickstartSpec, QuickstartAppType, DefaultAppOrigin } from './quickstarts';
+
+export const PROJECT_MARKERS = [
+  'package.json', 'Cargo.toml', 'pyproject.toml', 'go.mod',
+  'composer.json', 'pom.xml', 'build.gradle', 'build.gradle.kts', '.git',
+];
+
+export function hasProjectMarker(dir: string): boolean {
+  return PROJECT_MARKERS.some(marker => fs.existsSync(path.join(dir, marker)));
+}
 
 export const FRAMEWORK_FILENAMES = {
   react: 'react-quickstart-definition.json',

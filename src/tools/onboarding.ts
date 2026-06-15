@@ -4,7 +4,7 @@ import type { HandlerConfig, HandlerRequest, HandlerResponse, Tool } from '../ut
 import { log } from '../utils/logger.js';
 import { createErrorResponse, createSuccessResponse } from '../utils/http-utility.js';
 import { fetchQuickstartSpec } from '../utils/quickstarts.js';
-import { isFrameworkSupported, SUPPORTED_FRAMEWORKS } from '../utils/onboarding.js';
+import { isFrameworkSupported, SUPPORTED_FRAMEWORKS, hasProjectMarker } from '../utils/onboarding.js';
 import { APPLICATION_HANDLERS } from './applications.js';
 
 const APP_TYPE_MAP: Record<string, string> = {
@@ -88,6 +88,9 @@ export const ONBOARDING_HANDLERS: Record<
     }
     if (!fs.statSync(resolvedProjectPath, { throwIfNoEntry: false })?.isDirectory()) {
       return createErrorResponse('Error: project_path must be an existing directory');
+    }
+    if (!hasProjectMarker(resolvedProjectPath)) {
+      return createErrorResponse('Error: project_path must be a project directory (no recognized project file found)');
     }
 
     // Validate auth

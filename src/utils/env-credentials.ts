@@ -4,7 +4,7 @@ import { randomBytes } from 'crypto';
 import { log } from './logger.js';
 import { fetchQuickstartSpec } from './quickstarts.js';
 import type { QuickstartSpec, DefaultAppOrigin } from './quickstarts.js';
-import { isFrameworkSupported } from './onboarding.js';
+import { isFrameworkSupported, hasProjectMarker } from './onboarding.js';
 import { getManagementClient } from './auth0-client.js';
 import { writeCredentialsToEnv, parseEnvFile, detectExistingEnvFile, ensureGitignore } from './credentials-writer.js';
 import type { HandlerConfig } from './types.js';
@@ -70,7 +70,10 @@ function validateProjectPath(projectPath: string): string | null {
   if (!resolved.startsWith(allowedRoot + path.sep) && resolved !== allowedRoot) {
     return 'project_path must be within the current working directory';
   }
-  
+  if (!hasProjectMarker(resolved)) {
+    return 'project_path must be a project directory (no recognized project file found)';
+  }
+
   return null;
 }
 

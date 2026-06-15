@@ -271,6 +271,28 @@ describe('credentials-writer', () => {
       ).rejects.toThrow('Security error: file path');
     });
 
+    it('should reject a symlink inside allowedDir that points outside it', async () => {
+      const outsideDir = path.join(testDir, '..', 'outside-symlink-target');
+      fs.mkdirSync(outsideDir, { recursive: true });
+      const outsideFile = path.join(outsideDir, '.env.outside');
+      fs.writeFileSync(outsideFile, 'OUTSIDE=value\n', 'utf-8');
+
+      const symlinkPath = path.join(testDir, '.env.symlink');
+      fs.symlinkSync(outsideFile, symlinkPath);
+
+      try {
+        await expect(
+          writeCredentialsToEnv(
+            { AUTH0_DOMAIN: 'test.auth0.com' },
+            { filePath: symlinkPath, allowedDir: testDir }
+          )
+        ).rejects.toThrow('Security error: file path');
+      } finally {
+        try { fs.unlinkSync(symlinkPath); } catch { /* ignore */ }
+        fs.rmSync(outsideDir, { recursive: true, force: true });
+      }
+    });
+
     it('should not leave a .tmp file after a successful write', async () => {
       await writeCredentialsToEnv({ AUTH0_DOMAIN: 'test.auth0.com' });
 

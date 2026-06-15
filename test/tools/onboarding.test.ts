@@ -11,8 +11,10 @@ vi.mock('../../src/utils/quickstarts', () => ({
 }));
 
 const mockStatSync = vi.fn();
+const mockExistsSync = vi.fn().mockReturnValue(true);
 vi.mock('fs', () => ({
   statSync: (...args: any[]) => mockStatSync(...args),
+  existsSync: (...args: any[]) => mockExistsSync(...args),
 }));
 
 const mockCreateApplication = vi.fn();
@@ -59,6 +61,7 @@ describe('auth0_onboarding', () => {
     vi.resetAllMocks();
     mockFetchQuickstartSpec.mockResolvedValue(makeMockSpec());
     mockStatSync.mockReturnValue({ isDirectory: () => true });
+    mockExistsSync.mockReturnValue(true);
 
     mockCreateApplication.mockResolvedValue({
       isError: false,
@@ -231,6 +234,24 @@ describe('auth0_onboarding', () => {
       );
       expect(response.isError).toBe(true);
       expect(response.content[0].text).toContain('existing directory');
+    });
+
+    it('should return error when project_path has no recognized project marker files', async () => {
+      mockExistsSync.mockReturnValue(false);
+
+      const response = await ONBOARDING_HANDLERS.auth0_onboarding(
+        {
+          token,
+          parameters: {
+            app_name: 'My App',
+            framework: 'react',
+            project_path: '/tmp/project',
+          },
+        },
+        config
+      );
+      expect(response.isError).toBe(true);
+      expect(response.content[0].text).toContain('project directory');
     });
   });
 

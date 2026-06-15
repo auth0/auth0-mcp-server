@@ -179,6 +179,46 @@ describe('resolveAndWriteCredentials — project path validation', () => {
       expect(result.error).not.toContain(fallbackParams.project_path);
     }
   });
+
+  it('rejects project_path with no recognized project marker files', async () => {
+    // existsSync returns true for the directory itself but false for all marker lookups
+    vi.mocked(fs.existsSync).mockImplementation((p) => p === path.resolve(fallbackParams.project_path));
+
+    const result = await resolveAndWriteCredentials(fallbackParams, config, token);
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toBe('project_path must be a project directory (no recognized project file found)');
+    }
+  });
+
+  it('does not reject project_path that contains a package.json marker', async () => {
+    const projectPath = path.resolve(fallbackParams.project_path);
+    vi.mocked(fs.existsSync).mockImplementation((p) =>
+      p === projectPath || String(p) === path.join(projectPath, 'package.json')
+    );
+
+    const result = await resolveAndWriteCredentials(fallbackParams, config, token);
+
+    // Marker check passed — any failure comes from later stages (API etc.), not validation
+    if (!result.success) {
+      expect(result.error).not.toContain('no recognized project file found');
+    }
+  });
+
+  it('does not reject project_path that contains a .git marker', async () => {
+    const projectPath = path.resolve(fallbackParams.project_path);
+    vi.mocked(fs.existsSync).mockImplementation((p) =>
+      p === projectPath || String(p) === path.join(projectPath, '.git')
+    );
+
+    const result = await resolveAndWriteCredentials(fallbackParams, config, token);
+
+    // Marker check passed — any failure comes from later stages (API etc.), not validation
+    if (!result.success) {
+      expect(result.error).not.toContain('no recognized project file found');
+    }
+  });
 });
 
 describe('resolveAndWriteCredentials — spec with no envSnippet', () => {

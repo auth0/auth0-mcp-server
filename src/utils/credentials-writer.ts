@@ -56,6 +56,13 @@ export async function writeCredentialsToEnv(
   if (!resolvedPath.startsWith(allowedDir + path.sep) && resolvedPath !== allowedDir) {
     throw new Error('Security error: file path resolves outside the allowed directory');
   }
+  // Symlink protection: if the target already exists, verify its dereferenced real path is also within allowedDir
+  if (fs.existsSync(resolvedPath)) {
+    const realPath = fs.realpathSync(resolvedPath);
+    if (!realPath.startsWith(allowedDir + path.sep) && realPath !== allowedDir) {
+      throw new Error('Security error: file path resolves outside the allowed directory');
+    }
+  }
 
   const fileExisted = fs.existsSync(envFile);
   const incomingKeys = new Set(Object.keys(credentials));
