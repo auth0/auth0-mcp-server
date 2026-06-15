@@ -61,7 +61,7 @@ export const QUICKSTART_TOOLS: Tool[] = [
       readOnlyHint: false,
       destructiveHint: false,
       idempotentHint: true,
-      openWorldHint: false,
+      openWorldHint: true,
     },
   },
 ];
