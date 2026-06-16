@@ -4,6 +4,7 @@ import { ACTION_TOOLS, ACTION_HANDLERS } from '../../src/tools/actions';
 import { APPLICATION_TOOLS, APPLICATION_HANDLERS } from '../../src/tools/applications';
 import { FORM_TOOLS, FORM_HANDLERS } from '../../src/tools/forms';
 import { LOG_TOOLS, LOG_HANDLERS } from '../../src/tools/logs';
+import { ONBOARDING_TOOLS, ONBOARDING_HANDLERS } from '../../src/tools/onboarding';
 import { QUICKSTART_TOOLS, QUICKSTART_HANDLERS } from '../../src/tools/quickstarts';
 import { RESOURCE_SERVER_TOOLS, RESOURCE_SERVER_HANDLERS } from '../../src/tools/resource-servers';
 import {
@@ -20,6 +21,7 @@ describe('Tools Index', () => {
         APPLICATION_TOOLS.length +
         FORM_TOOLS.length +
         LOG_TOOLS.length +
+        ONBOARDING_TOOLS.length +
         RESOURCE_SERVER_TOOLS.length +
         APPLICATION_GRANTS_TOOLS.length +
         QUICKSTART_TOOLS.length;
@@ -33,6 +35,7 @@ describe('Tools Index', () => {
         ...APPLICATION_TOOLS,
         ...FORM_TOOLS,
         ...LOG_TOOLS,
+        ...ONBOARDING_TOOLS,
         ...RESOURCE_SERVER_TOOLS,
         ...APPLICATION_GRANTS_TOOLS,
         ...QUICKSTART_TOOLS,
@@ -53,6 +56,7 @@ describe('Tools Index', () => {
       const applicationHandlerKeys = Object.keys(APPLICATION_HANDLERS);
       const formHandlerKeys = Object.keys(FORM_HANDLERS);
       const logHandlerKeys = Object.keys(LOG_HANDLERS);
+      const onboardingHandlerKeys = Object.keys(ONBOARDING_HANDLERS);
       const quickstartHandlerKeys = Object.keys(QUICKSTART_HANDLERS);
       const resourceServerHandlerKeys = Object.keys(RESOURCE_SERVER_HANDLERS);
       const applicationGrantsHandlerKey = Object.keys(APPLICATION_GRANTS_HANDLERS);
@@ -63,6 +67,7 @@ describe('Tools Index', () => {
         applicationHandlerKeys.length +
         formHandlerKeys.length +
         logHandlerKeys.length +
+        onboardingHandlerKeys.length +
         quickstartHandlerKeys.length +
         resourceServerHandlerKeys.length +
         applicationGrantsHandlerKey.length;
@@ -76,6 +81,7 @@ describe('Tools Index', () => {
         ...applicationHandlerKeys,
         ...formHandlerKeys,
         ...logHandlerKeys,
+        ...onboardingHandlerKeys,
         ...quickstartHandlerKeys,
         ...resourceServerHandlerKeys,
         ...applicationGrantsHandlerKey,
@@ -103,6 +109,10 @@ describe('Tools Index', () => {
       });
 
       resourceServerHandlerKeys.forEach((key) => {
+        expect(typeof HANDLERS[key]).toBe('function');
+      });
+
+      onboardingHandlerKeys.forEach((key) => {
         expect(typeof HANDLERS[key]).toBe('function');
       });
 

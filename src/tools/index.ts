@@ -4,6 +4,7 @@ import { APPLICATION_GRANTS_HANDLERS, APPLICATION_GRANTS_TOOLS } from './applica
 import type { HandlerConfig, HandlerRequest, HandlerResponse, Tool } from '../utils/types.js';
 import { FORM_HANDLERS, FORM_TOOLS } from './forms.js';
 import { LOG_HANDLERS, LOG_TOOLS } from './logs.js';
+import { ONBOARDING_HANDLERS, ONBOARDING_TOOLS } from './onboarding.js';
 import { QUICKSTART_HANDLERS, QUICKSTART_TOOLS } from './quickstarts.js';
 import { RESOURCE_SERVER_HANDLERS, RESOURCE_SERVER_TOOLS } from './resource-servers.js';
 import trackEvent from '../utils/analytics.js';
@@ -16,6 +17,7 @@ export const TOOLS: Tool[] = [
   ...LOG_TOOLS,
   ...FORM_TOOLS,
   ...APPLICATION_GRANTS_TOOLS,
+  ...ONBOARDING_TOOLS,
   ...QUICKSTART_TOOLS,
 ];
 
@@ -27,6 +29,7 @@ const allHandlers = {
   ...LOG_HANDLERS,
   ...FORM_HANDLERS,
   ...APPLICATION_GRANTS_HANDLERS,
+  ...ONBOARDING_HANDLERS,
   ...QUICKSTART_HANDLERS,
 };
 
