@@ -98,7 +98,7 @@ export async function writeCredentialsToEnv(
 
   const tmpFile = envFile + '.tmp';
   try {
-    fs.writeFileSync(tmpFile, content, 'utf-8');
+    fs.writeFileSync(tmpFile, content, { encoding: 'utf-8', mode: 0o600 });
     // rename is atomic on POSIX (same filesystem): the target either fully
     // appears or doesn't, preventing a half-written .env file on crash
     fs.renameSync(tmpFile, envFile);
