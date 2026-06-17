@@ -41,6 +41,7 @@ export const ONBOARDING_TOOLS: Tool[] = [
         },
       },
       required: ['app_name', 'framework', 'project_path'],
+      additionalProperties: false,
     },
     _meta: {
       requiredScopes: ['create:clients'],

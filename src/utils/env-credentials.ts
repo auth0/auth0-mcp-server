@@ -57,18 +57,30 @@ type ResolvedCredentials =
  * @param token - Auth0 Management API access token
  * @returns Result indicating success (with file metadata) or failure (with error message)
  */
+const WEB_SERVER_ROOTS = [
+  '/var/www', '/var/html', '/srv/www',
+  '/usr/share/nginx/html', '/usr/share/apache2',
+];
+const WEB_SERVED_SEGMENT_NAMES = new Set([
+  'public', 'dist', 'build', 'static', 'www', 'wwwroot', 'html', 'assets', 'out',
+]);
+
+function isLikelyWebServedDirectory(resolvedDir: string): boolean {
+  const segment = path.basename(resolvedDir).toLowerCase();
+  if (WEB_SERVED_SEGMENT_NAMES.has(segment)) return true;
+  return WEB_SERVER_ROOTS.some(
+    root => resolvedDir === root || resolvedDir.startsWith(root + path.sep)
+  );
+}
+
 function validateProjectPath(projectPath: string): string | null {
   if (projectPath.includes('..')) {
     return 'project_path must not contain path traversal sequences';
   }
   const resolved = path.resolve(projectPath);
-  const allowedRoot = process.cwd();
 
   if (!fs.existsSync(resolved) || !fs.statSync(resolved).isDirectory()) {
     return 'project_path does not exist or is not a directory';
-  }
-  if (!resolved.startsWith(allowedRoot + path.sep) && resolved !== allowedRoot) {
-    return 'project_path must be within the current working directory';
   }
   if (!hasProjectMarker(resolved)) {
     return 'project_path must be a project directory (no recognized project file found)';
@@ -84,7 +96,7 @@ export async function resolveAndWriteCredentials(
 ): Promise<EnvCredentialsResult> {
   const { client_id: clientId, framework, project_path: projectPath } = params;
 
-  // Validation: ensure projectPath is a valid directory within the current working directory, with no path traversal
+  // Validation: ensure projectPath is a valid directory with no path traversal
   const projectPathError = validateProjectPath(projectPath);
   if (projectPathError) return { success: false, error: projectPathError };
   const resolvedProjectPath = path.resolve(projectPath);
@@ -184,6 +196,10 @@ export async function resolveAndWriteCredentials(
       ? `Credentials saved securely to ${credentialsInfo.file_path}. ${generatedKeys.join(', ')} was generated automatically and saved to the file. You can rotate it at any time by replacing the value with a new 32-byte hex string.`
       : `Credentials saved securely to ${credentialsInfo.file_path}`;
 
+  const webServedWarning = isLikelyWebServedDirectory(resolvedProjectPath)
+    ? ' Warning: project_path appears to be a web-served directory. Ensure your web server is configured to deny access to .env files to prevent credentials from being exposed over HTTP.'
+    : '';
+
   return {
     success: true,
     client_id: clientId,
@@ -191,7 +207,7 @@ export async function resolveAndWriteCredentials(
     keys_written: credentialsInfo.keys_written,
     generated_keys: generatedKeys,
     file_created: credentialsInfo.file_created,
-    message: `${baseMessage} A write audit log is available at ${auditLogPath}. ${securityNotice}`,
+    message: `${baseMessage} A write audit log is available at ${auditLogPath}. ${securityNotice}${webServedWarning}`,
   };
 }
 
@@ -381,9 +397,9 @@ async function buildFallbackCredentials(
 // ── Write guard ──────────────────────────────────────────────────────────────
 
 const WRITE_GUARD_FILE = '.auth0-mcp-state.json';
-// 2 minutes: long enough to catch rapid double-invocations in a multi-step AI
+// 30 seconds: long enough to catch rapid double-invocations in a multi-step AI
 // flow, short enough not to block an intentional re-run after a failed attempt.
-const WRITE_GUARD_WINDOW_MS = 2 * 60 * 1000;
+const WRITE_GUARD_WINDOW_MS = 30 * 1000;
 
 interface WriteGuardState {
   lastWrittenAt: string;

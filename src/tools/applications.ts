@@ -392,6 +392,7 @@ export const APPLICATION_TOOLS: Tool[] = [
         },
       },
       required: ['client_id', 'framework', 'project_path'],
+      additionalProperties: false,
     },
     _meta: {
       requiredScopes: ['read:clients', 'read:client_credentials'],

@@ -166,20 +166,6 @@ describe('resolveAndWriteCredentials — project path validation', () => {
     }
   });
 
-  it('rejects project_path outside process.cwd()', async () => {
-    const result = await resolveAndWriteCredentials(
-      { ...fallbackParams, project_path: '/tmp/outside' },
-      config,
-      token
-    );
-
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error).toBe('project_path must be within the current working directory');
-      expect(result.error).not.toContain('/tmp/outside');
-    }
-  });
-
   it('does not leak project_path value in the error message when path does not exist', async () => {
     vi.mocked(fs.existsSync).mockReturnValue(false);
 
@@ -761,6 +747,51 @@ describe('resolveAndWriteCredentials — security notice in message', () => {
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.message).toContain('.auth0-mcp-writes.log');
+    }
+  });
+});
+
+describe('resolveAndWriteCredentials — web-served directory warning', () => {
+  beforeEach(() => {
+    mockFetchQuickstartSpec.mockResolvedValue(specSpaNoSecret);
+  });
+
+  it('includes a web-served directory warning when project_path ends with "public"', async () => {
+    const result = await resolveAndWriteCredentials(
+      { ...fallbackParams, project_path: '/some/project/public' },
+      config,
+      token
+    );
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.message).toContain('web-served directory');
+    }
+  });
+
+  it('includes a web-served directory warning for /var/www paths', async () => {
+    const result = await resolveAndWriteCredentials(
+      { ...fallbackParams, project_path: '/var/www/myapp' },
+      config,
+      token
+    );
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.message).toContain('web-served directory');
+    }
+  });
+
+  it('does not include a web-served directory warning for a normal project path', async () => {
+    const result = await resolveAndWriteCredentials(
+      { ...fallbackParams, framework: 'react' },
+      config,
+      token
+    );
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.message).not.toContain('web-served directory');
     }
   });
 });

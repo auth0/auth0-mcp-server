@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
@@ -210,6 +210,27 @@ describe('credentials-writer', () => {
         ).rejects.toThrow('Failed to read existing env file');
       } finally {
         fs.chmodSync(envFilePath, 0o600);
+      }
+    });
+
+    it('should throw when processing existing env file content exceeds time limit', async () => {
+      fs.writeFileSync(envFilePath, 'EXISTING=value\n', 'utf-8');
+
+      // Simulate elapsed time exceeding the 500ms threshold by making Date.now advance
+      // by 501ms on the second call (after the processing starts).
+      let callCount = 0;
+      const realNow = Date.now();
+      const dateSpy = vi.spyOn(Date, 'now').mockImplementation(() => {
+        callCount++;
+        return callCount === 1 ? realNow : realNow + 501;
+      });
+
+      try {
+        await expect(
+          writeCredentialsToEnv({ AUTH0_DOMAIN: 'test.auth0.com' })
+        ).rejects.toThrow('exceeded time limit');
+      } finally {
+        dateSpy.mockRestore();
       }
     });
 

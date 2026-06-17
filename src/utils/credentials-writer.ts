@@ -3,6 +3,17 @@ import * as path from 'path';
 import { parse as dotenvParse } from 'dotenv';
 import { log } from './logger.js';
 
+const ENV_PARSE_TIMEOUT_MS = 500;
+
+function withTimeout<T>(fn: () => T, timeoutMs: number, label: string): T {
+  const start = Date.now();
+  const result = fn();
+  if (Date.now() - start > timeoutMs) {
+    throw new Error(`${label} exceeded time limit`);
+  }
+  return result;
+}
+
 /**
  * Result of writing credentials to file
  */
@@ -76,7 +87,16 @@ export async function writeCredentialsToEnv(
     } catch {
       throw new Error('Failed to read existing env file');
     }
-    const updatedLines = commentOutConflictingKeys(existingContent, incomingKeys);
+    let updatedLines: string;
+    try {
+      updatedLines = withTimeout(
+        () => commentOutConflictingKeys(existingContent, incomingKeys),
+        ENV_PARSE_TIMEOUT_MS,
+        'Env file processing'
+      );
+    } catch (e: unknown) {
+      throw e instanceof Error ? e : new Error('Failed to process existing env file');
+    }
     const newSection =
       `\n# Auth0 Credentials (Generated: ${new Date().toISOString()})\n` +
       Object.entries(credentials)
