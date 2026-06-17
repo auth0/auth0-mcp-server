@@ -209,6 +209,10 @@ Restart your MCP Client (Claude Desktop, Windsurf, Cursor, etc.) and ask it to h
   <img src="https://cdn.auth0.com/website/mcp/assets/help-image-01.png" alt="Claude Desktop help screen showing successful integration" width="300">
 </div>
 
+### Onboard your project
+
+To get a project running with Auth0 from scratch, ask your MCP Client to onboard it (e.g. `Onboard my Next.js project with Auth0`). This invokes the `auth0_onboarding` tool, which creates an Auth0 application configured for your framework and writes the credentials to a `.env` file in your project. Under the hood it composes the `auth0_create_application` and `auth0_save_credentials_to_file` tools to do this. It then hands off to `auth0_get_quickstart_guide`, which resolves your callback URLs, updates the application, and returns the framework-specific code to integrate the Auth0 SDK — taking you from no Auth0 setup to a working integration in a single guided flow.
+
 ## 🛠️ Supported Tools
 
 The Auth0 MCP Server provides the following tools for Claude to interact with your Auth0 tenant:
@@ -226,6 +230,14 @@ The Auth0 MCP Server provides the following tools for Claude to interact with yo
 | `auth0_get_application`    | Get details about a specific Auth0 application              | - `Show me details for the application called 'Customer Portal'` <br> - `Get information about my application with client ID abc123` <br> - `What are the callback URLs for my 'Mobile App'?`                                            |
 | `auth0_create_application` | Create a new Auth0 application                              | - `Create a new single-page application called 'Analytics Dashboard'` <br> - `Set up a new native mobile app called 'iOS Client'` <br> - `Create a machine-to-machine application for our background service`                            |
 | `auth0_update_application` | Update an existing Auth0 application                        | - `Update the callback URLs for my 'Web App' to include https://staging.example.com/callback` <br> - `Change the logout URL for the 'Customer Portal'` <br> - `Add development environment metadata to my 'Admin Dashboard' application` |
+| `auth0_save_credentials_to_file` | Save an application's credentials as environment variables to a project's `.env` file (and add it to `.gitignore`) | - `Save my app's Auth0 credentials to a .env file in this project` <br> - `Write the client ID and secret for 'Web App' to .env.local` <br> - `Store these Auth0 credentials in my project's environment file` |
+
+### Onboarding
+
+| Tool                          | Description                                                                                                                     | Usage Examples                                                                                                                                                                            |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `auth0_onboarding`            | Onboard a project with Auth0: creates an application configured for the given framework and saves credentials to a `.env` file | - `Onboard my Next.js project with Auth0` <br> - `Set up Auth0 for my React app in this directory` <br> - `Get my Express app started with Auth0`                                        |
+| `auth0_get_quickstart_guide`  | Fetch the framework quickstart prompt, resolve and update callback URLs, and return code to integrate the Auth0 SDK            | - `Show me how to add the Auth0 SDK to my Next.js app` <br> - `Complete the Auth0 integration for my project` <br> - `Give me the quickstart code for my React application`              |
 
 ### Resource Servers
 
@@ -418,7 +430,7 @@ This will start the device authorization flow, allowing you to log in to your Au
 > Using the MCP Server will consume Management API rate limits according to the subscription plan. Refer to the [Rate Limit Policy](https://auth0.com/docs/troubleshoot/customer-support/operational-policies/rate-limit-policy) for more information.
 
 > [!TIP]
-> Using the `--no-interaction` flag skips the user interaction (press return) to open the browser during setup. This can be usefull if the MCP server is initiated in certain environments like an AI Agent.
+> Using the `--no-interaction` flag skips the user interaction (press return) to open the browser during setup. This can be useful if the MCP server is initiated in certain environments like an AI Agent.
 
 ### Session Management
 
