@@ -1,5 +1,15 @@
 # Change Log
 
+## [v0.1.0-beta.15](https://github.com/auth0/auth0-mcp-server/tree/v0.1.0-beta.15) (2026-06-16)
+[Full Changelog](https://github.com/auth0/auth0-mcp-server/compare/v0.1.0-beta.14...v0.1.0-beta.15)
+
+**Added**
+- feat: add auth0_onboarding tool (DXAA-430) [\#174](https://github.com/auth0/auth0-mcp-server/pull/174) ([GilbertLS](https://github.com/GilbertLS))
+- feat: add auth0_get_quickstart_guide tool (DXAA-555) [\#173](https://github.com/auth0/auth0-mcp-server/pull/173) ([GilbertLS](https://github.com/GilbertLS))
+
+**Fixed**
+- Fix: Undocumented Parameters Hardening [\#175](https://github.com/auth0/auth0-mcp-server/pull/175) ([wdaimee](https://github.com/wdaimee))
+
 ## [v0.1.0-beta.14](https://github.com/auth0/auth0-mcp-server/tree/v0.1.0-beta.14) (2026-06-10)
 [Full Changelog](https://github.com/auth0/auth0-mcp-server/compare/v0.1.0-beta.13...v0.1.0-beta.14)
 
