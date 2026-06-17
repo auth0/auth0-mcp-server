@@ -16,7 +16,7 @@ const EVENT_NAME_PREFIX = 'auth0-mcp-server';
 
 // Analytics schema version, emitted to Heap as `analytics_version`. Bump when the
 // meaning of tracked data changes so the shift is queryable in Heap.
-const ANALYTICS_SCHEMA_VERSION = "2.0.0";
+const ANALYTICS_SCHEMA_VERSION = '2.0.0';
 
 // Common property keys
 const VERSION_KEY = 'version';
