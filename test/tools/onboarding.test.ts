@@ -104,7 +104,7 @@ describe('auth0_onboarding', () => {
       expect(tool?.annotations?.readOnlyHint).toBe(false);
       expect(tool?.annotations?.destructiveHint).toBe(true);
       expect(tool?.annotations?.idempotentHint).toBe(false);
-      expect(tool?.annotations?.openWorldHint).toBe(false);
+      expect(tool?.annotations?.openWorldHint).toBe(true);
     });
 
     it('should require create:clients scope and be localOnly', () => {
