@@ -75,7 +75,7 @@ export async function writeCredentialsToEnv(
     }
   }
 
-  const fileExisted = fs.existsSync(envFile);
+  const fileExisted = fs.existsSync(resolvedPath);
   const incomingKeys = new Set(Object.keys(credentials));
 
   let content: string;
@@ -83,7 +83,7 @@ export async function writeCredentialsToEnv(
   if (fileExisted) {
     let existingContent: string;
     try {
-      existingContent = fs.readFileSync(envFile, 'utf-8');
+      existingContent = fs.readFileSync(resolvedPath, 'utf-8');
     } catch {
       throw new Error('Failed to read existing env file');
     }
@@ -95,7 +95,7 @@ export async function writeCredentialsToEnv(
         .join('\n') +
       '\n';
     content = updatedLines + newSection;
-    log(`Appending credentials to existing file: ${envFile}`);
+    log(`Appending credentials to existing file: ${resolvedPath}`);
   } else {
     const header = `# Auth0 Credentials (Generated: ${new Date().toISOString()})\n`;
     content =
@@ -104,15 +104,15 @@ export async function writeCredentialsToEnv(
         .map(([key, value]) => `${key}=${value}`)
         .join('\n') +
       '\n';
-    log(`Creating new file with credentials: ${envFile}`);
+    log(`Creating new file with credentials: ${resolvedPath}`);
   }
 
-  const tmpFile = envFile + '.tmp';
+  const tmpFile = resolvedPath + '.tmp';
   try {
     fs.writeFileSync(tmpFile, content, { encoding: 'utf-8', mode: CREDENTIAL_FILE_MODE });
     // rename is atomic on POSIX (same filesystem): the target either fully
     // appears or doesn't, preventing a half-written .env file on crash
-    fs.renameSync(tmpFile, envFile);
+    fs.renameSync(tmpFile, resolvedPath);
   } catch {
     // tmpFile may or may not exist at this point (writeFileSync could have failed before creating it, or partway through)
     // Suppress cleanup errors so they don't shadow the original write failure.
@@ -124,24 +124,23 @@ export async function writeCredentialsToEnv(
   // throw if chmod fails or if the resulting on-disk mode doesn't match.
   // Windows has no meaningful chmod, so skip verification there.
   if (process.platform !== 'win32') {
-    fs.chmodSync(envFile, CREDENTIAL_FILE_MODE);
-    const actualMode = fs.statSync(envFile).mode & 0o777;
+    fs.chmodSync(resolvedPath, CREDENTIAL_FILE_MODE);
+    const actualMode = fs.statSync(resolvedPath).mode & 0o777;
     if (actualMode !== CREDENTIAL_FILE_MODE) {
       throw new Error(
         `Security error: expected file mode ${CREDENTIAL_FILE_MODE.toString(8)}, got ${actualMode.toString(8)}`
       );
     }
-    log(`Set file permissions to 600 (owner read/write only) for: ${envFile}`);
+    log(`Set file permissions to 600 (owner read/write only) for: ${resolvedPath}`);
   }
 
   // Ensure .gitignore includes the env file
   if (options?.createGitignore !== false) {
-    const envFileDir = path.dirname(path.resolve(envFile));
-    ensureGitignore(envFileDir, path.basename(envFile));
+    ensureGitignore(path.dirname(resolvedPath), path.basename(resolvedPath));
   }
 
   return {
-    file_path: envFile,
+    file_path: resolvedPath,
     keys_written: Object.keys(credentials),
     file_created: !fileExisted,
   };

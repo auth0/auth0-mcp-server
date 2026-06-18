@@ -65,6 +65,9 @@ const WEB_SERVED_SEGMENT_NAMES = new Set([
   'public', 'dist', 'build', 'static', 'www', 'wwwroot', 'html', 'assets', 'out',
 ]);
 
+// Detects whether a directory is likely web-served (e.g. public/, dist/, /var/www).
+// Used to warn the user if credentials are being written to a directory that a web
+// server might expose over HTTP.
 function isLikelyWebServedDirectory(resolvedDir: string): boolean {
   const segment = path.basename(resolvedDir).toLowerCase();
   if (WEB_SERVED_SEGMENT_NAMES.has(segment)) return true;
@@ -386,6 +389,9 @@ async function buildFallbackCredentials(
 }
 
 // ── Write guard ──────────────────────────────────────────────────────────────
+// Prevents accidental double-writes within a 30-second window by persisting the
+// last-written keys and timestamp to .auth0-mcp-state.json in the project directory.
+// Can be bypassed with force: true for intentional overwrites.
 
 const WRITE_GUARD_FILE = '.auth0-mcp-state.json';
 // 30 seconds: long enough to catch rapid double-invocations in a multi-step AI
@@ -432,6 +438,8 @@ function updateWriteGuard(projectPath: string, keysWritten: string[], framework:
 }
 
 // ── Audit log ────────────────────────────────────────────────────────────────
+// Appends a timestamped entry to .auth0-mcp-writes.log on every successful write.
+// Capped at MAX_AUDIT_LOG_LINES to prevent unbounded growth.
 
 const AUDIT_LOG_FILE = '.auth0-mcp-writes.log';
 // Cap log size
