@@ -177,19 +177,10 @@ export async function resolveAndWriteCredentials(
     fallbackReason
   );
 
-  const securityNotices: string[] = [];
-  if (!credentialsInfo.permissions_set) {
-    securityNotices.push(
-      'Warning: file permissions could not be set to 600 on this platform. ' +
-        'Ensure the file is not readable by other users.'
-    );
-  }
-  securityNotices.push(
-    `Verify that ${path.basename(credentialsInfo.file_path)} is listed in .gitignore ` +
-      'before committing this project to version control.'
-  );
   const auditLogPath = path.join(resolvedProjectPath, AUDIT_LOG_FILE);
-  const securityNotice = securityNotices.join(' ');
+  const securityNotice =
+    `Verify that ${path.basename(credentialsInfo.file_path)} is listed in .gitignore ` +
+    'before committing this project to version control.';
 
   const baseMessage =
     generatedKeys.length > 0

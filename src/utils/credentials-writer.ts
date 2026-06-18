@@ -3,16 +3,8 @@ import * as path from 'path';
 import { parse as dotenvParse } from 'dotenv';
 import { log } from './logger.js';
 
-const ENV_PARSE_TIMEOUT_MS = 500;
-
-function withTimeout<T>(fn: () => T, timeoutMs: number, label: string): T {
-  const start = Date.now();
-  const result = fn();
-  if (Date.now() - start > timeoutMs) {
-    throw new Error(`${label} exceeded time limit`);
-  }
-  return result;
-}
+const CREDENTIAL_FILE_MODE = 0o600;
+const MAX_ENV_FILE_SIZE_BYTES = 1024 * 1024; // 1 MB
 
 /**
  * Result of writing credentials to file
@@ -21,8 +13,6 @@ export interface CredentialsWriteResult {
   file_path: string;
   keys_written: string[];
   file_created: boolean;
-  permissions_set: boolean;
-  gitignore_updated: boolean;
 }
 
 /**
@@ -67,11 +57,21 @@ export async function writeCredentialsToEnv(
   if (!resolvedPath.startsWith(allowedDir + path.sep) && resolvedPath !== allowedDir) {
     throw new Error('Security error: file path resolves outside the allowed directory');
   }
-  // Symlink protection: if the target already exists, verify its dereferenced real path is also within allowedDir
+  // Symlink, type, and size checks on existing file
   if (fs.existsSync(resolvedPath)) {
     const realPath = fs.realpathSync(resolvedPath);
     if (!realPath.startsWith(allowedDir + path.sep) && realPath !== allowedDir) {
       throw new Error('Security error: file path resolves outside the allowed directory');
+    }
+    const stat = fs.statSync(resolvedPath);
+    if (!stat.isFile()) {
+      throw new Error('Security error: env file path is not a regular file');
+    }
+    if (stat.size > MAX_ENV_FILE_SIZE_BYTES) {
+      throw new Error(
+        `Security error: env file exceeds maximum allowed size of ${MAX_ENV_FILE_SIZE_BYTES / 1024 / 1024} MB. ` +
+        'The file may be corrupted or malicious. Remove or truncate it before retrying.'
+      );
     }
   }
 
@@ -87,16 +87,7 @@ export async function writeCredentialsToEnv(
     } catch {
       throw new Error('Failed to read existing env file');
     }
-    let updatedLines: string;
-    try {
-      updatedLines = withTimeout(
-        () => commentOutConflictingKeys(existingContent, incomingKeys),
-        ENV_PARSE_TIMEOUT_MS,
-        'Env file processing'
-      );
-    } catch (e: unknown) {
-      throw e instanceof Error ? e : new Error('Failed to process existing env file');
-    }
+    const updatedLines = commentOutConflictingKeys(existingContent, incomingKeys);
     const newSection =
       `\n# Auth0 Credentials (Generated: ${new Date().toISOString()})\n` +
       Object.entries(credentials)
@@ -118,7 +109,7 @@ export async function writeCredentialsToEnv(
 
   const tmpFile = envFile + '.tmp';
   try {
-    fs.writeFileSync(tmpFile, content, { encoding: 'utf-8', mode: 0o600 });
+    fs.writeFileSync(tmpFile, content, { encoding: 'utf-8', mode: CREDENTIAL_FILE_MODE });
     // rename is atomic on POSIX (same filesystem): the target either fully
     // appears or doesn't, preventing a half-written .env file on crash
     fs.renameSync(tmpFile, envFile);
@@ -129,30 +120,30 @@ export async function writeCredentialsToEnv(
     throw new Error('Failed to write env file');
   }
 
-  // Set restrictive permissions (owner read/write only)
-  let permissions_set = false;
-  try {
-    fs.chmodSync(envFile, 0o600);
-    permissions_set = true;
+  // Enforce restrictive permissions. On POSIX this is a hard requirement —
+  // throw if chmod fails or if the resulting on-disk mode doesn't match.
+  // Windows has no meaningful chmod, so skip verification there.
+  if (process.platform !== 'win32') {
+    fs.chmodSync(envFile, CREDENTIAL_FILE_MODE);
+    const actualMode = fs.statSync(envFile).mode & 0o777;
+    if (actualMode !== CREDENTIAL_FILE_MODE) {
+      throw new Error(
+        `Security error: expected file mode ${CREDENTIAL_FILE_MODE.toString(8)}, got ${actualMode.toString(8)}`
+      );
+    }
     log(`Set file permissions to 600 (owner read/write only) for: ${envFile}`);
-  } catch (error) {
-    // chmod may not work on all platforms (e.g., Windows)
-    log(`Warning: Could not set file permissions for ${envFile}: ${error}`);
   }
 
   // Ensure .gitignore includes the env file
-  let gitignore_updated = false;
   if (options?.createGitignore !== false) {
     const envFileDir = path.dirname(path.resolve(envFile));
-    gitignore_updated = ensureGitignore(envFileDir, path.basename(envFile));
+    ensureGitignore(envFileDir, path.basename(envFile));
   }
 
   return {
     file_path: envFile,
     keys_written: Object.keys(credentials),
     file_created: !fileExisted,
-    permissions_set,
-    gitignore_updated,
   };
 }
 
@@ -216,6 +207,8 @@ export function ensureGitignore(cwd: string, envFileName: string): boolean {
 export function parseEnvFile(filePath: string): Record<string, string> {
   if (!fs.existsSync(filePath)) return {};
   try {
+    const stat = fs.statSync(filePath);
+    if (!stat.isFile() || stat.size > MAX_ENV_FILE_SIZE_BYTES) return {};
     return dotenvParse(fs.readFileSync(filePath, 'utf-8'));
   } catch {
     return {};

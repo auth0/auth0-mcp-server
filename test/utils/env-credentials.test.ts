@@ -690,36 +690,6 @@ describe('resolveAndWriteCredentials — security notice in message', () => {
     }
   });
 
-  it('includes a permissions warning when permissions_set is false', async () => {
-    mockWriteCredentialsToEnv.mockResolvedValue({ ...mockWriteResult, permissions_set: false });
-
-    const result = await resolveAndWriteCredentials(
-      { ...fallbackParams, framework: 'react' },
-      config,
-      token
-    );
-
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.message).toContain('file permissions could not be set');
-    }
-  });
-
-  it('does not include a permissions warning when permissions_set is true', async () => {
-    mockWriteCredentialsToEnv.mockResolvedValue({ ...mockWriteResult, permissions_set: true });
-
-    const result = await resolveAndWriteCredentials(
-      { ...fallbackParams, framework: 'react' },
-      config,
-      token
-    );
-
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.message).not.toContain('file permissions could not be set');
-    }
-  });
-
   it('includes an audit log path in the success message', async () => {
     // No prior write guard state for this project
     vi.mocked(fs.existsSync).mockImplementation((p) => {

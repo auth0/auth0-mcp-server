@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
@@ -52,8 +52,6 @@ describe('credentials-writer', () => {
         'AUTH0_DOMAIN',
         'AUTH0_CALLBACK_URL',
       ]);
-      expect(result.permissions_set).toBe(true);
-      expect(result.gitignore_updated).toBe(true);
       // Verify file content
       const content = fs.readFileSync(envFilePath, 'utf-8');
       expect(content).toContain('AUTH0_CLIENT_ID=test_client_id');
@@ -148,17 +146,6 @@ describe('credentials-writer', () => {
       expect(gitignoreContent).toContain('.auth0-mcp-writes.log');
     });
 
-    it('should return gitignore_updated=true when .gitignore is newly created', async () => {
-      const result = await writeCredentialsToEnv({ AUTH0_DOMAIN: 'test.auth0.com' });
-      expect(result.gitignore_updated).toBe(true);
-    });
-
-    it('should return gitignore_updated=false when entry already exists in .gitignore', async () => {
-      fs.writeFileSync(gitignorePath, 'node_modules/\n.env.local\n', 'utf-8');
-      const result = await writeCredentialsToEnv({ AUTH0_DOMAIN: 'test.auth0.com' });
-      expect(result.gitignore_updated).toBe(false);
-    });
-
     it('should write only the keys provided', async () => {
       const result = await writeCredentialsToEnv({ AUTH0_CLIENT_ID: 'test_client_id' });
 
@@ -210,27 +197,6 @@ describe('credentials-writer', () => {
         ).rejects.toThrow('Failed to read existing env file');
       } finally {
         fs.chmodSync(envFilePath, 0o600);
-      }
-    });
-
-    it('should throw when processing existing env file content exceeds time limit', async () => {
-      fs.writeFileSync(envFilePath, 'EXISTING=value\n', 'utf-8');
-
-      // Simulate elapsed time exceeding the 500ms threshold by making Date.now advance
-      // by 501ms on the second call (after the processing starts).
-      let callCount = 0;
-      const realNow = Date.now();
-      const dateSpy = vi.spyOn(Date, 'now').mockImplementation(() => {
-        callCount++;
-        return callCount === 1 ? realNow : realNow + 501;
-      });
-
-      try {
-        await expect(
-          writeCredentialsToEnv({ AUTH0_DOMAIN: 'test.auth0.com' })
-        ).rejects.toThrow('exceeded time limit');
-      } finally {
-        dateSpy.mockRestore();
       }
     });
 
@@ -321,6 +287,21 @@ describe('credentials-writer', () => {
       expect(fs.existsSync(envFilePath + '.tmp')).toBe(false);
     });
 
+    it('should throw when the existing env file exceeds the maximum size', async () => {
+      fs.writeFileSync(envFilePath, 'A'.repeat(1024 * 1024 + 1), 'utf-8');
+      await expect(
+        writeCredentialsToEnv({ AUTH0_DOMAIN: 'test.auth0.com' })
+      ).rejects.toThrow('exceeds maximum allowed size');
+    });
+
+    it('should throw when the existing env file path is not a regular file', async () => {
+      const dirAsEnvPath = path.join(testDir, '.env.local');
+      fs.mkdirSync(dirAsEnvPath, { recursive: true });
+      await expect(
+        writeCredentialsToEnv({ AUTH0_DOMAIN: 'test.auth0.com' }, { filePath: dirAsEnvPath })
+      ).rejects.toThrow('not a regular file');
+    });
+
     it('should set chmod 600 on the env file', async () => {
       await writeCredentialsToEnv({ AUTH0_DOMAIN: 'test.auth0.com' });
 
@@ -358,6 +339,11 @@ describe('credentials-writer', () => {
       const result = parseEnvFile(envFilePath);
 
       expect(result).toEqual({ FOO: 'bar=baz' });
+    });
+
+    it('should return empty object when file exceeds maximum size', () => {
+      fs.writeFileSync(envFilePath, 'A'.repeat(1024 * 1024 + 1), 'utf-8');
+      expect(parseEnvFile(envFilePath)).toEqual({});
     });
 
     it('should return empty object when readFileSync throws', () => {
