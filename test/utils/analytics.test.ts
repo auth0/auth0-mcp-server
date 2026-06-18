@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { TrackEvent } from '../../src/utils/analytics';
+import { OnboardingStep, OnboardingStepStatus, TrackEvent } from '../../src/utils/analytics';
 
 // Mock dependencies
 vi.mock('crypto', () => ({
@@ -154,10 +154,14 @@ describe('TrackEvent', () => {
     it('should track an onboarding step with framework and success outcome', () => {
       const spy = vi.spyOn(trackEvent as any, 'track');
 
-      trackEvent.trackOnboardingStep('create_application', 'react', 'success');
+      trackEvent.trackOnboardingStep(
+        OnboardingStep.CreateApplication,
+        'react',
+        OnboardingStepStatus.Success
+      );
 
       expect(spy).toHaveBeenCalledWith(
-        'auth0-mcp-server-onboarding-create_application',
+        'auth0-mcp-server-onboarding',
         expect.objectContaining({
           step: 'create_application',
           framework: 'react',
@@ -169,12 +173,17 @@ describe('TrackEvent', () => {
     it('should track a failure outcome and include extra properties', () => {
       const spy = vi.spyOn(trackEvent as any, 'track');
 
-      trackEvent.trackOnboardingStep('quickstart_guide', 'nextjs', 'failure', {
-        failure_stage: 'update_callback_urls',
-      });
+      trackEvent.trackOnboardingStep(
+        OnboardingStep.QuickstartGuide,
+        'nextjs',
+        OnboardingStepStatus.Failure,
+        {
+          failure_stage: 'update_callback_urls',
+        }
+      );
 
       expect(spy).toHaveBeenCalledWith(
-        'auth0-mcp-server-onboarding-quickstart_guide',
+        'auth0-mcp-server-onboarding',
         expect.objectContaining({
           step: 'quickstart_guide',
           framework: 'nextjs',
@@ -189,7 +198,10 @@ describe('TrackEvent', () => {
     it('should track credential resolution with framework, resolution path, and secret generated', () => {
       const spy = vi.spyOn(trackEvent as any, 'track');
 
-      trackEvent.trackCredentialResolution('nextjs', 'spec', true, ['AUTH0_DOMAIN', 'AUTH0_CLIENT_ID']);
+      trackEvent.trackCredentialResolution('nextjs', 'spec', true, [
+        'AUTH0_DOMAIN',
+        'AUTH0_CLIENT_ID',
+      ]);
 
       expect(spy).toHaveBeenCalledWith(
         'auth0-mcp-server-credential-resolution',
@@ -205,7 +217,10 @@ describe('TrackEvent', () => {
     it('should track fallback path when spec is unavailable', () => {
       const spy = vi.spyOn(trackEvent as any, 'track');
 
-      trackEvent.trackCredentialResolution('sveltekit', 'fallback', false, ['AUTH0_SECRET', 'AUTH0_DOMAIN']);
+      trackEvent.trackCredentialResolution('sveltekit', 'fallback', false, [
+        'AUTH0_SECRET',
+        'AUTH0_DOMAIN',
+      ]);
 
       expect(spy).toHaveBeenCalledWith(
         'auth0-mcp-server-credential-resolution',
@@ -221,7 +236,13 @@ describe('TrackEvent', () => {
     it('should include fallback_reason when provided', () => {
       const spy = vi.spyOn(trackEvent as any, 'track');
 
-      trackEvent.trackCredentialResolution('react', 'fallback', false, ['AUTH0_DOMAIN'], 'cdn_unavailable');
+      trackEvent.trackCredentialResolution(
+        'react',
+        'fallback',
+        false,
+        ['AUTH0_DOMAIN'],
+        'cdn_unavailable'
+      );
 
       expect(spy).toHaveBeenCalledWith(
         'auth0-mcp-server-credential-resolution',
@@ -296,7 +317,7 @@ describe('TrackEvent', () => {
         // Arrange
         const eventName = 'Test Event';
         const customProps = { test: 'value' };
-        const timestampSpy = vi.spyOn(trackEvent as any, 'timestamp').mockReturnValue(12345);
+        vi.spyOn(trackEvent as any, 'timestamp').mockReturnValue(12345);
 
         // Act
         const result = (trackEvent as any).createEvent(eventName, customProps);

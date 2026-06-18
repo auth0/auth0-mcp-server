@@ -34,6 +34,23 @@ const APP_NAME = 'app_name';
  */
 export type CredentialResolutionFallbackReason = 'unsupported' | 'cdn_unavailable';
 
+/**
+ * Steps in the onboarding flow, used as the discriminator on onboarding analytics events.
+ */
+export enum OnboardingStep {
+  CreateApplication = 'create_application',
+  SaveCredentials = 'save_credentials',
+  QuickstartGuide = 'quickstart_guide',
+}
+
+/**
+ * Outcome of an onboarding step.
+ */
+export enum OnboardingStepStatus {
+  Failure = 'failure',
+  Success = 'success',
+}
+
 interface HeapEvent {
   app_id: string;
   identity?: string;
@@ -117,22 +134,22 @@ export class TrackEvent {
    * tool-usage event does not, so the multi-step onboarding flow can be
    * analyzed end to end.
    *
-   * @param step - The onboarding step (e.g. 'create_application', 'save_credentials', 'quickstart_guide')
+   * @param step - The onboarding step
    * @param framework - The framework being onboarded
    * @param outcome - Whether the step succeeded or failed
    * @param extraProperties - Additional step-specific properties
    */
   trackOnboardingStep(
-    step: string,
+    step: OnboardingStep,
     framework: string,
-    outcome: 'success' | 'failure',
+    outcome: OnboardingStepStatus,
     extraProperties?: Record<string, string | number | boolean>
   ): void {
-    const eventName = `${EVENT_NAME_PREFIX}-onboarding-${step}`;
+    const eventName = `${EVENT_NAME_PREFIX}-onboarding`;
     const properties = {
       step,
       framework,
-      success: outcome === 'success',
+      success: outcome === OnboardingStepStatus.Success,
       ...extraProperties,
       ...this.getCommonProperties(),
     };
