@@ -14,8 +14,13 @@ const packageVersion = packageJson.version;
 // Constants
 const EVENT_NAME_PREFIX = 'auth0-mcp-server';
 
+// Analytics schema version, emitted to Heap as `analytics_version`. Bump when the
+// meaning of tracked data changes so the shift is queryable in Heap.
+const ANALYTICS_SCHEMA_VERSION = '2.0.0';
+
 // Common property keys
 const VERSION_KEY = 'version';
+const ANALYTICS_VERSION_KEY = 'analytics_version';
 const OS_KEY = 'os';
 const ARCH_KEY = 'arch';
 const NODE_VERSION = 'node_version';
@@ -28,6 +33,23 @@ const APP_NAME = 'app_name';
  *   so a supported user silently got generic vars — worth surfacing in analytics.
  */
 export type CredentialResolutionFallbackReason = 'unsupported' | 'cdn_unavailable';
+
+/**
+ * Steps in the onboarding flow, used as the discriminator on onboarding analytics events.
+ */
+export enum OnboardingStep {
+  CreateApplication = 'create_application',
+  SaveCredentials = 'save_credentials',
+  QuickstartGuide = 'quickstart_guide',
+}
+
+/**
+ * Outcome of an onboarding step.
+ */
+export enum OnboardingStepStatus {
+  Failure = 'failure',
+  Success = 'success',
+}
 
 interface HeapEvent {
   app_id: string;
@@ -43,6 +65,7 @@ interface HeapEvent {
 export class TrackEvent {
   private appId: string;
   private endpoint: string;
+  private identity: string;
   /**
    * Constructor for TrackEvent
    *
@@ -52,6 +75,9 @@ export class TrackEvent {
   constructor(appId: string, endpoint: string) {
     this.appId = appId;
     this.endpoint = endpoint;
+    // Generate the identity once so all events in a session share one identity,
+    // rather than creating a new UUID per event (which fragments user tracking).
+    this.identity = crypto.randomUUID();
   }
   /**
    * Track a command run event
@@ -96,6 +122,35 @@ export class TrackEvent {
     const eventName = `${EVENT_NAME_PREFIX}-tool-${toolName}`;
     const properties = {
       success,
+      ...this.getCommonProperties(),
+    };
+    this.track(eventName, properties);
+  }
+
+  /**
+   * Track an onboarding flow step
+   *
+   * Captures the framework dimension and per-step outcome that the generic
+   * tool-usage event does not, so the multi-step onboarding flow can be
+   * analyzed end to end.
+   *
+   * @param step - The onboarding step
+   * @param framework - The framework being onboarded
+   * @param outcome - Whether the step succeeded or failed
+   * @param extraProperties - Additional step-specific properties
+   */
+  trackOnboardingStep(
+    step: OnboardingStep,
+    framework: string,
+    outcome: OnboardingStepStatus,
+    extraProperties?: Record<string, string | number | boolean>
+  ): void {
+    const eventName = `${EVENT_NAME_PREFIX}-onboarding`;
+    const properties = {
+      step,
+      framework,
+      success: outcome === OnboardingStepStatus.Success,
+      ...extraProperties,
       ...this.getCommonProperties(),
     };
     this.track(eventName, properties);
@@ -159,7 +214,7 @@ export class TrackEvent {
   ): HeapEvent {
     return {
       app_id: this.appId,
-      identity: crypto.randomUUID(),
+      identity: this.identity,
       event: eventName,
       timestamp: this.timestamp(),
       properties: {
@@ -226,6 +281,7 @@ export class TrackEvent {
     return {
       [APP_NAME]: EVENT_NAME_PREFIX,
       [VERSION_KEY]: packageVersion,
+      [ANALYTICS_VERSION_KEY]: ANALYTICS_SCHEMA_VERSION,
       [OS_KEY]: process.platform,
       [ARCH_KEY]: process.arch,
       [NODE_VERSION]: process.version,

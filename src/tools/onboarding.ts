@@ -6,6 +6,7 @@ import { createErrorResponse, createSuccessResponse } from '../utils/http-utilit
 import { fetchQuickstartSpec } from '../utils/quickstarts.js';
 import { isFrameworkSupported, SUPPORTED_FRAMEWORKS } from '../utils/onboarding.js';
 import { APPLICATION_HANDLERS } from './applications.js';
+import trackEvent, { OnboardingStep, OnboardingStepStatus } from '../utils/analytics.js';
 
 const APP_TYPE_MAP: Record<string, string> = {
   spa: 'spa',
@@ -137,8 +138,21 @@ export const ONBOARDING_HANDLERS: Record<
     );
 
     if (createResponse.isError) {
+      trackEvent.trackOnboardingStep(
+        OnboardingStep.CreateApplication,
+        framework,
+        OnboardingStepStatus.Failure
+      );
       return createResponse;
     }
+    trackEvent.trackOnboardingStep(
+      OnboardingStep.CreateApplication,
+      framework,
+      OnboardingStepStatus.Success,
+      {
+        app_type: mappedAppType,
+      }
+    );
 
     // Parse create response to extract client_id
     let appData: Record<string, any>;
@@ -167,11 +181,21 @@ export const ONBOARDING_HANDLERS: Record<
     );
 
     if (saveResponse.isError) {
+      trackEvent.trackOnboardingStep(
+        OnboardingStep.SaveCredentials,
+        framework,
+        OnboardingStepStatus.Failure
+      );
       const saveError = saveResponse.content[0]?.text ?? 'Unknown error';
       return createErrorResponse(
         `Error: Application "${resolvedAppName}" was created (client_id: ${clientId}) but credentials could not be saved. ${saveError}`
       );
     }
+    trackEvent.trackOnboardingStep(
+      OnboardingStep.SaveCredentials,
+      framework,
+      OnboardingStepStatus.Success
+    );
 
     // Parse save response
     let saveData: Record<string, any>;
