@@ -91,7 +91,7 @@ export const ONBOARDING_HANDLERS: Record<
       return createErrorResponse('Error: project_path must be an existing directory');
     }
     if (!hasProjectMarker(resolvedProjectPath)) {
-      return createErrorResponse('Error: project_path must be a project directory (no recognized project file found)');
+      return createErrorResponse('Error: project_path must not be a system or home directory');
     }
 
     // Validate auth

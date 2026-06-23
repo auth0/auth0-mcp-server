@@ -86,7 +86,7 @@ function validateProjectPath(projectPath: string): string | null {
     return 'project_path does not exist or is not a directory';
   }
   if (!hasProjectMarker(resolved)) {
-    return 'project_path must be a project directory (no recognized project file found)';
+    return 'project_path must not be a system or home directory';
   }
 
   return null;

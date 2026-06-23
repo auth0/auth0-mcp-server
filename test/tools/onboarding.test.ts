@@ -122,7 +122,7 @@ describe('auth0_onboarding', () => {
           parameters: {
             app_name: 'My App',
             framework: 'react',
-            project_path: '/tmp/project',
+            project_path: '/mock/project',
           },
         },
         config
@@ -138,7 +138,7 @@ describe('auth0_onboarding', () => {
           parameters: {
             app_name: 'My App',
             framework: 'react',
-            project_path: '/tmp/project',
+            project_path: '/mock/project',
           },
         },
         { domain: undefined }
@@ -151,7 +151,7 @@ describe('auth0_onboarding', () => {
   describe('input validation', () => {
     it('should return error when framework is missing', async () => {
       const response = await ONBOARDING_HANDLERS.auth0_onboarding(
-        { token, parameters: { app_name: 'My App', project_path: '/tmp/project' } },
+        { token, parameters: { app_name: 'My App', project_path: '/mock/project' } },
         config
       );
       expect(response.isError).toBe(true);
@@ -165,7 +165,7 @@ describe('auth0_onboarding', () => {
           parameters: {
             app_name: 'My App',
             framework: 'svelte',
-            project_path: '/tmp/project',
+            project_path: '/mock/project',
           },
         },
         config
@@ -209,7 +209,7 @@ describe('auth0_onboarding', () => {
           parameters: {
             app_name: 'My App',
             framework: 'react',
-            project_path: '/tmp/project',
+            project_path: '/mock/project',
           },
         },
         config
@@ -227,7 +227,7 @@ describe('auth0_onboarding', () => {
           parameters: {
             app_name: 'My App',
             framework: 'react',
-            project_path: '/tmp/project',
+            project_path: '/mock/project',
           },
         },
         config
@@ -236,22 +236,20 @@ describe('auth0_onboarding', () => {
       expect(response.content[0].text).toContain('existing directory');
     });
 
-    it('should return error when project_path has no recognized project marker files', async () => {
-      mockExistsSync.mockReturnValue(false);
-
+    it('should return error when project_path is a system directory', async () => {
       const response = await ONBOARDING_HANDLERS.auth0_onboarding(
         {
           token,
           parameters: {
             app_name: 'My App',
             framework: 'react',
-            project_path: '/tmp/project',
+            project_path: '/etc',
           },
         },
         config
       );
       expect(response.isError).toBe(true);
-      expect(response.content[0].text).toContain('project directory');
+      expect(response.content[0].text).toContain('system or home directory');
     });
   });
 
@@ -265,7 +263,7 @@ describe('auth0_onboarding', () => {
           parameters: {
             app_name: 'My App',
             framework: 'react',
-            project_path: '/tmp/project',
+            project_path: '/mock/project',
           },
         },
         config
@@ -284,7 +282,7 @@ describe('auth0_onboarding', () => {
           parameters: {
             app_name: 'My App',
             framework: 'react',
-            project_path: '/tmp/project',
+            project_path: '/mock/project',
           },
         },
         config
@@ -301,7 +299,7 @@ describe('auth0_onboarding', () => {
           parameters: {
             app_name: 'My App',
             framework: 'react',
-            project_path: '/tmp/project',
+            project_path: '/mock/project',
           },
         },
         config
@@ -322,7 +320,7 @@ describe('auth0_onboarding', () => {
           parameters: {
             app_name: 'My App',
             framework: 'react',
-            project_path: '/tmp/project',
+            project_path: '/mock/project',
           },
         },
         config
@@ -349,7 +347,7 @@ describe('auth0_onboarding', () => {
           parameters: {
             app_name: 'My App',
             framework: 'nextjs',
-            project_path: '/tmp/project',
+            project_path: '/mock/project',
           },
         },
         config
@@ -376,7 +374,7 @@ describe('auth0_onboarding', () => {
           parameters: {
             app_name: 'My App',
             framework: 'react',
-            project_path: '/tmp/project',
+            project_path: '/mock/project',
           },
         },
         config
@@ -408,7 +406,7 @@ describe('auth0_onboarding', () => {
           parameters: {
             app_name: 'My App',
             framework: 'react',
-            project_path: '/tmp/project',
+            project_path: '/mock/project',
           },
         },
         config
@@ -429,7 +427,7 @@ describe('auth0_onboarding', () => {
           parameters: {
             app_name: 'My App',
             framework: 'react',
-            project_path: '/tmp/project',
+            project_path: '/mock/project',
           },
         },
         config
@@ -452,7 +450,7 @@ describe('auth0_onboarding', () => {
           parameters: {
             app_name: 'My App',
             framework: 'react',
-            project_path: '/tmp/project',
+            project_path: '/mock/project',
           },
         },
         config
@@ -473,7 +471,7 @@ describe('auth0_onboarding', () => {
           parameters: {
             app_name: 'My App',
             framework: 'react',
-            project_path: '/tmp/project',
+            project_path: '/mock/project',
           },
         },
         config
@@ -494,7 +492,7 @@ describe('auth0_onboarding', () => {
           parameters: {
             app_name: 'My App',
             framework: 'react',
-            project_path: '/tmp/project',
+            project_path: '/mock/project',
           },
         },
         config
@@ -512,7 +510,7 @@ describe('auth0_onboarding', () => {
           parameters: {
             app_name: 'My App',
             framework: 'react',
-            project_path: '/tmp/project',
+            project_path: '/mock/project',
           },
         },
         config
@@ -559,7 +557,7 @@ describe('auth0_onboarding', () => {
           parameters: {
             app_name: 'My App',
             framework: 'nextjs',
-            project_path: '/tmp/project',
+            project_path: '/mock/project',
           },
         },
         config
@@ -583,7 +581,7 @@ describe('auth0_onboarding', () => {
           parameters: {
             app_name: 'My App',
             framework: 'react',
-            project_path: '/tmp/project',
+            project_path: '/mock/project',
           },
         },
         config
@@ -602,7 +600,7 @@ describe('auth0_onboarding', () => {
           parameters: {
             app_name: '',
             framework: 'react',
-            project_path: '/tmp/project',
+            project_path: '/mock/project',
           },
         },
         config
@@ -623,7 +621,7 @@ describe('auth0_onboarding', () => {
           parameters: {
             app_name: 'My App',
             framework: 'react',
-            project_path: '/tmp/project',
+            project_path: '/mock/project',
           },
         },
         config
@@ -635,7 +633,7 @@ describe('auth0_onboarding', () => {
           parameters: expect.objectContaining({
             client_id: 'new-client-id',
             framework: 'react',
-            project_path: '/tmp/project',
+            project_path: '/mock/project',
           }),
         }),
         config
@@ -649,7 +647,7 @@ describe('auth0_onboarding', () => {
           parameters: {
             app_name: 'Test',
             framework: 'vue',
-            project_path: '/tmp/project',
+            project_path: '/mock/project',
           },
         },
         config
@@ -668,7 +666,7 @@ describe('auth0_onboarding', () => {
           parameters: {
             app_name: 'My App',
             framework: 'react',
-            project_path: '/tmp/./project',
+            project_path: '/mock/./project',
           },
         },
         config
@@ -676,7 +674,7 @@ describe('auth0_onboarding', () => {
 
       expect(mockSaveCredentials).toHaveBeenCalledWith(
         expect.objectContaining({
-          parameters: expect.objectContaining({ project_path: '/tmp/project' }),
+          parameters: expect.objectContaining({ project_path: '/mock/project' }),
         }),
         config
       );
@@ -689,7 +687,7 @@ describe('auth0_onboarding', () => {
           parameters: {
             app_name: 'My App',
             framework: 'React',
-            project_path: '/tmp/project',
+            project_path: '/mock/project',
           },
         },
         config
