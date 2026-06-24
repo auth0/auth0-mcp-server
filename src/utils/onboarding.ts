@@ -5,7 +5,7 @@ import type { QuickstartSpec, QuickstartAppType, DefaultAppOrigin } from './quic
 // Directories that must never receive credential files.
 const POSIX_DENIED_PREFIXES = [
   '/etc', '/var', '/usr', '/bin', '/sbin', '/lib', '/lib64',
-  '/boot', '/run', '/root', '/tmp', '/opt',
+  '/boot', '/run', '/root', '/tmp', '/opt', '/srv',
 ];
 
 const WINDOWS_DENIED_PREFIXES = [

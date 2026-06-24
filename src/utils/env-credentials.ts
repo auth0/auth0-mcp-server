@@ -57,30 +57,21 @@ type ResolvedCredentials =
  * @param token - Auth0 Management API access token
  * @returns Result indicating success (with file metadata) or failure (with error message)
  */
-const WEB_SERVER_ROOTS = [
-  '/var/www', '/var/html', '/srv/www',
-  '/usr/share/nginx/html', '/usr/share/apache2',
-];
 const WEB_SERVED_SEGMENT_NAMES = new Set([
   'public', 'dist', 'build', 'static', 'www', 'wwwroot', 'html', 'assets', 'out',
 ]);
 
-// Detects whether a directory is likely web-served (e.g. public/, dist/, /var/www).
-// Used to warn the user if credentials are being written to a directory that a web
-// server might expose over HTTP.
+// Detects whether a directory is likely web-served based on its final path segment.
+// Absolute web server roots (/srv, /var/www, etc.) are hard-blocked by hasProjectMarker.
 function isLikelyWebServedDirectory(resolvedDir: string): boolean {
-  const segment = path.basename(resolvedDir).toLowerCase();
-  if (WEB_SERVED_SEGMENT_NAMES.has(segment)) return true;
-  return WEB_SERVER_ROOTS.some(
-    root => resolvedDir === root || resolvedDir.startsWith(root + path.sep)
-  );
+  return WEB_SERVED_SEGMENT_NAMES.has(path.basename(resolvedDir).toLowerCase());
 }
 
 function validateProjectPath(projectPath: string): string | null {
-  if (projectPath.includes('..')) {
+  const resolved = path.resolve(projectPath);
+  if (resolved !== projectPath && projectPath.includes('..')) {
     return 'project_path must not contain path traversal sequences';
   }
-  const resolved = path.resolve(projectPath);
 
   if (!fs.existsSync(resolved) || !fs.statSync(resolved).isDirectory()) {
     return 'project_path does not exist or is not a directory';
@@ -159,10 +150,15 @@ export async function resolveAndWriteCredentials(
     if (guardError) return { success: false, error: guardError };
   }
 
-  const credentialsInfo = await writeCredentialsToEnv(resolved.credentialMap, {
-    filePath: resolved.envFilePath,
-    allowedDir: resolvedProjectPath,
-  });
+  let credentialsInfo;
+  try {
+    credentialsInfo = await writeCredentialsToEnv(resolved.credentialMap, {
+      filePath: resolved.envFilePath,
+      allowedDir: resolvedProjectPath,
+    });
+  } catch (err: any) {
+    return { success: false, error: err.message ?? 'Failed to write credentials' };
+  }
   log(`Credentials saved to: ${credentialsInfo.file_path}`);
 
   updateWriteGuard(resolvedProjectPath, credentialsInfo.keys_written, framework);
@@ -404,10 +400,14 @@ interface WriteGuardState {
   framework: string;
 }
 
+const MAX_WRITE_GUARD_SIZE_BYTES = 4096;
+
 function checkWriteGuard(projectPath: string, incomingKeys: string[]): string | null {
   const statePath = path.join(projectPath, WRITE_GUARD_FILE);
   if (!fs.existsSync(statePath)) return null;
   try {
+    const guardStat = fs.statSync(statePath);
+    if (!guardStat.isFile() || guardStat.size > MAX_WRITE_GUARD_SIZE_BYTES) return null;
     const state: WriteGuardState = JSON.parse(fs.readFileSync(statePath, 'utf-8'));
     const elapsed = Date.now() - new Date(state.lastWrittenAt).getTime();
     if (elapsed < WRITE_GUARD_WINDOW_MS) {

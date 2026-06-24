@@ -758,6 +758,11 @@ describe('resolveAndWriteCredentials — write guard', () => {
       if (String(p).endsWith('.auth0-mcp-state.json')) return true;
       return true; // keep project path checks passing
     });
+    vi.mocked(fs.statSync).mockImplementation((p) => {
+      if (String(p).endsWith('.auth0-mcp-state.json'))
+        return { isFile: () => true, isDirectory: () => false, size: 200 } as any;
+      return { isDirectory: () => true, isFile: () => false } as any;
+    });
     vi.mocked(fs.readFileSync).mockImplementation((p) => {
       if (String(p).endsWith('.auth0-mcp-state.json')) return guardState;
       return '';
@@ -774,6 +779,11 @@ describe('resolveAndWriteCredentials — write guard', () => {
     vi.mocked(fs.existsSync).mockImplementation((p) => {
       if (String(p).endsWith('.auth0-mcp-state.json')) return true;
       return true;
+    });
+    vi.mocked(fs.statSync).mockImplementation((p) => {
+      if (String(p).endsWith('.auth0-mcp-state.json'))
+        return { isFile: () => true, isDirectory: () => false, size: 200 } as any;
+      return { isDirectory: () => true, isFile: () => false } as any;
     });
     vi.mocked(fs.readFileSync).mockImplementation((p) => {
       if (String(p).endsWith('.auth0-mcp-state.json')) return guardState;
@@ -802,6 +812,11 @@ describe('resolveAndWriteCredentials — write guard', () => {
     vi.mocked(fs.existsSync).mockImplementation((p) => {
       if (String(p).endsWith('.auth0-mcp-state.json')) return true;
       return true;
+    });
+    vi.mocked(fs.statSync).mockImplementation((p) => {
+      if (String(p).endsWith('.auth0-mcp-state.json'))
+        return { isFile: () => true, isDirectory: () => false, size: 200 } as any;
+      return { isDirectory: () => true, isFile: () => false } as any;
     });
     vi.mocked(fs.readFileSync).mockImplementation((p) => {
       if (String(p).endsWith('.auth0-mcp-state.json')) return 'not valid json{{{';
