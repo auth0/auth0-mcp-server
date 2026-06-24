@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { createRateLimiter } from '../../src/utils/rate-limiter.js';
 
-describe('SlidingWindowRateLimiter', () => {
+describe('createRateLimiter', () => {
   afterEach(() => {
     vi.useRealTimers();
   });

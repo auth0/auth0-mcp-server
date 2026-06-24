@@ -179,6 +179,19 @@ describe('resolveAndWriteCredentials — project path validation', () => {
     }
   });
 
+  it('rejects project_path under /srv', async () => {
+    const result = await resolveAndWriteCredentials(
+      { ...fallbackParams, project_path: '/srv/myapp' },
+      config,
+      token
+    );
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toBe('project_path must not be a system or home directory');
+    }
+  });
+
   it('allows a normal project directory', async () => {
     const result = await resolveAndWriteCredentials(fallbackParams, config, token);
 
@@ -827,6 +840,40 @@ describe('resolveAndWriteCredentials — write guard', () => {
 
     expect(result.success).toBe(true);
     expect(mockWriteCredentialsToEnv).toHaveBeenCalled();
+  });
+
+  it('allows the write when the state file exceeds the size limit', async () => {
+    vi.mocked(fs.existsSync).mockImplementation((p) => {
+      if (String(p).endsWith('.auth0-mcp-state.json')) return true;
+      return true;
+    });
+    vi.mocked(fs.statSync).mockImplementation((p) => {
+      if (String(p).endsWith('.auth0-mcp-state.json'))
+        return { isFile: () => true, isDirectory: () => false, size: 8192 } as any;
+      return { isDirectory: () => true, isFile: () => false } as any;
+    });
+
+    const result = await resolveAndWriteCredentials(specParams, config, token);
+     
+    expect(result.success).toBe(true);
+    expect(mockWriteCredentialsToEnv).toHaveBeenCalled();
+  });
+
+  it('returns structured error when writeCredentialsToEnv throws', async () => {
+    vi.mocked(fs.existsSync).mockImplementation((p) => {
+      if (String(p).endsWith('.auth0-mcp-state.json')) return false;
+      return true;
+    });
+    mockWriteCredentialsToEnv.mockRejectedValueOnce(
+      new Error('Security error: env file exceeds maximum allowed size')
+    );
+
+    const result = await resolveAndWriteCredentials(specParams, config, token);
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toContain('Security error');
+    }
   });
 
   it('trims the audit log when it exceeds MAX_AUDIT_LOG_LINES', async () => {

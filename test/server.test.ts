@@ -78,11 +78,20 @@ vi.mock('../src/tools/index.js', () => {
           required: ['name'],
         },
       },
+      {
+        name: 'auth0_save_credentials_to_file',
+        description: 'Rate-limited credential write tool',
+        inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+      },
     ],
     HANDLERS: {
       test_tool: mockHandler,
       schema_tool: vi.fn().mockResolvedValue({
         content: [{ type: 'text', text: 'Success' }],
+        isError: false,
+      }),
+      auth0_save_credentials_to_file: vi.fn().mockResolvedValue({
+        content: [{ type: 'text', text: 'Credentials saved' }],
         isError: false,
       }),
     },
@@ -431,6 +440,37 @@ describe('Server', () => {
 
       expect(result).toHaveProperty('isError', false);
       expect(HANDLERS.test_tool).toHaveBeenCalled();
+    });
+
+    it('should rate-limit auth0_save_credentials_to_file after 5 calls', async () => {
+      await startServer();
+      const handlerFn = getCallToolHandler();
+      const request = {
+        params: { name: 'auth0_save_credentials_to_file', arguments: {} },
+      };
+
+      for (let i = 0; i < 5; i++) {
+        const result = await handlerFn(request);
+        expect(result).toHaveProperty('isError', false);
+      }
+
+      const result = await handlerFn(request);
+      expect(result).toHaveProperty('isError', true);
+      expect(result.content[0].text).toContain('Rate limit exceeded');
+      expect(result.content[0].text).toContain('5 calls per 60 seconds');
+    });
+
+    it('should not rate-limit other tools', async () => {
+      await startServer();
+      const handlerFn = getCallToolHandler();
+      const request = {
+        params: { name: 'test_tool', arguments: {} },
+      };
+
+      for (let i = 0; i < 10; i++) {
+        const result = await handlerFn(request);
+        expect(result).toHaveProperty('isError', false);
+      }
     });
   });
 });
