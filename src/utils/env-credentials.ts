@@ -20,7 +20,6 @@ export interface EnvCredentialsParams {
   base_url?: string;
   callback_url?: string;
   port?: number;
-  force?: boolean;
   dry_run?: boolean;
 }
 
@@ -143,12 +142,8 @@ export async function resolveAndWriteCredentials(
     };
   }
 
-  // Guard against accidental double-writes within the same session. 
-  // Pass force: true only when the developer has explicitly requested an overwrite.
-  if (!params.force) {
-    const guardError = checkWriteGuard(resolvedProjectPath, Object.keys(resolved.credentialMap));
-    if (guardError) return { success: false, error: guardError };
-  }
+  const guardError = checkWriteGuard(resolvedProjectPath, Object.keys(resolved.credentialMap));
+  if (guardError) return { success: false, error: guardError };
 
   let credentialsInfo;
   try {
@@ -387,7 +382,7 @@ async function buildFallbackCredentials(
 // ── Write guard ──────────────────────────────────────────────────────────────
 // Prevents accidental double-writes within a 30-second window by persisting the
 // last-written keys and timestamp to .auth0-mcp-state.json in the project directory.
-// Can be bypassed with force: true for intentional overwrites.
+// Can be bypassed by deleting .auth0-mcp-state.json from the project directory.
 
 const WRITE_GUARD_FILE = '.auth0-mcp-state.json';
 // 30 seconds: long enough to catch rapid double-invocations in a multi-step AI
@@ -413,11 +408,10 @@ function checkWriteGuard(projectPath: string, incomingKeys: string[]): string | 
     if (elapsed < WRITE_GUARD_WINDOW_MS) {
       const overlap = incomingKeys.filter((k) => state.keysWritten.includes(k));
       if (overlap.length > 0) {
-        const minutesAgo = Math.round(elapsed / 60_000);
-        const timeAgo = minutesAgo < 1 ? 'less than a minute' : `${minutesAgo} minute(s)`;
+        const secondsAgo = Math.round(elapsed / 1000);
         return (
-          `Credentials were already written to this project ${timeAgo} ago ` +
-          `(keys: ${overlap.join(', ')}). Pass force: true to overwrite.`
+          `Credentials were already written to this project ${secondsAgo} second(s) ago ` +
+          `(keys: ${overlap.join(', ')}). To write again, delete ${WRITE_GUARD_FILE} from the project directory and retry, or wait ${Math.ceil((WRITE_GUARD_WINDOW_MS - elapsed) / 1000)} second(s) for the window to expire.`
         );
       }
     }

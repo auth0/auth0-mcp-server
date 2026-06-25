@@ -788,27 +788,6 @@ describe('resolveAndWriteCredentials — write guard', () => {
     expect(mockWriteCredentialsToEnv).not.toHaveBeenCalled();
   });
 
-  it('allows the write when force: true even within the guard window', async () => {
-    vi.mocked(fs.existsSync).mockImplementation((p) => {
-      if (String(p).endsWith('.auth0-mcp-state.json')) return true;
-      return true;
-    });
-    vi.mocked(fs.statSync).mockImplementation((p) => {
-      if (String(p).endsWith('.auth0-mcp-state.json'))
-        return { isFile: () => true, isDirectory: () => false, size: 200 } as any;
-      return { isDirectory: () => true, isFile: () => false } as any;
-    });
-    vi.mocked(fs.readFileSync).mockImplementation((p) => {
-      if (String(p).endsWith('.auth0-mcp-state.json')) return guardState;
-      return '';
-    });
-
-    const result = await resolveAndWriteCredentials({ ...specParams, force: true }, config, token);
-
-    expect(result.success).toBe(true);
-    expect(mockWriteCredentialsToEnv).toHaveBeenCalled();
-  });
-
   it('allows the write when no state file exists', async () => {
     vi.mocked(fs.existsSync).mockImplementation((p) => {
       if (String(p).endsWith('.auth0-mcp-state.json')) return false;

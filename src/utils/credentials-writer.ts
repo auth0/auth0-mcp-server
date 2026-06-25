@@ -57,10 +57,14 @@ export async function writeCredentialsToEnv(
   if (!resolvedPath.startsWith(allowedDir + path.sep) && resolvedPath !== allowedDir) {
     throw new Error('Security error: file path resolves outside the allowed directory');
   }
-  // Symlink, type, and size checks on existing file.
   const fileExisted = fs.existsSync(resolvedPath);
+  const incomingKeys = new Set(Object.keys(credentials));
+  let content: string;
+
   if (fileExisted) {
     const realPath = fs.realpathSync(resolvedPath);
+
+    // Symlink, type, and size checks on existing file in these following statements
     if (!realPath.startsWith(allowedDir + path.sep) && realPath !== allowedDir) {
       throw new Error('Security error: file path resolves outside the allowed directory');
     }
@@ -71,21 +75,17 @@ export async function writeCredentialsToEnv(
     if (stat.size > MAX_ENV_FILE_SIZE_BYTES) {
       throw new Error(
         `Security error: env file exceeds maximum allowed size of ${MAX_ENV_FILE_SIZE_BYTES / 1024 / 1024} MB. ` +
-        'The file may be corrupted or malicious. Remove or truncate it before retrying.'
+          'The file may be corrupted or malicious. Remove or truncate it before retrying.'
       );
     }
-  }
-  const incomingKeys = new Set(Object.keys(credentials));
 
-  let content: string;
-
-  if (fileExisted) {
     let existingContent: string;
     try {
       existingContent = fs.readFileSync(resolvedPath, 'utf-8');
     } catch {
       throw new Error('Failed to read existing env file');
     }
+
     const updatedLines = commentOutConflictingKeys(existingContent, incomingKeys);
     const newSection =
       `\n# Auth0 Credentials (Generated: ${new Date().toISOString()})\n` +
@@ -115,7 +115,11 @@ export async function writeCredentialsToEnv(
   } catch {
     // tmpFile may or may not exist at this point (writeFileSync could have failed before creating it, or partway through)
     // Suppress cleanup errors so they don't shadow the original write failure.
-    try { fs.unlinkSync(tmpFile); } catch { /* ignore */ }
+    try {
+      fs.unlinkSync(tmpFile);
+    } catch {
+      /* ignore */
+    }
     throw new Error('Failed to write env file');
   }
 
