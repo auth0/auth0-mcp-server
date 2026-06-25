@@ -382,7 +382,6 @@ async function buildFallbackCredentials(
 // ── Write guard ──────────────────────────────────────────────────────────────
 // Prevents accidental double-writes within a 30-second window by persisting the
 // last-written keys and timestamp to .auth0-mcp-state.json in the project directory.
-// Can be bypassed by deleting .auth0-mcp-state.json from the project directory.
 
 const WRITE_GUARD_FILE = '.auth0-mcp-state.json';
 // 30 seconds: long enough to catch rapid double-invocations in a multi-step AI
@@ -409,9 +408,10 @@ function checkWriteGuard(projectPath: string, incomingKeys: string[]): string | 
       const overlap = incomingKeys.filter((k) => state.keysWritten.includes(k));
       if (overlap.length > 0) {
         const secondsAgo = Math.round(elapsed / 1000);
+        const secondsLeft = Math.ceil((WRITE_GUARD_WINDOW_MS - elapsed) / 1000);
         return (
           `Credentials were already written to this project ${secondsAgo} second(s) ago ` +
-          `(keys: ${overlap.join(', ')}). To write again, delete ${WRITE_GUARD_FILE} from the project directory and retry, or wait ${Math.ceil((WRITE_GUARD_WINDOW_MS - elapsed) / 1000)} second(s) for the window to expire.`
+          `(keys: ${overlap.join(', ')}). Please wait ${secondsLeft} second(s) before trying again.`
         );
       }
     }
