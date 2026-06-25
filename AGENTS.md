@@ -48,3 +48,30 @@ Tools are filtered at startup by glob patterns (`--tools` / `AUTH0_MCP_TOOLS`) a
 ## Testing
 
 Tests in `test/` mirror `src/` structure. Uses Vitest + MSW for API mocking.
+
+## Code Style
+
+Enforced by Prettier + ESLint (`npm run build` runs both before compiling).
+
+- **Variables**: `const` by default; `let` only when reassignment is needed; no `var`.
+- **Equality**: always `===`, never `==`.
+- **Strings**: template literals over concatenation.
+- **Logging**: No `console.*` — use the logger utilities or remove before committing.
+- **`ts-ignore`**: allowed only with a description of ≥ 10 characters.
+- **Non-null assertions (`!`)**: avoid; prefer an explicit null-check or guard.
+
+## Checklist
+
+Before marking a task complete, verify:
+
+- [ ] `npm run typecheck` passes — no type errors.
+- [ ] `npm run test` passes — all tests green.
+- [ ] `npm run lint:fix` leaves no errors (warnings tolerated where unavoidable).
+- [ ] `npm run format` produces no diff (or was already run).
+- [ ] New tool: defined in `src/tools/<domain>.ts`, handler added, both registered in `src/tools/index.ts`.
+- [ ] Any new secret-like fields are added to `src/utils/response-masker.ts`.
+- [ ] No `console.log` / debug output left in production paths.
+- [ ] No secrets, tokens, or credentials are logged or returned in tool responses — verify against `src/utils/response-masker.ts`.
+- [ ] Tool schemas reject undeclared parameters (no extra fields allowed) — prompt injection defense.
+- [ ] New parameters are validated at the boundary; never pass raw user input directly to Auth0 API calls.
+- [ ] No new dependencies introduced without reviewing their supply-chain risk (`npm audit`).
