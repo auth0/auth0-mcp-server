@@ -1,5 +1,14 @@
 # Change Log
 
+## [v0.1.0-beta.16](https://github.com/auth0/auth0-mcp-server/tree/v0.1.0-beta.16) (2026-06-29)
+[Full Changelog](https://github.com/auth0/auth0-mcp-server/compare/v0.1.0-beta.15...v0.1.0-beta.16)
+
+**Added**
+- Add Heap Tracking for Onboarding Tool [\#182](https://github.com/auth0/auth0-mcp-server/pull/182) ([wdaimee](https://github.com/wdaimee))
+
+**Changed**
+- docs: add onboarding tools to README [\#183](https://github.com/auth0/auth0-mcp-server/pull/183) ([wdaimee](https://github.com/wdaimee))
+
 ## [v0.1.0-beta.15](https://github.com/auth0/auth0-mcp-server/tree/v0.1.0-beta.15) (2026-06-16)
 [Full Changelog](https://github.com/auth0/auth0-mcp-server/compare/v0.1.0-beta.14...v0.1.0-beta.15)
 
