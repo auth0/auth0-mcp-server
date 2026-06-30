@@ -36,8 +36,8 @@ describe('isFrameworkSupported', () => {
 
   it('returns false for unsupported frameworks', () => {
     expect(isFrameworkSupported('sveltekit')).toBe(false);
-    expect(isFrameworkSupported('express')).toBe(false);
     expect(isFrameworkSupported('flask')).toBe(false);
+    expect(isFrameworkSupported('django')).toBe(false);
     expect(isFrameworkSupported('')).toBe(false);
   });
 });

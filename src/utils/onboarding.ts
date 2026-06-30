@@ -5,6 +5,9 @@ export const FRAMEWORK_FILENAMES = {
   vue: 'vuejs-quickstart-definition.json',
   angular: 'angular-quickstart-definition.json',
   nextjs: 'nextjs-quickstart-definition.json',
+  javascript: 'vanillajs-quickstart-definition.json',
+  express: 'express-quickstart-definition.json',
+  python: 'python-quickstart-definition.json',
 } as const;
 
 export const SUPPORTED_FRAMEWORKS = Object.keys(FRAMEWORK_FILENAMES) as Array<
