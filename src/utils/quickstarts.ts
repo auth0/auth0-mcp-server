@@ -1,3 +1,4 @@
+import * as path from 'path';
 import { z } from 'zod';
 import { log } from './logger.js';
 import { fetchWithOptions } from './fetch.js';
@@ -51,7 +52,13 @@ const QuickstartSpecSchema = z.object({
     .object({
       type: z.string(),
       language: z.string(),
-      fileName: z.string().min(1),
+      fileName: z
+        .string()
+        .min(1)
+        .refine(
+          (val) => val === path.basename(val) && !val.includes('..'),
+          { message: 'envSnippet.fileName must be a plain filename with no path components' }
+        ),
       entries: z.array(EnvEntrySchema),
     })
     .optional(),

@@ -10,6 +10,7 @@ import { maskTenantName } from './utils/terminal.js';
 import { getAvailableTools } from './utils/tools.js';
 import type { RunOptions } from './commands/run.js';
 import { packageVersion } from './utils/package.js';
+import { createRateLimiter } from './utils/rate-limiter.js';
 
 type ServerOptions = RunOptions;
 
@@ -64,6 +65,9 @@ export async function startServer(options?: ServerOptions) {
     // Get available tools based on options if provided
     const availableTools = getAvailableTools(TOOLS, options?.tools, options?.readOnly);
 
+    const rateLimiter = createRateLimiter(5, 60_000);
+    const RATE_LIMITED_TOOLS = new Set(['auth0_save_credentials_to_file']);
+
     // Create server instance
     const server = new Server(
       { name: 'auth0', version: packageVersion },
@@ -108,6 +112,18 @@ export async function startServer(options?: ServerOptions) {
           );
           if (undeclaredKeys.length > 0) {
             throw new Error(`Rejected undeclared parameters: ${undeclaredKeys.join(', ')}`);
+          }
+        }
+
+        const isDryRun = request.params.arguments?.dry_run === true;
+        if (RATE_LIMITED_TOOLS.has(toolName) && !isDryRun) {
+          const { allowed, retryAfterMs } = rateLimiter(toolName);
+          if (!allowed) {
+            const retryAfterSec = Math.ceil(retryAfterMs / 1000);
+            throw new Error(
+              `Rate limit exceeded for ${toolName}: maximum 5 calls per 60 seconds. ` +
+              `Try again in ${retryAfterSec} second(s).`
+            );
           }
         }
 

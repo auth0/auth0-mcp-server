@@ -1,4 +1,39 @@
+import * as path from 'path';
+import * as os from 'os';
 import type { QuickstartSpec, QuickstartAppType, DefaultAppOrigin } from './quickstarts';
+
+// Directories that must never receive credential files.
+const POSIX_DENIED_PREFIXES = [
+  '/etc', '/var', '/usr', '/bin', '/sbin', '/lib', '/lib64',
+  '/boot', '/run', '/root', '/tmp', '/opt', '/srv',
+];
+
+const WINDOWS_DENIED_PREFIXES = [
+  'C:\\Windows', 'C:\\Program Files', 'C:\\Program Files (x86)',
+  'C:\\ProgramData', 'C:\\System Volume Information',
+];
+
+export function hasProjectMarker(resolvedDir: string): boolean {
+  const homeDir = os.homedir();
+  if (resolvedDir === homeDir) return false;
+  
+  // Block hidden config directories directly inside home (e.g. ~/.ssh, ~/.config)
+  if (
+    resolvedDir.startsWith(homeDir + path.sep) &&
+    path.basename(resolvedDir).startsWith('.')
+  ) return false;
+
+  if (process.platform === 'win32') {
+    const lower = resolvedDir.toLowerCase();
+    return !WINDOWS_DENIED_PREFIXES.some(
+      (p) => lower === p.toLowerCase() || lower.startsWith(p.toLowerCase() + path.sep)
+    );
+  }
+
+  return !POSIX_DENIED_PREFIXES.some(
+    (p) => resolvedDir === p || resolvedDir.startsWith(p + path.sep)
+  );
+}
 
 export const FRAMEWORK_FILENAMES = {
   react: 'react-quickstart-definition.json',
