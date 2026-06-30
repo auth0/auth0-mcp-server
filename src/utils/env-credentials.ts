@@ -67,15 +67,17 @@ function isLikelyWebServedDirectory(resolvedDir: string): boolean {
 }
 
 function validateProjectPath(projectPath: string): string | null {
-  const resolved = path.resolve(projectPath);
-  if (resolved !== projectPath && projectPath.includes('..')) {
+  if (!path.isAbsolute(projectPath)) {
+    return 'project_path must be an absolute path';
+  }
+  if (projectPath.includes('..')) {
     return 'project_path must not contain path traversal sequences';
   }
 
-  if (!fs.existsSync(resolved) || !fs.statSync(resolved).isDirectory()) {
+  if (!fs.existsSync(projectPath) || !fs.statSync(projectPath).isDirectory()) {
     return 'project_path does not exist or is not a directory';
   }
-  if (!hasProjectMarker(resolved)) {
+  if (!hasProjectMarker(projectPath)) {
     return 'project_path must not be a system or home directory';
   }
 
@@ -92,8 +94,6 @@ export async function resolveAndWriteCredentials(
   // Validation: ensure projectPath is a valid directory with no path traversal
   const projectPathError = validateProjectPath(projectPath);
   if (projectPathError) return { success: false, error: projectPathError };
-  const resolvedProjectPath = path.resolve(projectPath);
-
   const spec = await fetchQuickstartSpec(framework);
 
   if (spec !== null && !spec.envSnippet) {
@@ -122,10 +122,9 @@ export async function resolveAndWriteCredentials(
   // After the guard above, the only remaining fallback case is an unsupported framework.
   const fallbackReason: CredentialResolutionFallbackReason | undefined =
     resolutionPath === 'fallback' ? 'unsupported' : undefined;
-  const resolvedParams = { ...params, project_path: resolvedProjectPath };
   const resolved = spec?.envSnippet
-    ? await buildSpecCredentials(resolvedParams, spec.envSnippet, spec.defaultAppOrigin, config, token, spec.placeholders)
-    : await buildFallbackCredentials(resolvedParams, config, token);
+    ? await buildSpecCredentials(params, spec.envSnippet, spec.defaultAppOrigin, config, token, spec.placeholders)
+    : await buildFallbackCredentials(params, config, token);
 
   if (!resolved.success) return resolved;
 
@@ -142,24 +141,24 @@ export async function resolveAndWriteCredentials(
     };
   }
 
-  const guardError = checkWriteGuard(resolvedProjectPath, Object.keys(resolved.credentialMap));
+  const guardError = checkWriteGuard(projectPath, Object.keys(resolved.credentialMap));
   if (guardError) return { success: false, error: guardError };
 
   let credentialsInfo;
   try {
     credentialsInfo = await writeCredentialsToEnv(resolved.credentialMap, {
       filePath: resolved.envFilePath,
-      allowedDir: resolvedProjectPath,
+      allowedDir: projectPath,
     });
   } catch (err: any) {
     return { success: false, error: err.message ?? 'Failed to write credentials' };
   }
   log(`Credentials saved to: ${credentialsInfo.file_path}`);
 
-  updateWriteGuard(resolvedProjectPath, credentialsInfo.keys_written, framework);
-  appendAuditLog(resolvedProjectPath, framework, credentialsInfo);
-  ensureGitignore(resolvedProjectPath, WRITE_GUARD_FILE);
-  ensureGitignore(resolvedProjectPath, AUDIT_LOG_FILE);
+  updateWriteGuard(projectPath, credentialsInfo.keys_written, framework);
+  appendAuditLog(projectPath, framework, credentialsInfo);
+  ensureGitignore(projectPath, WRITE_GUARD_FILE);
+  ensureGitignore(projectPath, AUDIT_LOG_FILE);
 
   const generatedKeys = resolved.generated_keys;
 
@@ -171,7 +170,7 @@ export async function resolveAndWriteCredentials(
     fallbackReason
   );
 
-  const auditLogPath = path.join(resolvedProjectPath, AUDIT_LOG_FILE);
+  const auditLogPath = path.join(projectPath, AUDIT_LOG_FILE);
   const securityNotice =
     `Verify that ${path.basename(credentialsInfo.file_path)} is listed in .gitignore ` +
     'before committing this project to version control.';
@@ -181,7 +180,7 @@ export async function resolveAndWriteCredentials(
       ? `Credentials saved securely to ${credentialsInfo.file_path}. ${generatedKeys.join(', ')} was generated automatically and saved to the file. You can rotate it at any time by replacing the value with a new 32-byte hex string.`
       : `Credentials saved securely to ${credentialsInfo.file_path}`;
 
-  const webServedWarning = isLikelyWebServedDirectory(resolvedProjectPath)
+  const webServedWarning = isLikelyWebServedDirectory(projectPath)
     ? ' Warning: project_path appears to be a web-served directory. Ensure your web server is configured to deny access to .env files to prevent credentials from being exposed over HTTP.'
     : '';
 

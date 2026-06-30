@@ -123,13 +123,27 @@ beforeEach(() => {
 });
 
 describe('resolveAndWriteCredentials — project path validation', () => {
+  it('returns error when project_path is not absolute', async () => {
+    const result = await resolveAndWriteCredentials(
+      { ...fallbackParams, project_path: 'myapp' },
+      config,
+      token
+    );
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toBe('project_path must be an absolute path');
+      expect(result.error).not.toContain('myapp');
+    }
+  });
+
   it('returns error when project_path does not exist', async () => {
     vi.mocked(fs.existsSync).mockReturnValue(false);
 
     const result = await resolveAndWriteCredentials(fallbackParams, config, token);
 
     expect(result.success).toBe(false);
-    if (!result.success) expect(result.error).toContain('does not exist or is not a directory');
+    if (!result.success) expect(result.error).toBe('project_path does not exist or is not a directory');
   });
 
   it('returns error when project_path is not a directory', async () => {
@@ -138,12 +152,12 @@ describe('resolveAndWriteCredentials — project path validation', () => {
     const result = await resolveAndWriteCredentials(fallbackParams, config, token);
 
     expect(result.success).toBe(false);
-    if (!result.success) expect(result.error).toContain('does not exist or is not a directory');
+    if (!result.success) expect(result.error).toBe('project_path does not exist or is not a directory');
   });
 
   it('rejects project_path containing traversal sequences', async () => {
     const result = await resolveAndWriteCredentials(
-      { ...fallbackParams, project_path: '../../etc' },
+      { ...fallbackParams, project_path: '/foo/../etc' },
       config,
       token
     );
@@ -151,18 +165,6 @@ describe('resolveAndWriteCredentials — project path validation', () => {
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error).toBe('project_path must not contain path traversal sequences');
-      expect(result.error).not.toContain('../../etc');
-    }
-  });
-
-  it('does not leak project_path value in the error message when path does not exist', async () => {
-    vi.mocked(fs.existsSync).mockReturnValue(false);
-
-    const result = await resolveAndWriteCredentials(fallbackParams, config, token);
-
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error).not.toContain(fallbackParams.project_path);
     }
   });
 
