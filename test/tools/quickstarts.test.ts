@@ -1225,7 +1225,9 @@ describe('auth0_get_quickstart_guide', () => {
       );
       expect(response.isError).toBe(true);
       expect(response.content[0].text).toContain('Unsupported framework');
-      expect(response.content[0].text).toContain('react, vue, angular, nextjs');
+      expect(response.content[0].text).toContain(
+        'react, vue, angular, nextjs, javascript, express, python'
+      );
     });
 
     it('should accept mixed-case framework values', async () => {
