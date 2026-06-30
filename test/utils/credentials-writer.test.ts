@@ -280,6 +280,25 @@ describe('credentials-writer', () => {
       }
     });
 
+    it('should reject file path that escapes the real allowedDir when allowedDir is a symlink', async () => {
+      const realTarget = path.join(testDir, 'real-project');
+      fs.mkdirSync(realTarget, { recursive: true });
+      const symlinkDir = path.join(testDir, 'symlinked-project');
+      fs.symlinkSync(realTarget, symlinkDir);
+
+      try {
+        await expect(
+          writeCredentialsToEnv(
+            { AUTH0_DOMAIN: 'test.auth0.com' },
+            { filePath: path.join(testDir, '.env.escape'), allowedDir: symlinkDir }
+          )
+        ).rejects.toThrow('Security error: file path resolves outside the allowed directory');
+      } finally {
+        try { fs.unlinkSync(symlinkDir); } catch { /* ignore */ }
+        fs.rmSync(realTarget, { recursive: true, force: true });
+      }
+    });
+
     it('should not leave a .tmp file after a successful write', async () => {
       await writeCredentialsToEnv({ AUTH0_DOMAIN: 'test.auth0.com' });
 

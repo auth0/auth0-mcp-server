@@ -81,7 +81,7 @@ vi.mock('../src/tools/index.js', () => {
       {
         name: 'auth0_save_credentials_to_file',
         description: 'Rate-limited credential write tool',
-        inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+        inputSchema: { type: 'object', properties: { dry_run: { type: 'boolean' } }, additionalProperties: false },
       },
     ],
     HANDLERS: {
@@ -458,6 +458,20 @@ describe('Server', () => {
       expect(result).toHaveProperty('isError', true);
       expect(result.content[0].text).toContain('Rate limit exceeded');
       expect(result.content[0].text).toContain('5 calls per 60 seconds');
+    });
+
+    it('should not rate-limit auth0_save_credentials_to_file when dry_run is true', async () => {
+      await startServer();
+      const handlerFn = getCallToolHandler();
+      const request = {
+        params: { name: 'auth0_save_credentials_to_file', arguments: { dry_run: true } },
+      };
+
+      for (let i = 0; i < 10; i++) {
+        const result = await handlerFn(request);
+        expect(result).not.toHaveProperty('isError', true);
+        if (result.isError) expect(result.content[0].text).not.toContain('Rate limit exceeded');
+      }
     });
 
     it('should not rate-limit other tools', async () => {

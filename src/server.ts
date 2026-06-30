@@ -115,7 +115,8 @@ export async function startServer(options?: ServerOptions) {
           }
         }
 
-        if (RATE_LIMITED_TOOLS.has(toolName)) {
+        const isDryRun = request.params.arguments?.dry_run === true;
+        if (RATE_LIMITED_TOOLS.has(toolName) && !isDryRun) {
           const { allowed, retryAfterMs } = rateLimiter(toolName);
           if (!allowed) {
             const retryAfterSec = Math.ceil(retryAfterMs / 1000);

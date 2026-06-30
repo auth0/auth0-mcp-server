@@ -49,7 +49,9 @@ export async function writeCredentialsToEnv(
   credentials: Record<string, string>,
   options?: WriteCredentialsOptions
 ): Promise<CredentialsWriteResult> {
-  const allowedDir = path.resolve(options?.allowedDir ?? process.cwd());
+
+  // Symlink check for directory path
+  const allowedDir = fs.realpathSync(path.resolve(options?.allowedDir ?? process.cwd()));
   const envFile = options?.filePath || path.join(allowedDir, '.env.local');
 
   // Path traversal protection: ensure the resolved file path is within the allowed directory
@@ -64,7 +66,7 @@ export async function writeCredentialsToEnv(
   if (fileExisted) {
     const realPath = fs.realpathSync(resolvedPath);
 
-    // Symlink, type, and size checks on existing file in these following statements
+    // Symlink check for file path, type, and size checks on existing file in these following statements
     if (!realPath.startsWith(allowedDir + path.sep) && realPath !== allowedDir) {
       throw new Error('Security error: file path resolves outside the allowed directory');
     }
