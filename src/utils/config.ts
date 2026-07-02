@@ -7,7 +7,6 @@ import {
   getValidAccessToken,
 } from '../auth/device-auth-flow.js';
 import { log } from './logger.js';
-import { getTenantFromToken } from './terminal.js';
 
 // Ensure HOME is set
 if (!process.env.HOME) {
@@ -71,25 +70,18 @@ function loadConfigFromEnvironment(): Auth0Config | null {
   }
 
   const explicitDomain = process.env.AUTH0_DOMAIN?.trim();
-  const inferredDomain = explicitDomain || inferDomainFromToken(token) || '';
+
+  if (!explicitDomain) {
+    log('AUTH0_TOKEN is set but AUTH0_DOMAIN is required and missing');
+    return null;
+  }
 
   return {
     token,
-    domain: inferredDomain,
-    tenantName: inferredDomain || 'default',
+    domain: explicitDomain,
+    tenantName: explicitDomain,
     source: 'env',
   };
-}
-
-function inferDomainFromToken(token: string): string | undefined {
-  try {
-    return getTenantFromToken(token);
-  } catch (error) {
-    log(
-      `Unable to infer AUTH0_DOMAIN from AUTH0_TOKEN: ${error instanceof Error ? error.message : String(error)}`
-    );
-    return undefined;
-  }
 }
 
 function isJwtTokenExpired(token: string, bufferSeconds = 300): boolean {

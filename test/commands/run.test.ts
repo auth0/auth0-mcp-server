@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import run from '../../src/commands/run.js';
 import { startServer } from '../../src/server';
 import { log, logInfo, logError } from '../../src/utils/logger';
+import { validatePatterns } from '../../src/utils/tools.js';
 import * as os from 'os';
 import { keychain } from '../../src/utils/keychain.js';
 import { isTokenExpired } from '../../src/auth/device-auth-flow.js';
@@ -11,6 +12,10 @@ vi.mock('../../src/utils/logger', () => ({
   log: vi.fn(),
   logInfo: vi.fn(),
   logError: vi.fn(),
+}));
+
+vi.mock('../../src/utils/tools.js', () => ({
+  validatePatterns: vi.fn(),
 }));
 
 vi.mock('../../src/server', () => ({
@@ -214,6 +219,23 @@ describe('Run Module', () => {
       expect(keychain.getToken).not.toHaveBeenCalled();
       expect(process.exit).not.toHaveBeenCalled();
     });
+
+    it('exits with error when AUTH0_TOKEN is set but AUTH0_DOMAIN is missing', async () => {
+      process.env.AUTH0_TOKEN = 'some-token';
+      delete process.env.AUTH0_DOMAIN;
+
+      const processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => {
+        throw new Error('Process exit called');
+      });
+
+      await expect(run({ tools: ['*'] })).rejects.toThrow('Process exit called');
+
+      expect(logError).toHaveBeenCalledWith(
+        'AUTH0_TOKEN is set but AUTH0_DOMAIN is required. Set AUTH0_DOMAIN to your Auth0 tenant domain (e.g. your-tenant.auth0.com)'
+      );
+      expect(processExitSpy).toHaveBeenCalledWith(1);
+      expect(startServer).not.toHaveBeenCalled();
+    });
   });
 
   describe('Env-var overrides (MCPB-style launch)', () => {
@@ -259,6 +281,25 @@ describe('Run Module', () => {
       await run({ tools: ['*'] });
 
       expect(startServer).toHaveBeenCalledWith({ tools: ['*'] });
+    });
+
+    it('exits with error when AUTH0_MCP_TOOLS contains invalid patterns', async () => {
+      process.env.AUTH0_MCP_TOOLS = 'nonexistent_tool';
+
+      // Mock validatePatterns to throw an error for invalid pattern
+      vi.mocked(validatePatterns).mockImplementationOnce(() => {
+        throw new Error('Invalid tool: nonexistent_tool. Accepted tools are: auth0_list_applications');
+      });
+
+      const processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => {
+        throw new Error('Process exit called');
+      });
+
+      await expect(run({ tools: ['*'] })).rejects.toThrow('Process exit called');
+
+      expect(logError).toHaveBeenCalledWith('Fatal error starting server:', expect.any(Error));
+      expect(processExitSpy).toHaveBeenCalledWith(1);
+      expect(startServer).not.toHaveBeenCalled();
     });
   });
 });

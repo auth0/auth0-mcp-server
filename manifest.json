@@ -130,15 +130,15 @@
     "auth0_token": {
       "type": "string",
       "title": "Auth0 Management API Token",
-      "description": "Optional access token for Auth0 Management API requests. If omitted, the server falls back to credentials stored by the init flow.",
+      "description": "Access token for Auth0 Management API requests. Requires AUTH0_DOMAIN to also be set. See https://auth0.com/docs/get-started/mcp for setup instructions.",
       "sensitive": true,
-      "required": false
+      "required": true
     },
     "auth0_domain": {
       "type": "string",
       "title": "Auth0 Tenant Domain",
-      "description": "Optional tenant domain such as your-tenant.auth0.com. If omitted, the server will try to infer it from a JWT access token.",
-      "required": false
+      "description": "Auth0 tenant domain, e.g. your-tenant.auth0.com. Required when AUTH0_TOKEN is provided. See https://auth0.com/docs/get-started/mcp for setup instructions.",
+      "required": true
     },
     "read_only": {
       "type": "boolean",

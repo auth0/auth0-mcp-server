@@ -1,6 +1,10 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { parse as dotenvParse } from 'dotenv';
 import { log } from './logger.js';
+
+const CREDENTIAL_FILE_MODE = 0o600;
+const MAX_ENV_FILE_SIZE_BYTES = 1024 * 1024; // 1 MB
 
 /**
  * Result of writing credentials to file
@@ -45,25 +49,45 @@ export async function writeCredentialsToEnv(
   credentials: Record<string, string>,
   options?: WriteCredentialsOptions
 ): Promise<CredentialsWriteResult> {
-  const allowedDir = path.resolve(options?.allowedDir ?? process.cwd());
+
+  // Symlink check for directory path
+  const allowedDir = fs.realpathSync(path.resolve(options?.allowedDir ?? process.cwd()));
   const envFile = options?.filePath || path.join(allowedDir, '.env.local');
 
   // Path traversal protection: ensure the resolved file path is within the allowed directory
   const resolvedPath = path.resolve(allowedDir, envFile);
   if (!resolvedPath.startsWith(allowedDir + path.sep) && resolvedPath !== allowedDir) {
-    throw new Error(
-      `Security error: file path "${envFile}" resolves outside the allowed directory. ` +
-        `Resolved path: "${resolvedPath}", allowed directory: "${allowedDir}"`
-    );
+    throw new Error('Security error: file path resolves outside the allowed directory');
   }
-
-  const fileExisted = fs.existsSync(envFile);
+  const fileExisted = fs.existsSync(resolvedPath);
   const incomingKeys = new Set(Object.keys(credentials));
-
   let content: string;
 
   if (fileExisted) {
-    const existingContent = fs.readFileSync(envFile, 'utf-8');
+    const realPath = fs.realpathSync(resolvedPath);
+
+    // Symlink check for file path, type, and size checks on existing file in these following statements
+    if (!realPath.startsWith(allowedDir + path.sep) && realPath !== allowedDir) {
+      throw new Error('Security error: file path resolves outside the allowed directory');
+    }
+    const stat = fs.statSync(resolvedPath);
+    if (!stat.isFile()) {
+      throw new Error('Security error: env file path is not a regular file');
+    }
+    if (stat.size > MAX_ENV_FILE_SIZE_BYTES) {
+      throw new Error(
+        `Security error: env file exceeds maximum allowed size of ${MAX_ENV_FILE_SIZE_BYTES / 1024 / 1024} MB. ` +
+          'The file may be corrupted or malicious. Remove or truncate it before retrying.'
+      );
+    }
+
+    let existingContent: string;
+    try {
+      existingContent = fs.readFileSync(resolvedPath, 'utf-8');
+    } catch {
+      throw new Error('Failed to read existing env file');
+    }
+
     const updatedLines = commentOutConflictingKeys(existingContent, incomingKeys);
     const newSection =
       `\n# Auth0 Credentials (Generated: ${new Date().toISOString()})\n` +
@@ -72,7 +96,7 @@ export async function writeCredentialsToEnv(
         .join('\n') +
       '\n';
     content = updatedLines + newSection;
-    log(`Appending credentials to existing file: ${envFile}`);
+    log(`Appending credentials to existing file: ${resolvedPath}`);
   } else {
     const header = `# Auth0 Credentials (Generated: ${new Date().toISOString()})\n`;
     content =
@@ -81,28 +105,47 @@ export async function writeCredentialsToEnv(
         .map(([key, value]) => `${key}=${value}`)
         .join('\n') +
       '\n';
-    log(`Creating new file with credentials: ${envFile}`);
+    log(`Creating new file with credentials: ${resolvedPath}`);
   }
 
-  fs.writeFileSync(envFile, content, 'utf-8');
-
-  // Set restrictive permissions (owner read/write only)
+  const tmpFile = resolvedPath + '.tmp';
   try {
-    fs.chmodSync(envFile, 0o600);
-    log(`Set file permissions to 600 (owner read/write only) for: ${envFile}`);
-  } catch (error) {
-    // chmod may not work on all platforms (e.g., Windows)
-    log(`Warning: Could not set file permissions for ${envFile}: ${error}`);
+    fs.writeFileSync(tmpFile, content, { encoding: 'utf-8', mode: CREDENTIAL_FILE_MODE });
+    // rename is atomic on POSIX (same filesystem): the target either fully
+    // appears or doesn't, preventing a half-written .env file on crash
+    fs.renameSync(tmpFile, resolvedPath);
+  } catch {
+    // tmpFile may or may not exist at this point (writeFileSync could have failed before creating it, or partway through)
+    // Suppress cleanup errors so they don't shadow the original write failure.
+    try {
+      fs.unlinkSync(tmpFile);
+    } catch {
+      /* ignore */
+    }
+    throw new Error('Failed to write env file');
+  }
+
+  // Enforce restrictive permissions. On POSIX this is a hard requirement —
+  // throw if chmod fails or if the resulting on-disk mode doesn't match.
+  // Windows has no meaningful chmod, so skip verification there.
+  if (process.platform !== 'win32') {
+    fs.chmodSync(resolvedPath, CREDENTIAL_FILE_MODE);
+    const actualMode = fs.statSync(resolvedPath).mode & 0o777;
+    if (actualMode !== CREDENTIAL_FILE_MODE) {
+      throw new Error(
+        `Security error: expected file mode ${CREDENTIAL_FILE_MODE.toString(8)}, got ${actualMode.toString(8)}`
+      );
+    }
+    log(`Set file permissions to 600 (owner read/write only) for: ${resolvedPath}`);
   }
 
   // Ensure .gitignore includes the env file
   if (options?.createGitignore !== false) {
-    const envFileDir = path.dirname(path.resolve(envFile));
-    ensureGitignore(envFileDir, path.basename(envFile));
+    ensureGitignore(path.dirname(resolvedPath), path.basename(resolvedPath));
   }
 
   return {
-    file_path: envFile,
+    file_path: resolvedPath,
     keys_written: Object.keys(credentials),
     file_created: !fileExisted,
   };
@@ -130,7 +173,7 @@ function commentOutConflictingKeys(existingContent: string, incomingKeys: Set<st
  * @param cwd - Current working directory
  * @param envFileName - Name of the env file to add to .gitignore
  */
-function ensureGitignore(cwd: string, envFileName: string): void {
+export function ensureGitignore(cwd: string, envFileName: string): boolean {
   const gitignorePath = path.join(cwd, '.gitignore');
 
   try {
@@ -140,16 +183,22 @@ function ensureGitignore(cwd: string, envFileName: string): void {
       // Check if the env file is already ignored
       if (!content.split('\n').some((line) => line.trim() === envFileName)) {
         log(`Adding ${envFileName} to .gitignore`);
-        fs.appendFileSync(gitignorePath, `\n# Auth0 credentials\n${envFileName}\n`, 'utf-8');
+        const hasAuthComment = content.includes('# Auth0 credentials');
+        const header = hasAuthComment ? '' : '\n# Auth0 credentials';
+        fs.appendFileSync(gitignorePath, `${header}\n${envFileName}\n`, 'utf-8');
+        return true;
       } else {
         log(`${envFileName} already in .gitignore`);
+        return false;
       }
     } else {
       log(`Creating .gitignore with ${envFileName}`);
       fs.writeFileSync(gitignorePath, `# Auth0 credentials\n${envFileName}\n`, 'utf-8');
+      return true;
     }
   } catch (error) {
     log(`Warning: Could not update .gitignore: ${error}`);
+    return false;
   }
 }
 
@@ -161,12 +210,13 @@ function ensureGitignore(cwd: string, envFileName: string): void {
  */
 export function parseEnvFile(filePath: string): Record<string, string> {
   if (!fs.existsSync(filePath)) return {};
-  const result: Record<string, string> = {};
-  for (const line of fs.readFileSync(filePath, 'utf-8').split('\n')) {
-    const match = line.match(/^([A-Za-z_][A-Za-z0-9_]*)=(.*)/);
-    if (match) result[match[1]] = match[2];
+  try {
+    const stat = fs.statSync(filePath);
+    if (!stat.isFile() || stat.size > MAX_ENV_FILE_SIZE_BYTES) return {};
+    return dotenvParse(fs.readFileSync(filePath, 'utf-8'));
+  } catch {
+    return {};
   }
-  return result;
 }
 
 /**

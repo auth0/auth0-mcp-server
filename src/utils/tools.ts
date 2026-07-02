@@ -102,11 +102,11 @@ function filterToolsByPatterns(tools: Tool[], patterns: string[]): Tool[] {
     log(`Selected ${filteredTools.length} available tools based on patterns`);
     return filteredTools;
   } catch (error) {
-    // Log error and use all tools as fallback
+    // Log error and fail closed
     log(
       `Error determining available tools: ${error instanceof Error ? error.message : String(error)}`
     );
-    return tools;
+    throw error;
   }
 }
 

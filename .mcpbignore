@@ -22,3 +22,7 @@ vitest.config.ts
 *.mcpb
 dist/**/*.map
 package-lock.json
+.env
+.env.local
+.env.*.local
+.DS_Store
