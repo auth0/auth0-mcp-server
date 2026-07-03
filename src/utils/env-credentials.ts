@@ -41,8 +41,17 @@ type ResolvedCredentials =
       credentialMap: Record<string, string>;
       envFilePath: string;
       generated_keys: string[];
+      /** Whether the session-cookie secret was auto-generated (drives the secret_generated analytic). */
+      secret_generated: boolean;
     }
   | { success: false; error: string };
+
+/**
+ * CDN spec placeholder for the session-cookie secret. We never populate its input
+ * (`sessionCookieSecret`) — the value is generated locally — so any sensitive var
+ * templated with this token is the session secret, regardless of its output name.
+ */
+const SESSION_SECRET_PLACEHOLDER = '%AUTH0_SECRET%';
 
 /**
  * Resolves Auth0 credentials for the given framework and writes them to the project's env file.
@@ -165,7 +174,7 @@ export async function resolveAndWriteCredentials(
   trackEvent.trackCredentialResolution(
     framework,
     resolutionPath,
-    generatedKeys.includes('AUTH0_SECRET'),
+    resolved.secret_generated,
     credentialsInfo.keys_written,
     fallbackReason
   );
@@ -202,7 +211,9 @@ export async function resolveAndWriteCredentials(
  * with actual values derived from the spec's placeholder→inputKey mapping.
  *
  * SPA frameworks (empty secretKeys) skip the Management API call entirely.
- * AUTH0_SECRET is generated only when required and not already present in the existing env file.
+ * The session-cookie secret is generated only when required and not already present in the
+ * existing env file. It is identified by the %AUTH0_SECRET% placeholder rather than a fixed
+ * output name, since that name varies by framework (AUTH0_SECRET for Next.js, SECRET for Express).
  */
 async function buildSpecCredentials(
   params: EnvCredentialsParams,
@@ -283,12 +294,17 @@ async function buildSpecCredentials(
   const existingEnv = parseEnvFile(envFilePath);
   const credentialMap: Record<string, string> = {};
   const generated_keys: string[] = [];
+  let secret_generated = false;
 
   for (const entry of varEntries) {
-    if (entry.name === 'AUTH0_SECRET') {
-      if (!existingEnv['AUTH0_SECRET']) {
+    // Session-cookie secret: detected by the %AUTH0_SECRET% placeholder, not the output
+    // name (which varies by framework), since we generate it locally rather than fetch it.
+    // Generate only if not already present in the env file.
+    if (entry.sensitive && entry.value.includes(SESSION_SECRET_PLACEHOLDER)) {
+      if (!existingEnv[entry.name]) {
         credentialMap[entry.name] = randomBytes(32).toString('hex');
         generated_keys.push(entry.name);
+        secret_generated = true;
       }
       continue;
     }
@@ -299,7 +315,7 @@ async function buildSpecCredentials(
     }
   }
 
-  return { success: true, credentialMap, envFilePath, generated_keys };
+  return { success: true, credentialMap, envFilePath, generated_keys, secret_generated };
 }
 
 /**
@@ -366,7 +382,7 @@ async function buildFallbackCredentials(
       ...(resolvedCallbackUrl ? { AUTH0_CALLBACK_URL: resolvedCallbackUrl } : {}),
     };
 
-    return { success: true, credentialMap, envFilePath, generated_keys: [] };
+    return { success: true, credentialMap, envFilePath, generated_keys: [], secret_generated: false };
   } catch (sdkError: any) {
     let error = `Failed to retrieve application: ${sdkError.message || 'Unknown error'}`;
     if (sdkError.statusCode === 404) {
