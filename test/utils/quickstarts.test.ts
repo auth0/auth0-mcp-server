@@ -16,6 +16,9 @@ const FRAMEWORK_FILENAMES: Record<string, string> = {
   vue: 'vuejs-quickstart-definition.json',
   angular: 'angular-quickstart-definition.json',
   nextjs: 'nextjs-quickstart-definition.json',
+  javascript: 'vanillajs-quickstart-definition.json',
+  express: 'express-quickstart-definition.json',
+  python: 'python-quickstart-definition.json',
 };
 
 const defUrl = (framework: string) =>
@@ -176,6 +179,9 @@ describe('fetchQuickstartSpec', () => {
     ['vue', 'vuejs-quickstart-definition.json'],
     ['angular', 'angular-quickstart-definition.json'],
     ['nextjs', 'nextjs-quickstart-definition.json'],
+    ['javascript', 'vanillajs-quickstart-definition.json'],
+    ['express', 'express-quickstart-definition.json'],
+    ['python', 'python-quickstart-definition.json'],
   ])('maps %s to filename %s', async (framework, expectedFilename) => {
     let capturedUrl = '';
     server.use(

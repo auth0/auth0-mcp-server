@@ -107,7 +107,26 @@ const specWithSecret64 = {
     ...specWithSecret.envSnippet,
     entries: [
       ...specWithSecret.envSnippet.entries,
-      { type: 'var' as const, name: 'AUTH0_SECRET', value: '{yourSecret}' },
+      { type: 'var' as const, name: 'AUTH0_SECRET', value: '%AUTH0_SECRET%', sensitive: true },
+    ],
+  },
+};
+
+// Express names its session-cookie secret `SECRET` (not `AUTH0_SECRET`) but still
+// templates it as %AUTH0_SECRET% with sensitive: true. Generation must key off the
+// placeholder, not the output name, so this var gets a value.
+const specExpress = {
+  ...specWithSecret,
+  envSnippet: {
+    type: 'env',
+    language: 'shell',
+    fileName: '.env',
+    entries: [
+      { type: 'var' as const, name: 'ISSUER_BASE_URL', value: 'https://%AUTH0_DOMAIN%' },
+      { type: 'var' as const, name: 'CLIENT_ID', value: '%AUTH0_CLIENT_ID%' },
+      { type: 'var' as const, name: 'SECRET', value: '%AUTH0_SECRET%', sensitive: true },
+      { type: 'var' as const, name: 'BASE_URL', value: '%APP_SCHEME%://%APP_DOMAIN%:%PORT%' },
+      { type: 'var' as const, name: 'PORT', value: '%PORT%' },
     ],
   },
 };
@@ -453,6 +472,38 @@ describe('resolveAndWriteCredentials — spec path (supported framework)', () =>
 
     const credentialMap = mockWriteCredentialsToEnv.mock.calls[0][0];
     expect(credentialMap).not.toHaveProperty('AUTH0_SECRET');
+  });
+
+  it('generates the session secret for Express, which names the var SECRET', async () => {
+    mockFetchQuickstartSpec.mockResolvedValue(specExpress);
+    mockParseEnvFile.mockReturnValue({});
+
+    const result = await resolveAndWriteCredentials(specParams, config, token);
+
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.generated_keys).toContain('SECRET');
+
+    const credentialMap = mockWriteCredentialsToEnv.mock.calls[0][0];
+    // Session secret generated under its Express name.
+    expect(credentialMap['SECRET']).toMatch(/^[0-9a-f]{64}$/);
+    // Non-secret vars all resolve — none dropped for unresolved %…% tokens.
+    expect(credentialMap['ISSUER_BASE_URL']).toBe(`https://${config.domain}`);
+    expect(credentialMap['CLIENT_ID']).toBe(clientId);
+    expect(credentialMap['BASE_URL']).toBe('http://localhost:3000');
+    expect(credentialMap['PORT']).toBe('3000');
+  });
+
+  it('skips Express SECRET generation when already present in the env file', async () => {
+    mockFetchQuickstartSpec.mockResolvedValue(specExpress);
+    mockParseEnvFile.mockReturnValue({ SECRET: 'existing-secret' });
+
+    const result = await resolveAndWriteCredentials(specParams, config, token);
+
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.generated_keys).not.toContain('SECRET');
+
+    const credentialMap = mockWriteCredentialsToEnv.mock.calls[0][0];
+    expect(credentialMap).not.toHaveProperty('SECRET');
   });
 
   it('returns a helpful error when base_url is malformed', async () => {
