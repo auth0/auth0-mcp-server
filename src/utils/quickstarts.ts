@@ -42,7 +42,7 @@ const QuickstartSpecSchema = z.object({
   appType: z.enum(['spa', 'webapp', 'native']),
   defaultAppOrigin: z.object({
     scheme: z.string().min(1),
-    domain: z.string().min(1),
+    domain: z.union([z.string().min(1), z.object({ inputKey: z.string().min(1) })]),
     port: z.number().optional(),
   }),
   callbackPath: z.string().min(1),
@@ -55,10 +55,9 @@ const QuickstartSpecSchema = z.object({
       fileName: z
         .string()
         .min(1)
-        .refine(
-          (val) => val === path.basename(val) && !val.includes('..'),
-          { message: 'envSnippet.fileName must be a plain filename with no path components' }
-        ),
+        .refine((val) => val === path.basename(val) && !val.includes('..'), {
+          message: 'envSnippet.fileName must be a plain filename with no path components',
+        }),
       entries: z.array(EnvEntrySchema),
     })
     .optional(),

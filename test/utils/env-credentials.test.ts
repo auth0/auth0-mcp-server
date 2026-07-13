@@ -4,7 +4,12 @@ import { http, HttpResponse } from 'msw';
 import * as fs from 'fs';
 import { server } from '../setup';
 
-const { mockWriteCredentialsToEnv, mockParseEnvFile, mockDetectExistingEnvFile, mockEnsureGitignore } = vi.hoisted(() => ({
+const {
+  mockWriteCredentialsToEnv,
+  mockParseEnvFile,
+  mockDetectExistingEnvFile,
+  mockEnsureGitignore,
+} = vi.hoisted(() => ({
   mockWriteCredentialsToEnv: vi.fn(),
   mockParseEnvFile: vi.fn(),
   mockDetectExistingEnvFile: vi.fn(),
@@ -74,7 +79,12 @@ const specWithSecret = {
     entries: [
       { type: 'var' as const, name: 'AUTH0_DOMAIN', value: '%AUTH0_DOMAIN%' },
       { type: 'var' as const, name: 'AUTH0_CLIENT_ID', value: '%AUTH0_CLIENT_ID%' },
-      { type: 'var' as const, name: 'AUTH0_CLIENT_SECRET', value: '%AUTH0_CLIENT_SECRET%', sensitive: true },
+      {
+        type: 'var' as const,
+        name: 'AUTH0_CLIENT_SECRET',
+        value: '%AUTH0_CLIENT_SECRET%',
+        sensitive: true,
+      },
     ],
   },
   placeholders: defaultPlaceholders,
@@ -162,7 +172,8 @@ describe('resolveAndWriteCredentials — project path validation', () => {
     const result = await resolveAndWriteCredentials(fallbackParams, config, token);
 
     expect(result.success).toBe(false);
-    if (!result.success) expect(result.error).toBe('project_path does not exist or is not a directory');
+    if (!result.success)
+      expect(result.error).toBe('project_path does not exist or is not a directory');
   });
 
   it('returns error when project_path is not a directory', async () => {
@@ -171,7 +182,8 @@ describe('resolveAndWriteCredentials — project path validation', () => {
     const result = await resolveAndWriteCredentials(fallbackParams, config, token);
 
     expect(result.success).toBe(false);
-    if (!result.success) expect(result.error).toBe('project_path does not exist or is not a directory');
+    if (!result.success)
+      expect(result.error).toBe('project_path does not exist or is not a directory');
   });
 
   it('rejects project_path containing traversal sequences', async () => {
@@ -239,6 +251,47 @@ describe('resolveAndWriteCredentials — spec with no envSnippet', () => {
     }
     expect(mockWriteCredentialsToEnv).not.toHaveBeenCalled();
   });
+
+  it('returns no-op message for a native spec with object-form domain and no envSnippet (Android)', async () => {
+    mockFetchQuickstartSpec.mockResolvedValue({
+      appType: 'native' as const,
+      defaultAppOrigin: { scheme: 'https', domain: { inputKey: 'auth0Domain' } },
+      callbackPath: '/android/%APPLICATION_ID%/callback',
+      logoutPath: '/android/%APPLICATION_ID%/callback',
+      placeholders: {},
+      inputs: {},
+      environment: {},
+    });
+
+    const result = await resolveAndWriteCredentials(fallbackParams, config, token);
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.message).toBe('No .env file needed for this framework.');
+    }
+    expect(mockWriteCredentialsToEnv).not.toHaveBeenCalled();
+  });
+
+  it('resolves appDomain to localhost when defaultAppOrigin.domain is object-form and no base_url is given', async () => {
+    // Synthetic spec: object-form domain WITH an envSnippet (Android has none, but this
+    // exercises the union-domain type guard in buildSpecCredentials).
+    mockFetchQuickstartSpec.mockResolvedValue({
+      ...specSpaNoSecret,
+      defaultAppOrigin: { scheme: 'https', domain: { inputKey: 'auth0Domain' } },
+      envSnippet: {
+        type: 'env',
+        language: 'shell',
+        fileName: '.env.local',
+        entries: [{ type: 'var' as const, name: 'APP_DOMAIN', value: '%APP_DOMAIN%' }],
+      },
+    });
+
+    const result = await resolveAndWriteCredentials(fallbackParams, config, token);
+
+    expect(result.success).toBe(true);
+    const written = mockWriteCredentialsToEnv.mock.calls[0]?.[0] as Record<string, string>;
+    expect(written.APP_DOMAIN).toBe('localhost');
+  });
 });
 
 describe('resolveAndWriteCredentials — fallback path (unsupported framework)', () => {
@@ -250,16 +303,19 @@ describe('resolveAndWriteCredentials — fallback path (unsupported framework)',
     const result = await resolveAndWriteCredentials(fallbackParams, config, token);
 
     expect(result.success).toBe(false);
-    if (!result.success) expect(result.error).toContain(`Application with client_id '${clientId}' not found`);
+    if (!result.success)
+      expect(result.error).toContain(`Application with client_id '${clientId}' not found`);
   });
 
   it('returns 401 error with helpful message when token is expired or invalid', async () => {
     server.use(
-      http.get('https://*/api/v2/clients/:clientId', () =>
-        new HttpResponse(JSON.stringify({ message: 'Unauthorized' }), {
-          status: 401,
-          headers: { 'Content-Type': 'application/json' },
-        })
+      http.get(
+        'https://*/api/v2/clients/:clientId',
+        () =>
+          new HttpResponse(JSON.stringify({ message: 'Unauthorized' }), {
+            status: 401,
+            headers: { 'Content-Type': 'application/json' },
+          })
       )
     );
 
@@ -350,13 +406,23 @@ describe('resolveAndWriteCredentials — fallback_reason tracking', () => {
 
     await resolveAndWriteCredentials({ ...fallbackParams, framework: 'sveltekit' }, config, token);
 
-    expect(spy).toHaveBeenCalledWith('sveltekit', 'fallback', expect.any(Boolean), expect.any(Array), 'unsupported');
+    expect(spy).toHaveBeenCalledWith(
+      'sveltekit',
+      'fallback',
+      expect.any(Boolean),
+      expect.any(Array),
+      'unsupported'
+    );
   });
 
   it('returns an error and does not write when a supported framework spec cannot be fetched from CDN', async () => {
     mockFetchQuickstartSpec.mockResolvedValue(null);
 
-    const result = await resolveAndWriteCredentials({ ...fallbackParams, framework: 'react' }, config, token);
+    const result = await resolveAndWriteCredentials(
+      { ...fallbackParams, framework: 'react' },
+      config,
+      token
+    );
 
     expect(result.success).toBe(false);
     if (!result.success) expect(result.error).toContain('Could not fetch quickstart spec');
@@ -369,7 +435,13 @@ describe('resolveAndWriteCredentials — fallback_reason tracking', () => {
 
     await resolveAndWriteCredentials({ ...fallbackParams, framework: 'react' }, config, token);
 
-    expect(spy).toHaveBeenCalledWith('react', 'spec', expect.any(Boolean), expect.any(Array), undefined);
+    expect(spy).toHaveBeenCalledWith(
+      'react',
+      'spec',
+      expect.any(Boolean),
+      expect.any(Array),
+      undefined
+    );
   });
 });
 
@@ -391,16 +463,19 @@ describe('resolveAndWriteCredentials — spec path (supported framework)', () =>
     const result = await resolveAndWriteCredentials(specParams, config, token);
 
     expect(result.success).toBe(false);
-    if (!result.success) expect(result.error).toContain(`Application with client_id '${clientId}' not found`);
+    if (!result.success)
+      expect(result.error).toContain(`Application with client_id '${clientId}' not found`);
   });
 
   it('returns 401 error with helpful message when token is expired or invalid', async () => {
     server.use(
-      http.get('https://*/api/v2/clients/:clientId', () =>
-        new HttpResponse(JSON.stringify({ message: 'Unauthorized' }), {
-          status: 401,
-          headers: { 'Content-Type': 'application/json' },
-        })
+      http.get(
+        'https://*/api/v2/clients/:clientId',
+        () =>
+          new HttpResponse(JSON.stringify({ message: 'Unauthorized' }), {
+            status: 401,
+            headers: { 'Content-Type': 'application/json' },
+          })
       )
     );
 
@@ -529,12 +604,20 @@ describe('resolveAndWriteCredentials — spec path (supported framework)', () =>
       envSnippet: {
         ...specSpaNoSecret.envSnippet,
         entries: [
-          { type: 'var' as const, name: 'AUTH0_BASE_URL', value: '%APP_SCHEME%://%APP_DOMAIN%:%PORT%' },
+          {
+            type: 'var' as const,
+            name: 'AUTH0_BASE_URL',
+            value: '%APP_SCHEME%://%APP_DOMAIN%:%PORT%',
+          },
         ],
       },
     });
 
-    await resolveAndWriteCredentials({ ...specParams, base_url: 'http://localhost:4000' }, config, token);
+    await resolveAndWriteCredentials(
+      { ...specParams, base_url: 'http://localhost:4000' },
+      config,
+      token
+    );
 
     expect(mockWriteCredentialsToEnv).toHaveBeenCalledWith(
       expect.objectContaining({ AUTH0_BASE_URL: 'http://localhost:4000' }),
@@ -547,7 +630,13 @@ describe('resolveAndWriteCredentials — spec path (supported framework)', () =>
       ...specSpaNoSecret,
       envSnippet: {
         ...specSpaNoSecret.envSnippet,
-        entries: [{ type: 'var' as const, name: 'AUTH0_BASE_URL', value: '%APP_SCHEME%://%APP_DOMAIN%:%PORT%' }],
+        entries: [
+          {
+            type: 'var' as const,
+            name: 'AUTH0_BASE_URL',
+            value: '%APP_SCHEME%://%APP_DOMAIN%:%PORT%',
+          },
+        ],
       },
     });
 
@@ -599,9 +688,7 @@ describe('resolveAndWriteCredentials — spec path (supported framework)', () =>
       ...specSpaNoSecret,
       envSnippet: {
         ...specSpaNoSecret.envSnippet,
-        entries: [
-          { type: 'var' as const, name: 'AUTH0_CALLBACK_URL', value: '%CALLBACK_URL%' },
-        ],
+        entries: [{ type: 'var' as const, name: 'AUTH0_CALLBACK_URL', value: '%CALLBACK_URL%' }],
       },
     });
 
@@ -642,7 +729,11 @@ describe('resolveAndWriteCredentials — spec path (supported framework)', () =>
       envSnippet: {
         ...specSpaNoSecret.envSnippet,
         entries: [
-          { type: 'var' as const, name: 'AUTH0_BASE_URL', value: '%APP_SCHEME%://%APP_DOMAIN%:%PORT%' },
+          {
+            type: 'var' as const,
+            name: 'AUTH0_BASE_URL',
+            value: '%APP_SCHEME%://%APP_DOMAIN%:%PORT%',
+          },
           { type: 'var' as const, name: 'AUTH0_CALLBACK_URL', value: '%CALLBACK_URL%' },
           { type: 'var' as const, name: 'AUTH0_PORT', value: '%PORT%' },
         ],
@@ -650,7 +741,12 @@ describe('resolveAndWriteCredentials — spec path (supported framework)', () =>
     });
 
     await resolveAndWriteCredentials(
-      { ...specParams, base_url: 'http://localhost:8080', callback_url: 'http://localhost:8080/cb', port: 8080 },
+      {
+        ...specParams,
+        base_url: 'http://localhost:8080',
+        callback_url: 'http://localhost:8080/cb',
+        port: 8080,
+      },
       config,
       token
     );
@@ -680,7 +776,8 @@ describe('resolveAndWriteCredentials — envSnippet.fileName validation', () => 
     );
 
     expect(result.success).toBe(false);
-    if (!result.success) expect(result.error).toBe('Quickstart spec contained an invalid env file name');
+    if (!result.success)
+      expect(result.error).toBe('Quickstart spec contained an invalid env file name');
     expect(mockWriteCredentialsToEnv).not.toHaveBeenCalled();
   });
 
@@ -697,7 +794,8 @@ describe('resolveAndWriteCredentials — envSnippet.fileName validation', () => 
     );
 
     expect(result.success).toBe(false);
-    if (!result.success) expect(result.error).toBe('Quickstart spec contained an invalid env file name');
+    if (!result.success)
+      expect(result.error).toBe('Quickstart spec contained an invalid env file name');
     expect(mockWriteCredentialsToEnv).not.toHaveBeenCalled();
   });
 
@@ -886,7 +984,7 @@ describe('resolveAndWriteCredentials — write guard', () => {
     });
 
     const result = await resolveAndWriteCredentials(specParams, config, token);
-     
+
     expect(result.success).toBe(true);
     expect(mockWriteCredentialsToEnv).toHaveBeenCalled();
   });
@@ -989,4 +1087,3 @@ describe('resolveAndWriteCredentials — dry_run', () => {
     expect(mockWriteCredentialsToEnv).not.toHaveBeenCalled();
   });
 });
-

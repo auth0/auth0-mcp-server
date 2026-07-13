@@ -10,7 +10,8 @@ import {
   SUPPORTED_FRAMEWORKS,
 } from '../utils/onboarding.js';
 import { fetchWithOptions } from '../utils/fetch.js';
-import { calculateUrlUpdates, resolvePlaceholders } from '../utils/quickstart-guide.js';
+import { calculateUrlUpdates } from '../utils/quickstart-guide.js';
+import { resolvePlaceholders } from '../utils/quickstart-placeholders.js';
 import { detectExistingEnvFile } from '../utils/credentials-writer.js';
 import { APPLICATION_HANDLERS } from './applications.js';
 import trackEvent, { OnboardingStep, OnboardingStepStatus } from '../utils/analytics.js';
@@ -172,8 +173,26 @@ export const QUICKSTART_HANDLERS: Record<
       }
     }
 
-    // Step 4: Resolve callback URLs
-    const resolvedUrls = resolveCallbackUrls(spec, baseUrl);
+    // Step 4: Resolve callback URLs.
+    // Assemble the base-URL-independent input values first (Auth0 domain, client id, and
+    // spec.inputs defaults such as applicationId). These are needed to resolve an object-form
+    // defaultAppOrigin.domain and any %PLACEHOLDER% tokens in the callback/logout paths.
+    const baseInputValues: Record<string, string> = {
+      auth0Domain: config.domain,
+      auth0ClientId: clientId,
+    };
+    for (const [key, def] of Object.entries(spec.inputs)) {
+      if (
+        baseInputValues[key] === undefined &&
+        def &&
+        typeof def === 'object' &&
+        'default' in def
+      ) {
+        baseInputValues[key] = String((def as Record<string, unknown>).default);
+      }
+    }
+
+    const resolvedUrls = resolveCallbackUrls(spec, baseUrl, baseInputValues);
 
     // Step 5: Fetch LLM prompt
     let promptText: string;
@@ -209,21 +228,16 @@ export const QUICKSTART_HANDLERS: Record<
       (specDefaultPort !== undefined ? String(specDefaultPort) : null) ||
       (baseUrlParsed.protocol === 'https:' ? '443' : '80');
 
+    // Merge the base input values (incl. spec.inputs defaults) with the base-URL-derived
+    // values. Derived values are spread last so they take precedence over spec defaults.
     const inputValues: Record<string, string> = {
-      auth0Domain: config.domain,
-      auth0ClientId: clientId,
+      ...baseInputValues,
       port,
       appDomain: baseUrlParsed.hostname,
       appScheme: baseUrlParsed.protocol.replace(':', ''),
       auth0ClientSecret: '*******MASKED*********',
       sessionCookieSecret: '*******MASKED*********',
     };
-
-    for (const [key, def] of Object.entries(spec.inputs)) {
-      if (inputValues[key] === undefined && def && typeof def === 'object' && 'default' in def) {
-        inputValues[key] = String((def as Record<string, unknown>).default);
-      }
-    }
 
     const resolvedPrompt = resolvePlaceholders(
       promptText,

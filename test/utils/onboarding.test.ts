@@ -5,7 +5,7 @@ import {
   UrlSource,
   SUPPORTED_FRAMEWORKS,
   isFrameworkSupported,
-  hasNonVerifiableCallbacks
+  hasNonVerifiableCallbacks,
 } from '../../src/utils/onboarding';
 import type { QuickstartSpec, DefaultAppOrigin } from '../../src/utils/quickstarts';
 
@@ -66,6 +66,20 @@ describe('resolveDefaultOrigin', () => {
   it('should handle non-default ports', () => {
     const origin: DefaultAppOrigin = { scheme: 'https', domain: 'example.com', port: 8443 };
     expect(resolveDefaultOrigin(origin)).toBe('https://example.com:8443');
+  });
+
+  it('should resolve object-form domain from inputValues', () => {
+    const origin: DefaultAppOrigin = { scheme: 'https', domain: { inputKey: 'auth0Domain' } };
+    expect(resolveDefaultOrigin(origin, { auth0Domain: 'tenant.auth0.com' })).toBe(
+      'https://tenant.auth0.com'
+    );
+  });
+
+  it('should throw when object-form domain cannot be resolved from inputValues', () => {
+    const origin: DefaultAppOrigin = { scheme: 'https', domain: { inputKey: 'auth0Domain' } };
+    expect(() => resolveDefaultOrigin(origin, {})).toThrow(
+      /Cannot resolve defaultAppOrigin.domain/
+    );
   });
 });
 
@@ -184,6 +198,35 @@ describe('resolveCallbackUrls', () => {
       expect(result.logout_urls).toEqual(['http://localhost:8080/logout']);
       expect(result.web_origins).toBeUndefined();
       expect(result.url_source).toBe(UrlSource.Detected);
+    });
+  });
+
+  describe('native spec with object-form domain and placeholder paths (Android)', () => {
+    const androidSpec: QuickstartSpec = {
+      appType: 'native',
+      defaultAppOrigin: { scheme: 'https', domain: { inputKey: 'auth0Domain' } },
+      callbackPath: '/android/%APPLICATION_ID%/callback',
+      logoutPath: '/android/%APPLICATION_ID%/callback',
+      placeholders: { '%APPLICATION_ID%': { inputKey: 'applicationId' } },
+      inputs: {},
+      environment: {},
+    };
+
+    it('resolves the object domain and substitutes the path placeholder', () => {
+      const result = resolveCallbackUrls(androidSpec, undefined, {
+        auth0Domain: 'tenant.auth0.com',
+        applicationId: 'com.auth0.samples',
+      });
+
+      expect(result.base_url).toBe('https://tenant.auth0.com');
+      expect(result.callback_urls).toEqual([
+        'https://tenant.auth0.com/android/com.auth0.samples/callback',
+      ]);
+      expect(result.logout_urls).toEqual([
+        'https://tenant.auth0.com/android/com.auth0.samples/callback',
+      ]);
+      expect(result.web_origins).toBeUndefined();
+      expect(result.url_source).toBe(UrlSource.FrameworkDefault);
     });
   });
 });

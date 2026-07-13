@@ -19,6 +19,7 @@ const FRAMEWORK_FILENAMES: Record<string, string> = {
   javascript: 'vanillajs-quickstart-definition.json',
   express: 'express-quickstart-definition.json',
   python: 'python-quickstart-definition.json',
+  android: 'android-quickstart-definition.json',
 };
 
 const defUrl = (framework: string) =>
@@ -182,6 +183,7 @@ describe('fetchQuickstartSpec', () => {
     ['javascript', 'vanillajs-quickstart-definition.json'],
     ['express', 'express-quickstart-definition.json'],
     ['python', 'python-quickstart-definition.json'],
+    ['android', 'android-quickstart-definition.json'],
   ])('maps %s to filename %s', async (framework, expectedFilename) => {
     let capturedUrl = '';
     server.use(
@@ -253,6 +255,33 @@ describe('fetchQuickstartSpec', () => {
     );
     const result = await fetchQuickstartSpec('react');
     expect(result).toBeNull();
+  });
+
+  it('validates an Android-shaped native spec (object domain, no port, path placeholder, no envSnippet)', async () => {
+    const androidRawSpec = {
+      appType: 'native',
+      defaultAppOrigin: { scheme: 'https', domain: { inputKey: 'auth0Domain' } },
+      callbackPath: '/android/%APPLICATION_ID%/callback',
+      logoutPath: '/android/%APPLICATION_ID%/callback',
+      llmPromptPath: 'assets/llm-prompts/android-llm-prompt.md',
+      placeholders: { '%APPLICATION_ID%': { inputKey: 'applicationId' } },
+      inputs: { auth0Domain: null, applicationId: { default: 'com.auth0.samples' } },
+      environment: {},
+    };
+    server.use(
+      mockLatest(),
+      http.get(defUrl('android'), () => HttpResponse.json(androidRawSpec))
+    );
+
+    const spec = await fetchQuickstartSpec('android');
+    expect(spec).not.toBeNull();
+    expect(spec!.appType).toBe('native');
+    expect(spec!.defaultAppOrigin.domain).toEqual({ inputKey: 'auth0Domain' });
+    expect(spec!.defaultAppOrigin.port).toBeUndefined();
+    expect(spec!.envSnippet).toBeUndefined();
+    expect(spec!.llmPromptUrl).toBe(
+      `${CDN_BASE}/versions/${MOCK_VERSION}/assets/llm-prompts/android-llm-prompt.md`
+    );
   });
 
   it('returns null for unknown framework without network calls', async () => {
@@ -483,7 +512,10 @@ describe('fetchQuickstartSpec', () => {
       server.use(
         mockLatest(),
         http.get(defUrl('react'), () =>
-          HttpResponse.json({ ...makeMockRawSpec('react'), envSnippet: { ...makeMockRawSpec('react').envSnippet, fileName: '../../.bashrc' } })
+          HttpResponse.json({
+            ...makeMockRawSpec('react'),
+            envSnippet: { ...makeMockRawSpec('react').envSnippet, fileName: '../../.bashrc' },
+          })
         )
       );
       const result = await fetchQuickstartSpec('react');
@@ -494,7 +526,10 @@ describe('fetchQuickstartSpec', () => {
       server.use(
         mockLatest(),
         http.get(defUrl('react'), () =>
-          HttpResponse.json({ ...makeMockRawSpec('react'), envSnippet: { ...makeMockRawSpec('react').envSnippet, fileName: '/etc/passwd' } })
+          HttpResponse.json({
+            ...makeMockRawSpec('react'),
+            envSnippet: { ...makeMockRawSpec('react').envSnippet, fileName: '/etc/passwd' },
+          })
         )
       );
       const result = await fetchQuickstartSpec('react');
@@ -505,7 +540,10 @@ describe('fetchQuickstartSpec', () => {
       server.use(
         mockLatest(),
         http.get(defUrl('react'), () =>
-          HttpResponse.json({ ...makeMockRawSpec('react'), envSnippet: { ...makeMockRawSpec('react').envSnippet, fileName: '.env.local' } })
+          HttpResponse.json({
+            ...makeMockRawSpec('react'),
+            envSnippet: { ...makeMockRawSpec('react').envSnippet, fileName: '.env.local' },
+          })
         )
       );
       const result = await fetchQuickstartSpec('react');

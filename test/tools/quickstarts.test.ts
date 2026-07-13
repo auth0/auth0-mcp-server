@@ -377,6 +377,66 @@ describe('auth0_get_quickstart_guide', () => {
       expect(response.isError).toBe(false);
     });
 
+    it('resolves an Android native spec: object domain + path placeholder, no web_origins, no skip flag', async () => {
+      const androidSpec = makeMockSpec({
+        appType: 'native',
+        defaultAppOrigin: { scheme: 'https', domain: { inputKey: 'auth0Domain' } },
+        callbackPath: '/android/%APPLICATION_ID%/callback',
+        logoutPath: '/android/%APPLICATION_ID%/callback',
+        envSnippet: undefined,
+        placeholders: {
+          '%AUTH0_DOMAIN%': { inputKey: 'auth0Domain' },
+          '%AUTH0_CLIENT_ID%': { inputKey: 'auth0ClientId' },
+          '%APPLICATION_ID%': { inputKey: 'applicationId' },
+        },
+        inputs: {
+          auth0Domain: null,
+          auth0ClientId: null,
+          applicationId: { default: 'com.auth0.samples' },
+        },
+      });
+      mockFetchQuickstartSpec.mockResolvedValue(androidSpec);
+
+      const expectedCallback = `https://${domain}/android/com.auth0.samples/callback`;
+      let patchBody: Record<string, any> | undefined;
+      server.use(
+        http.get('https://*/api/v2/clients/:clientId', () => {
+          return HttpResponse.json({
+            ...mockAppData,
+            callbacks: [],
+            allowed_logout_urls: [],
+            web_origins: [],
+          });
+        }),
+        http.patch('https://*/api/v2/clients/:clientId', async ({ request }) => {
+          patchBody = (await request.json()) as Record<string, any>;
+          return HttpResponse.json({ ...mockAppData, ...patchBody });
+        })
+      );
+
+      const response = await QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
+        {
+          token,
+          parameters: {
+            client_id: 'test-client-id',
+            framework: 'android',
+            project_path: '/tmp/project',
+          },
+        },
+        config
+      );
+
+      expect(response.isError).toBe(false);
+      expect(patchBody).toBeDefined();
+      expect(patchBody!.callbacks).toContain(expectedCallback);
+      expect(patchBody!.allowed_logout_urls).toContain(expectedCallback);
+      // No literal placeholder should survive into the registered callback.
+      expect(JSON.stringify(patchBody)).not.toContain('%APPLICATION_ID%');
+      // Native app: no web_origins, and https App Links callback is verifiable → no skip flag.
+      expect(patchBody!.web_origins).toBeUndefined();
+      expect(patchBody!.skip_non_verifiable_callback_uri_confirmation_prompt).toBeUndefined();
+    });
+
     it('should not update when all URLs are already configured', async () => {
       server.use(
         http.get('https://*/api/v2/clients/:clientId', () => {
@@ -1226,7 +1286,7 @@ describe('auth0_get_quickstart_guide', () => {
       expect(response.isError).toBe(true);
       expect(response.content[0].text).toContain('Unsupported framework');
       expect(response.content[0].text).toContain(
-        'react, vue, angular, nextjs, javascript, express, python'
+        'react, vue, angular, nextjs, javascript, express, python, android'
       );
     });
 

@@ -1,27 +1,40 @@
 import * as path from 'path';
 import * as os from 'os';
 import type { QuickstartSpec, QuickstartAppType, DefaultAppOrigin } from './quickstarts';
+import { resolvePlaceholders } from './quickstart-placeholders.js';
 
 // Directories that must never receive credential files.
 const POSIX_DENIED_PREFIXES = [
-  '/etc', '/var', '/usr', '/bin', '/sbin', '/lib', '/lib64',
-  '/boot', '/run', '/root', '/tmp', '/opt', '/srv',
+  '/etc',
+  '/var',
+  '/usr',
+  '/bin',
+  '/sbin',
+  '/lib',
+  '/lib64',
+  '/boot',
+  '/run',
+  '/root',
+  '/tmp',
+  '/opt',
+  '/srv',
 ];
 
 const WINDOWS_DENIED_PREFIXES = [
-  'C:\\Windows', 'C:\\Program Files', 'C:\\Program Files (x86)',
-  'C:\\ProgramData', 'C:\\System Volume Information',
+  'C:\\Windows',
+  'C:\\Program Files',
+  'C:\\Program Files (x86)',
+  'C:\\ProgramData',
+  'C:\\System Volume Information',
 ];
 
 export function hasProjectMarker(resolvedDir: string): boolean {
   const homeDir = os.homedir();
   if (resolvedDir === homeDir) return false;
-  
+
   // Block hidden config directories directly inside home (e.g. ~/.ssh, ~/.config)
-  if (
-    resolvedDir.startsWith(homeDir + path.sep) &&
-    path.basename(resolvedDir).startsWith('.')
-  ) return false;
+  if (resolvedDir.startsWith(homeDir + path.sep) && path.basename(resolvedDir).startsWith('.'))
+    return false;
 
   if (process.platform === 'win32') {
     const lower = resolvedDir.toLowerCase();
@@ -43,6 +56,7 @@ export const FRAMEWORK_FILENAMES = {
   javascript: 'vanillajs-quickstart-definition.json',
   express: 'express-quickstart-definition.json',
   python: 'python-quickstart-definition.json',
+  android: 'android-quickstart-definition.json',
 } as const;
 
 export const SUPPORTED_FRAMEWORKS = Object.keys(FRAMEWORK_FILENAMES) as Array<
@@ -73,28 +87,55 @@ const APP_TYPE_URL_CONFIGS: Record<QuickstartAppType, Set<string>> = {
   native: new Set(['callback_urls', 'logout_urls']),
 };
 
-export const resolveDefaultOrigin = (defaultAppOrigin: DefaultAppOrigin): string => {
+export const resolveDefaultOrigin = (
+  defaultAppOrigin: DefaultAppOrigin,
+  inputValues: Record<string, string> = {}
+): string => {
   const { scheme, domain, port } = defaultAppOrigin;
+
+  // `domain` may be a literal string (web frameworks) or an object referencing an
+  // input value by key (e.g. native apps whose origin is the Auth0 tenant domain).
+  const resolvedDomain = typeof domain === 'string' ? domain : inputValues[domain.inputKey];
+  if (!resolvedDomain) {
+    throw new Error(
+      `Cannot resolve defaultAppOrigin.domain from input "${typeof domain === 'string' ? domain : domain.inputKey}"`
+    );
+  }
+
   const resolvedPort = port !== undefined ? String(port) : '';
 
-  return new URL(`${scheme}://${domain}${resolvedPort ? `:${resolvedPort}` : ''}`).origin;
+  return new URL(`${scheme}://${resolvedDomain}${resolvedPort ? `:${resolvedPort}` : ''}`).origin;
 };
 
-export const resolveCallbackUrls = (quickstartSpec: QuickstartSpec, baseUrl?: string) => {
+export const resolveCallbackUrls = (
+  quickstartSpec: QuickstartSpec,
+  baseUrl?: string,
+  inputValues: Record<string, string> = {}
+) => {
   const resolvedBaseUrl = baseUrl
     ? baseUrl.trim().replace(/\/+$/, '')
-    : resolveDefaultOrigin(quickstartSpec.defaultAppOrigin);
+    : resolveDefaultOrigin(quickstartSpec.defaultAppOrigin, inputValues);
 
   const urlSource = baseUrl ? UrlSource.Detected : UrlSource.FrameworkDefault;
 
   const urlKeys = APP_TYPE_URL_CONFIGS[quickstartSpec.appType];
 
+  // Paths may carry %PLACEHOLDER% tokens (e.g. /android/%APPLICATION_ID%/callback).
+  // Resolve them with the same semantics used for the LLM prompt before concatenation.
+  const resolvePath = (pathTemplate: string) =>
+    resolvePlaceholders(
+      pathTemplate,
+      quickstartSpec.placeholders,
+      inputValues,
+      quickstartSpec.environment
+    );
+
   const callbackUrl = quickstartSpec.callbackPath
-    ? `${resolvedBaseUrl}${quickstartSpec.callbackPath}`
+    ? `${resolvedBaseUrl}${resolvePath(quickstartSpec.callbackPath)}`
     : resolvedBaseUrl;
 
   const logoutUrl = quickstartSpec.logoutPath
-    ? `${resolvedBaseUrl}${quickstartSpec.logoutPath}`
+    ? `${resolvedBaseUrl}${resolvePath(quickstartSpec.logoutPath)}`
     : resolvedBaseUrl;
 
   return {
