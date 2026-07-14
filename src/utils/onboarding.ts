@@ -89,7 +89,8 @@ const APP_TYPE_URL_CONFIGS: Record<QuickstartAppType, Set<string>> = {
 
 export const resolveDefaultOrigin = (
   defaultAppOrigin: DefaultAppOrigin,
-  inputValues: Record<string, string> = {}
+  inputValues: Record<string, string> = {},
+  schemeOverride?: string
 ): string => {
   const { scheme, domain, port } = defaultAppOrigin;
 
@@ -102,19 +103,30 @@ export const resolveDefaultOrigin = (
     );
   }
 
+  // A custom URL scheme (e.g. an Android custom-scheme callback) may override the spec's
+  // fixed origin scheme.
+  const resolvedScheme = schemeOverride ?? scheme;
   const resolvedPort = port !== undefined ? String(port) : '';
+  const raw = `${resolvedScheme}://${resolvedDomain}${resolvedPort ? `:${resolvedPort}` : ''}`;
 
-  return new URL(`${scheme}://${resolvedDomain}${resolvedPort ? `:${resolvedPort}` : ''}`).origin;
+  // For http/https, `new URL().origin` normalizes the value (e.g. strips the default port).
+  // Custom schemes are non-special, so `.origin` returns the literal "null" — build the origin
+  // string directly (trailing slash stripped) in that case.
+  if (resolvedScheme === 'http' || resolvedScheme === 'https') {
+    return new URL(raw).origin;
+  }
+  return raw.replace(/\/+$/, '');
 };
 
 export const resolveCallbackUrls = (
   quickstartSpec: QuickstartSpec,
   baseUrl?: string,
-  inputValues: Record<string, string> = {}
+  inputValues: Record<string, string> = {},
+  schemeOverride?: string
 ) => {
   const resolvedBaseUrl = baseUrl
     ? baseUrl.trim().replace(/\/+$/, '')
-    : resolveDefaultOrigin(quickstartSpec.defaultAppOrigin, inputValues);
+    : resolveDefaultOrigin(quickstartSpec.defaultAppOrigin, inputValues, schemeOverride);
 
   const urlSource = baseUrl ? UrlSource.Detected : UrlSource.FrameworkDefault;
 

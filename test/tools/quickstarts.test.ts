@@ -377,8 +377,9 @@ describe('auth0_get_quickstart_guide', () => {
       expect(response.isError).toBe(false);
     });
 
-    it('resolves an Android native spec: object domain + path placeholder, no web_origins, no skip flag', async () => {
-      const androidSpec = makeMockSpec({
+    // Shared Android native spec builder.
+    const makeAndroidSpec = () =>
+      makeMockSpec({
         appType: 'native',
         defaultAppOrigin: { scheme: 'https', domain: { inputKey: 'auth0Domain' } },
         callbackPath: '/android/%APPLICATION_ID%/callback',
@@ -388,16 +389,22 @@ describe('auth0_get_quickstart_guide', () => {
           '%AUTH0_DOMAIN%': { inputKey: 'auth0Domain' },
           '%AUTH0_CLIENT_ID%': { inputKey: 'auth0ClientId' },
           '%APPLICATION_ID%': { inputKey: 'applicationId' },
+          '%AUTH0_SCHEME%': { inputKey: 'auth0Scheme' },
         },
         inputs: {
           auth0Domain: null,
           auth0ClientId: null,
+          auth0Scheme: { default: 'https' },
           applicationId: { default: 'com.auth0.samples' },
+          androidSha256Fingerprint: null,
         },
       });
-      mockFetchQuickstartSpec.mockResolvedValue(androidSpec);
+
+    it('universal_links: object domain + path placeholder, registers mobile.android, no web_origins, no skip flag', async () => {
+      mockFetchQuickstartSpec.mockResolvedValue(makeAndroidSpec());
 
       const expectedCallback = `https://${domain}/android/com.auth0.samples/callback`;
+      const fingerprint = 'AB:CD:EF:00:11:22';
       let patchBody: Record<string, any> | undefined;
       server.use(
         http.get('https://*/api/v2/clients/:clientId', () => {
@@ -421,6 +428,9 @@ describe('auth0_get_quickstart_guide', () => {
             client_id: 'test-client-id',
             framework: 'android',
             project_path: '/tmp/project',
+            app_package_name: 'com.auth0.samples',
+            callback_url_type: 'universal_links',
+            android_sha256_fingerprint: fingerprint,
           },
         },
         config
@@ -435,6 +445,424 @@ describe('auth0_get_quickstart_guide', () => {
       // Native app: no web_origins, and https App Links callback is verifiable → no skip flag.
       expect(patchBody!.web_origins).toBeUndefined();
       expect(patchBody!.skip_non_verifiable_callback_uri_confirmation_prompt).toBeUndefined();
+      // mobile.android registered with the package name and fingerprint.
+      expect(patchBody!.mobile).toEqual({
+        android: {
+          app_package_name: 'com.auth0.samples',
+          sha256_cert_fingerprints: [fingerprint],
+        },
+      });
+      // Both the callback URLs and mobile.android were configured.
+      const result = JSON.parse(response.content[0].text);
+      expect(result.urls_updated).toBe(true);
+      expect(result.mobile_updated).toBe(true);
+    });
+
+    it('universal_links: sets mobile.android even when the callback URL is already configured', async () => {
+      mockFetchQuickstartSpec.mockResolvedValue(makeAndroidSpec());
+
+      const existingCallback = `https://${domain}/android/com.auth0.samples/callback`;
+      const fingerprint = 'AB:CD:EF:00:11:22';
+      let patchBody: Record<string, any> | undefined;
+      server.use(
+        http.get('https://*/api/v2/clients/:clientId', () => {
+          return HttpResponse.json({
+            ...mockAppData,
+            callbacks: [existingCallback],
+            allowed_logout_urls: [existingCallback],
+            web_origins: [],
+          });
+        }),
+        http.patch('https://*/api/v2/clients/:clientId', async ({ request }) => {
+          patchBody = (await request.json()) as Record<string, any>;
+          return HttpResponse.json({ ...mockAppData, ...patchBody });
+        })
+      );
+
+      const response = await QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
+        {
+          token,
+          parameters: {
+            client_id: 'test-client-id',
+            framework: 'android',
+            project_path: '/tmp/project',
+            app_package_name: 'com.auth0.samples',
+            callback_url_type: 'universal_links',
+            android_sha256_fingerprint: fingerprint,
+          },
+        },
+        config
+      );
+
+      expect(response.isError).toBe(false);
+      // URLs unchanged, but the mobile.android registration still triggers the PATCH.
+      expect(patchBody).toBeDefined();
+      expect(patchBody!.mobile.android.sha256_cert_fingerprints).toContain(fingerprint);
+      // Only mobile.android changed; no callback URLs were updated.
+      const result = JSON.parse(response.content[0].text);
+      expect(result.urls_updated).toBe(false);
+      expect(result.mobile_updated).toBe(true);
+    });
+
+    it('universal_links: preserves sibling mobile.ios config when registering mobile.android', async () => {
+      mockFetchQuickstartSpec.mockResolvedValue(makeAndroidSpec());
+
+      const iosConfig = { app_bundle_identifier: 'com.auth0.samples.ios' };
+      const fingerprint = 'AB:CD:EF:00:11:22';
+      let patchBody: Record<string, any> | undefined;
+      server.use(
+        http.get('https://*/api/v2/clients/:clientId', () => {
+          return HttpResponse.json({
+            ...mockAppData,
+            callbacks: [],
+            allowed_logout_urls: [],
+            web_origins: [],
+            // The application already has an iOS mobile config that must not be clobbered.
+            mobile: { ios: iosConfig },
+          });
+        }),
+        http.patch('https://*/api/v2/clients/:clientId', async ({ request }) => {
+          patchBody = (await request.json()) as Record<string, any>;
+          return HttpResponse.json({ ...mockAppData, ...patchBody });
+        })
+      );
+
+      const response = await QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
+        {
+          token,
+          parameters: {
+            client_id: 'test-client-id',
+            framework: 'android',
+            project_path: '/tmp/project',
+            app_package_name: 'com.auth0.samples',
+            callback_url_type: 'universal_links',
+            android_sha256_fingerprint: fingerprint,
+          },
+        },
+        config
+      );
+
+      expect(response.isError).toBe(false);
+      expect(patchBody).toBeDefined();
+      // The Management API replaces the nested `mobile` object wholesale, so the PATCH must carry
+      // both the new android config and the pre-existing ios config.
+      expect(patchBody!.mobile.ios).toEqual(iosConfig);
+      expect(patchBody!.mobile.android).toEqual({
+        app_package_name: 'com.auth0.samples',
+        sha256_cert_fingerprints: [fingerprint],
+      });
+    });
+
+    it('universal_links: preserves existing android fingerprints when adding a new one', async () => {
+      mockFetchQuickstartSpec.mockResolvedValue(makeAndroidSpec());
+
+      const existingFingerprint = 'AA:BB:CC:DD:EE:FF';
+      const newFingerprint = 'AB:CD:EF:00:11:22';
+      let patchBody: Record<string, any> | undefined;
+      server.use(
+        http.get('https://*/api/v2/clients/:clientId', () => {
+          return HttpResponse.json({
+            ...mockAppData,
+            callbacks: [],
+            allowed_logout_urls: [],
+            web_origins: [],
+            mobile: {
+              android: {
+                app_package_name: 'com.auth0.samples',
+                sha256_cert_fingerprints: [existingFingerprint],
+              },
+            },
+          });
+        }),
+        http.patch('https://*/api/v2/clients/:clientId', async ({ request }) => {
+          patchBody = (await request.json()) as Record<string, any>;
+          return HttpResponse.json({ ...mockAppData, ...patchBody });
+        })
+      );
+
+      const response = await QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
+        {
+          token,
+          parameters: {
+            client_id: 'test-client-id',
+            framework: 'android',
+            project_path: '/tmp/project',
+            app_package_name: 'com.auth0.samples',
+            callback_url_type: 'universal_links',
+            android_sha256_fingerprint: newFingerprint,
+          },
+        },
+        config
+      );
+
+      expect(response.isError).toBe(false);
+      expect(patchBody).toBeDefined();
+      // Both the pre-existing and newly supplied fingerprints must be present.
+      expect(patchBody!.mobile.android.sha256_cert_fingerprints).toEqual([
+        existingFingerprint,
+        newFingerprint,
+      ]);
+    });
+
+    it('universal_links: registers mobile.android when the package name differs even if the fingerprint matches', async () => {
+      mockFetchQuickstartSpec.mockResolvedValue(makeAndroidSpec());
+
+      const existingCallback = `https://${domain}/android/com.auth0.samples/callback`;
+      const fingerprint = 'AB:CD:EF:00:11:22';
+      let patchBody: Record<string, any> | undefined;
+      server.use(
+        http.get('https://*/api/v2/clients/:clientId', () => {
+          return HttpResponse.json({
+            ...mockAppData,
+            callbacks: [existingCallback],
+            allowed_logout_urls: [existingCallback],
+            web_origins: [],
+            // Same fingerprint already present, but registered under a different package name.
+            mobile: {
+              android: {
+                app_package_name: 'com.auth0.other',
+                sha256_cert_fingerprints: [fingerprint],
+              },
+            },
+          });
+        }),
+        http.patch('https://*/api/v2/clients/:clientId', async ({ request }) => {
+          patchBody = (await request.json()) as Record<string, any>;
+          return HttpResponse.json({ ...mockAppData, ...patchBody });
+        })
+      );
+
+      const response = await QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
+        {
+          token,
+          parameters: {
+            client_id: 'test-client-id',
+            framework: 'android',
+            project_path: '/tmp/project',
+            app_package_name: 'com.auth0.samples',
+            callback_url_type: 'universal_links',
+            android_sha256_fingerprint: fingerprint,
+          },
+        },
+        config
+      );
+
+      expect(response.isError).toBe(false);
+      // Package name differs → PATCH must fire and set the new package name.
+      expect(patchBody).toBeDefined();
+      expect(patchBody!.mobile.android.app_package_name).toBe('com.auth0.samples');
+      expect(patchBody!.mobile.android.sha256_cert_fingerprints).toEqual([fingerprint]);
+      const result = JSON.parse(response.content[0].text);
+      expect(result.urls_updated).toBe(false);
+      expect(result.mobile_updated).toBe(true);
+    });
+
+    it('universal_links: skips the PATCH when the fingerprint is already registered and URLs match', async () => {
+      mockFetchQuickstartSpec.mockResolvedValue(makeAndroidSpec());
+
+      const existingCallback = `https://${domain}/android/com.auth0.samples/callback`;
+      const fingerprint = 'AB:CD:EF:00:11:22';
+      let patchCalled = false;
+      server.use(
+        http.get('https://*/api/v2/clients/:clientId', () => {
+          return HttpResponse.json({
+            ...mockAppData,
+            callbacks: [existingCallback],
+            allowed_logout_urls: [existingCallback],
+            web_origins: [],
+            mobile: {
+              android: {
+                app_package_name: 'com.auth0.samples',
+                sha256_cert_fingerprints: [fingerprint],
+              },
+            },
+          });
+        }),
+        http.patch('https://*/api/v2/clients/:clientId', async ({ request }) => {
+          patchCalled = true;
+          return HttpResponse.json(await request.json());
+        })
+      );
+
+      const response = await QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
+        {
+          token,
+          parameters: {
+            client_id: 'test-client-id',
+            framework: 'android',
+            project_path: '/tmp/project',
+            app_package_name: 'com.auth0.samples',
+            callback_url_type: 'universal_links',
+            android_sha256_fingerprint: fingerprint,
+          },
+        },
+        config
+      );
+
+      expect(response.isError).toBe(false);
+      expect(patchCalled).toBe(false);
+    });
+
+    it('custom_scheme: registers a custom-scheme callback, sets skip flag, and does NOT set mobile', async () => {
+      mockFetchQuickstartSpec.mockResolvedValue(makeAndroidSpec());
+
+      const expectedCallback = `demo://${domain}/android/com.auth0.samples/callback`;
+      let patchBody: Record<string, any> | undefined;
+      server.use(
+        http.get('https://*/api/v2/clients/:clientId', () => {
+          return HttpResponse.json({
+            ...mockAppData,
+            callbacks: [],
+            allowed_logout_urls: [],
+            web_origins: [],
+          });
+        }),
+        http.patch('https://*/api/v2/clients/:clientId', async ({ request }) => {
+          patchBody = (await request.json()) as Record<string, any>;
+          return HttpResponse.json({ ...mockAppData, ...patchBody });
+        })
+      );
+
+      const response = await QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
+        {
+          token,
+          parameters: {
+            client_id: 'test-client-id',
+            framework: 'android',
+            project_path: '/tmp/project',
+            app_package_name: 'com.auth0.samples',
+            callback_url_type: 'custom_scheme',
+            auth0_scheme: 'demo',
+          },
+        },
+        config
+      );
+
+      expect(response.isError).toBe(false);
+      expect(patchBody).toBeDefined();
+      expect(patchBody!.callbacks).toContain(expectedCallback);
+      expect(patchBody!.allowed_logout_urls).toContain(expectedCallback);
+      // Custom-scheme callbacks are non-verifiable → skip flag set.
+      expect(patchBody!.skip_non_verifiable_callback_uri_confirmation_prompt).toBe(true);
+      // No fingerprint/App Links association for a custom scheme.
+      expect(patchBody!.mobile).toBeUndefined();
+    });
+
+    describe('android conditional-required validation', () => {
+      beforeEach(() => {
+        mockFetchQuickstartSpec.mockResolvedValue(makeAndroidSpec());
+      });
+
+      const call = (extra: Record<string, any>) =>
+        QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
+          {
+            token,
+            parameters: {
+              client_id: 'test-client-id',
+              framework: 'android',
+              project_path: '/tmp/project',
+              ...extra,
+            },
+          },
+          config
+        );
+
+      it('requires app_package_name', async () => {
+        const response = await call({ callback_url_type: 'universal_links' });
+        expect(response.isError).toBe(true);
+        expect(response.content[0].text).toContain('app_package_name is required');
+      });
+
+      it('requires a valid callback_url_type', async () => {
+        const response = await call({ app_package_name: 'com.auth0.samples' });
+        expect(response.isError).toBe(true);
+        expect(response.content[0].text).toContain('callback_url_type is required');
+      });
+
+      it('rejects an unknown callback_url_type', async () => {
+        const response = await call({
+          app_package_name: 'com.auth0.samples',
+          callback_url_type: 'bogus',
+        });
+        expect(response.isError).toBe(true);
+        expect(response.content[0].text).toContain('callback_url_type is required');
+      });
+
+      it('requires android_sha256_fingerprint for universal_links', async () => {
+        const response = await call({
+          app_package_name: 'com.auth0.samples',
+          callback_url_type: 'universal_links',
+        });
+        expect(response.isError).toBe(true);
+        expect(response.content[0].text).toContain('android_sha256_fingerprint is required');
+      });
+
+      it('requires auth0_scheme for custom_scheme', async () => {
+        const response = await call({
+          app_package_name: 'com.auth0.samples',
+          callback_url_type: 'custom_scheme',
+        });
+        expect(response.isError).toBe(true);
+        expect(response.content[0].text).toContain('auth0_scheme is required');
+      });
+
+      it('rejects base_url for a custom_scheme callback', async () => {
+        // Otherwise-valid custom_scheme inputs; base_url would silently clobber the scheme.
+        const response = await call({
+          app_package_name: 'com.auth0.samples',
+          callback_url_type: 'custom_scheme',
+          auth0_scheme: 'demo',
+          base_url: 'http://localhost:8081',
+        });
+        expect(response.isError).toBe(true);
+        expect(response.content[0].text).toContain('base_url is not applicable');
+      });
+
+      it('rejects base_url for a universal_links callback', async () => {
+        // Otherwise-valid universal_links inputs; base_url would register the App Link against
+        // the wrong domain, making assetlinks verification impossible.
+        const response = await call({
+          app_package_name: 'com.auth0.samples',
+          callback_url_type: 'universal_links',
+          android_sha256_fingerprint:
+            'AB:CD:EF:12:34:56:78:90:AB:CD:EF:12:34:56:78:90:AB:CD:EF:12:34:56:78:90:AB:CD:EF:12:34:56:78:90',
+          base_url: 'https://staging.example.com',
+        });
+        expect(response.isError).toBe(true);
+        expect(response.content[0].text).toContain('base_url is not applicable');
+      });
+    });
+
+    it('non-android frameworks ignore the android callback params', async () => {
+      // react spec (default) with stray android params present — should succeed and not error.
+      let patchBody: Record<string, any> | undefined;
+      server.use(
+        http.get('https://*/api/v2/clients/:clientId', () => {
+          return HttpResponse.json({ ...mockAppData, callbacks: [], allowed_logout_urls: [] });
+        }),
+        http.patch('https://*/api/v2/clients/:clientId', async ({ request }) => {
+          patchBody = (await request.json()) as Record<string, any>;
+          return HttpResponse.json({ ...mockAppData, ...patchBody });
+        })
+      );
+
+      const response = await QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
+        {
+          token,
+          parameters: {
+            client_id: 'test-client-id',
+            framework: 'react',
+            project_path: '/tmp/project',
+            app_package_name: 'com.should.ignore',
+            callback_url_type: 'custom_scheme',
+          },
+        },
+        config
+      );
+
+      expect(response.isError).toBe(false);
+      // No android mobile settings leaked into the react update.
+      expect(patchBody?.mobile).toBeUndefined();
     });
 
     it('should not update when all URLs are already configured', async () => {

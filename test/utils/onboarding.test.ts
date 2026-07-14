@@ -228,6 +228,38 @@ describe('resolveCallbackUrls', () => {
       expect(result.web_origins).toBeUndefined();
       expect(result.url_source).toBe(UrlSource.FrameworkDefault);
     });
+
+    it('uses a custom scheme override for the registered callback URL (custom_scheme)', () => {
+      const result = resolveCallbackUrls(
+        androidSpec,
+        undefined,
+        { auth0Domain: 'tenant.auth0.com', applicationId: 'com.auth0.samples' },
+        'demo'
+      );
+
+      // The custom scheme drives the base URL and callback, not the spec's fixed https origin.
+      expect(result.base_url).toBe('demo://tenant.auth0.com');
+      expect(result.callback_urls).toEqual([
+        'demo://tenant.auth0.com/android/com.auth0.samples/callback',
+      ]);
+      // A custom-scheme callback is non-verifiable.
+      expect(hasNonVerifiableCallbacks(result.callback_urls!)).toBe(true);
+    });
+  });
+});
+
+describe('resolveDefaultOrigin with schemeOverride', () => {
+  it('builds a custom-scheme origin without the "null" origin bug', () => {
+    const origin: DefaultAppOrigin = { scheme: 'https', domain: { inputKey: 'auth0Domain' } };
+    // new URL('demo://host').origin returns the literal "null"; the override path must not use it.
+    expect(resolveDefaultOrigin(origin, { auth0Domain: 'tenant.auth0.com' }, 'demo')).toBe(
+      'demo://tenant.auth0.com'
+    );
+  });
+
+  it('still normalizes http/https origins when no override is given', () => {
+    const origin: DefaultAppOrigin = { scheme: 'https', domain: 'example.com', port: 443 };
+    expect(resolveDefaultOrigin(origin, {}, undefined)).toBe('https://example.com');
   });
 });
 

@@ -51,6 +51,35 @@ export const QUICKSTART_TOOLS: Tool[] = [
           description:
             'Explicit base URL override for callback resolution (e.g. http://localhost:3000)',
         },
+        app_package_name: {
+          type: 'string',
+          description:
+            'Android only. The app package name / Gradle applicationId (e.g. "com.auth0.samples"), ' +
+            'used in the callback URL and registered as mobile.android.app_package_name. ' +
+            'Required when framework is "android".',
+        },
+        callback_url_type: {
+          type: 'string',
+          enum: ['universal_links', 'custom_scheme'],
+          description:
+            'Android only. The callback style: "universal_links" (https App Link, requires ' +
+            'android_sha256_fingerprint) or "custom_scheme" (custom URL scheme, requires auth0_scheme). ' +
+            'Required when framework is "android".',
+        },
+        android_sha256_fingerprint: {
+          type: 'string',
+          description:
+            'Android only. The app signing certificate SHA256 fingerprint (colon-separated hex). ' +
+            'Registered as mobile.android.sha256_cert_fingerprints so Auth0 can serve the App Link ' +
+            'assetlinks association. Obtain via `./gradlew signingReport` (debug builds) or ' +
+            '`keytool -list -v -keystore <path>`. Required when callback_url_type is "universal_links".',
+        },
+        auth0_scheme: {
+          type: 'string',
+          description:
+            'Android only. The custom URL scheme the app claims (e.g. "com.auth0.samples" or "demo"). ' +
+            'Drives the scheme of the registered callback URL. Required when callback_url_type is "custom_scheme".',
+        },
       },
       required: ['client_id', 'framework', 'project_path'],
       additionalProperties: false,
@@ -69,6 +98,70 @@ export const QUICKSTART_TOOLS: Tool[] = [
   },
 ];
 
+/**
+ * Validate the Android-only callback configuration inputs. Android requires the app package name,
+ * the callback style, and the style-specific value (a signing fingerprint for App Links, or the
+ * scheme string for a custom scheme). Returns an error response when a required input is missing,
+ * or when base_url is supplied (it has no meaning for a native app), or null when the inputs are
+ * valid (or the framework is not Android).
+ */
+function validateAndroidInputs(params: {
+  isAndroid: boolean;
+  applicationId?: string;
+  callbackUrlType?: string;
+  androidSha256Fingerprint?: string;
+  auth0Scheme?: string;
+  baseUrl?: string;
+}): HandlerResponse | null {
+  const {
+    isAndroid,
+    applicationId,
+    callbackUrlType,
+    androidSha256Fingerprint,
+    auth0Scheme,
+    baseUrl,
+  } = params;
+  if (!isAndroid) {
+    return null;
+  }
+
+  // base_url is a web-dev-server concept (localhost/port). Android callbacks derive from the
+  // custom scheme or the Auth0 tenant domain, so a base_url can only misconfigure them — reject
+  // it outright rather than silently ignoring a value the caller believes is taking effect.
+  if (baseUrl) {
+    return createErrorResponse(
+      'Error: base_url is not applicable to the android framework. Android callbacks are ' +
+        'derived from the custom URL scheme (custom_scheme) or the Auth0 tenant domain ' +
+        '(universal_links), not a base URL — remove base_url and call again.'
+    );
+  }
+
+  if (!applicationId) {
+    return createErrorResponse(
+      'Error: app_package_name is required for the android framework (the app package name, e.g. "com.auth0.samples").'
+    );
+  }
+  if (callbackUrlType !== 'universal_links' && callbackUrlType !== 'custom_scheme') {
+    return createErrorResponse(
+      'Error: callback_url_type is required for the android framework and must be "universal_links" or "custom_scheme".'
+    );
+  }
+  if (callbackUrlType === 'universal_links' && !androidSha256Fingerprint) {
+    return createErrorResponse(
+      'Error: android_sha256_fingerprint is required when callback_url_type is "universal_links". ' +
+        'Get it via `./gradlew signingReport` (debug builds) or `keytool -list -v -keystore <path>`. ' +
+        'If the signing key is managed elsewhere (e.g. Google Play App Signing) or no keystore exists ' +
+        'yet, use callback_url_type "custom_scheme" instead (no fingerprint required).'
+    );
+  }
+  if (callbackUrlType === 'custom_scheme' && !auth0Scheme) {
+    return createErrorResponse(
+      'Error: auth0_scheme is required when callback_url_type is "custom_scheme".'
+    );
+  }
+  return null;
+}
+
 export const QUICKSTART_HANDLERS: Record<
   string,
   (request: HandlerRequest, config: HandlerConfig) => Promise<HandlerResponse>
@@ -82,6 +175,10 @@ export const QUICKSTART_HANDLERS: Record<
       framework,
       project_path: projectPath,
       base_url: baseUrl,
+      app_package_name: applicationId,
+      callback_url_type: callbackUrlType,
+      android_sha256_fingerprint: androidSha256Fingerprint,
+      auth0_scheme: auth0Scheme,
     } = request.parameters;
 
     if (!clientId) {
@@ -94,6 +191,20 @@ export const QUICKSTART_HANDLERS: Record<
       return createErrorResponse(
         `Error: Unsupported framework "${framework}". Must be one of: ${SUPPORTED_FRAMEWORKS.join(', ')}`
       );
+    }
+
+    // Android requires callback configuration; these inputs are ignored for other frameworks.
+    const isAndroid = framework.toLowerCase() === 'android';
+    const androidError = validateAndroidInputs({
+      isAndroid,
+      applicationId,
+      callbackUrlType,
+      androidSha256Fingerprint,
+      auth0Scheme,
+      baseUrl,
+    });
+    if (androidError) {
+      return androidError;
     }
 
     if (!projectPath) {
@@ -192,7 +303,22 @@ export const QUICKSTART_HANDLERS: Record<
       }
     }
 
-    const resolvedUrls = resolveCallbackUrls(spec, baseUrl, baseInputValues);
+    // Caller-supplied Android values override the spec's inputs defaults. applicationId and
+    // auth0Scheme drive both callback-path placeholder resolution (%APPLICATION_ID%) and the
+    // LLM prompt (%AUTH0_SCHEME%).
+    if (isAndroid) {
+      baseInputValues.applicationId = applicationId;
+      if (callbackUrlType === 'custom_scheme') {
+        baseInputValues.auth0Scheme = auth0Scheme;
+      }
+    }
+
+    // For a custom-scheme Android callback, the registered callback URL must use the custom scheme
+    // rather than the spec's fixed https origin scheme.
+    const schemeOverride =
+      isAndroid && callbackUrlType === 'custom_scheme' ? auth0Scheme : undefined;
+
+    const resolvedUrls = resolveCallbackUrls(spec, baseUrl, baseInputValues, schemeOverride);
 
     // Step 5: Fetch LLM prompt
     let promptText: string;
@@ -249,9 +375,43 @@ export const QUICKSTART_HANDLERS: Record<
     // Step 7: Update application after all failure-prone non-mutating work succeeds
     const { updatePayload, finalUrls } = calculateUrlUpdates(resolvedUrls, appData);
 
-    if (updatePayload) {
+    // For an Android App Link (universal_links) callback, Auth0 needs the app package name and
+    // signing-cert fingerprint to serve the assetlinks association. Register them via
+    // mobile.android unless they are already present on the application. A custom-scheme callback
+    // needs no fingerprint (there is no domain verification).
+    let mobilePayload: Record<string, any> | null = null;
+    if (isAndroid && callbackUrlType === 'universal_links') {
+      const existingFingerprints: string[] =
+        appData.mobile?.android?.sha256_cert_fingerprints ?? [];
+      const existingPackage: string | undefined = appData.mobile?.android?.app_package_name;
+      if (
+        existingPackage !== applicationId ||
+        !existingFingerprints.includes(androidSha256Fingerprint)
+      ) {
+        // The Management API replaces the nested `mobile` object wholesale on PATCH, so preserve
+        // any sibling config (e.g. mobile.ios) by spreading the existing `mobile` object.
+        mobilePayload = {
+          ...(appData.mobile ?? {}),
+          android: {
+            app_package_name: applicationId,
+            sha256_cert_fingerprints: Array.from(
+              new Set([...existingFingerprints, androidSha256Fingerprint])
+            ),
+          },
+        };
+      }
+    }
+
+    if (updatePayload || mobilePayload) {
       const updateResponse = await APPLICATION_HANDLERS['auth0_update_application'](
-        { token: request.token, parameters: { client_id: clientId, ...updatePayload } },
+        {
+          token: request.token,
+          parameters: {
+            client_id: clientId,
+            ...(updatePayload ?? {}),
+            ...(mobilePayload ? { mobile: mobilePayload } : {}),
+          },
+        },
         config
       );
       if (updateResponse.isError) {
@@ -281,6 +441,9 @@ export const QUICKSTART_HANDLERS: Record<
     if (finalUrls.skip_non_verifiable_callback_uri_confirmation_prompt) {
       configuredUrls.skip_non_verifiable_callback_uri_confirmation_prompt = true;
     }
+    if (mobilePayload) {
+      configuredUrls.mobile = mobilePayload;
+    }
 
     const actionsTaken: string[] = [];
     if (updatePayload !== null) {
@@ -299,6 +462,12 @@ export const QUICKSTART_HANDLERS: Record<
         );
       }
     }
+    if (mobilePayload) {
+      actionsTaken.push(
+        `Registered Android app package "${mobilePayload.android.app_package_name}" and signing-cert ` +
+          `fingerprint(s) on the application (mobile.android) so the App Link callback resolves back to the app`
+      );
+    }
     actionsTaken.push(`Fetched quickstart guide for ${framework}`);
 
     const credentialsNote = envFilePath
@@ -306,12 +475,16 @@ export const QUICKSTART_HANDLERS: Record<
         `any environment-variable or .env setup steps in the quickstart_prompt; do not create or copy a new .env file.`
       : '';
 
+    const urlsUpdated = updatePayload !== null;
+    const mobileUpdated = mobilePayload !== null;
+
     trackEvent.trackOnboardingStep(
       OnboardingStep.QuickstartGuide,
       framework,
       OnboardingStepStatus.Success,
       {
-        urls_updated: updatePayload !== null,
+        urls_updated: urlsUpdated,
+        mobile_updated: mobileUpdated,
       }
     );
 
@@ -323,7 +496,8 @@ export const QUICKSTART_HANDLERS: Record<
       app_type: spec.appType,
       quickstart_prompt: resolvedPrompt,
       configured_urls: configuredUrls,
-      urls_updated: updatePayload !== null,
+      urls_updated: urlsUpdated,
+      mobile_updated: mobileUpdated,
       url_source: resolvedUrls.url_source,
       actions_taken: actionsTaken,
       credentials_file: envFilePath,
