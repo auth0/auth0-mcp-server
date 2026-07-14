@@ -101,9 +101,11 @@ export const QUICKSTART_TOOLS: Tool[] = [
 /**
  * Validate the Android-only callback configuration inputs. Android requires the app package name,
  * the callback style, and the style-specific value (a signing fingerprint for App Links, or the
- * scheme string for a custom scheme). Returns an error response when a required input is missing,
- * or when base_url is supplied (it has no meaning for a native app), or null when the inputs are
- * valid (or the framework is not Android).
+ * scheme string for a custom scheme). Reports every missing/invalid input in a single message —
+ * with a hint on where to source each value and the conditional follow-ups — so the caller can
+ * gather everything in one pass and supply it in one further call, rather than discovering the
+ * requirements one error at a time. Rejects base_url, which has no meaning for a native app.
+ * Returns null when the inputs are valid (or not Android).
  */
 function validateAndroidInputs(params: {
   isAndroid: boolean;
@@ -136,30 +138,45 @@ function validateAndroidInputs(params: {
     );
   }
 
+  const hasValidType = callbackUrlType === 'universal_links' || callbackUrlType === 'custom_scheme';
+  const missing: string[] = [];
   if (!applicationId) {
-    return createErrorResponse(
-      'Error: app_package_name is required for the android framework (the app package name, e.g. "com.auth0.samples").'
+    missing.push(
+      'app_package_name — the app package name; read it from the Gradle `applicationId` in app/build.gradle(.kts) (e.g. "com.auth0.samples")'
     );
   }
-  if (callbackUrlType !== 'universal_links' && callbackUrlType !== 'custom_scheme') {
-    return createErrorResponse(
-      'Error: callback_url_type is required for the android framework and must be "universal_links" or "custom_scheme".'
+  if (!hasValidType) {
+    missing.push(
+      'callback_url_type — "universal_links" (https App Link) or "custom_scheme" (custom URL scheme)'
     );
   }
   if (callbackUrlType === 'universal_links' && !androidSha256Fingerprint) {
-    return createErrorResponse(
-      'Error: android_sha256_fingerprint is required when callback_url_type is "universal_links". ' +
-        'Get it via `./gradlew signingReport` (debug builds) or `keytool -list -v -keystore <path>`. ' +
-        'If the signing key is managed elsewhere (e.g. Google Play App Signing) or no keystore exists ' +
-        'yet, use callback_url_type "custom_scheme" instead (no fingerprint required).'
+    missing.push(
+      'android_sha256_fingerprint — the app signing-cert SHA256 fingerprint, via `./gradlew signingReport` (debug builds) or `keytool -list -v -keystore <path>`'
     );
   }
   if (callbackUrlType === 'custom_scheme' && !auth0Scheme) {
-    return createErrorResponse(
-      'Error: auth0_scheme is required when callback_url_type is "custom_scheme".'
-    );
+    missing.push('auth0_scheme — the custom URL scheme the app claims (e.g. "demo")');
   }
-  return null;
+
+  if (missing.length === 0) {
+    return null;
+  }
+
+  // When the callback style is not yet known, spell out both branches' follow-ups so the caller
+  // can supply the right one on the next call.
+  const typeNote = hasValidType
+    ? []
+    : [
+        'Note: "universal_links" additionally requires android_sha256_fingerprint; "custom_scheme" additionally requires auth0_scheme. If the signing key is managed elsewhere (e.g. Google Play App Signing) or no keystore exists yet, use "custom_scheme" (no fingerprint required).',
+      ];
+
+  const lines = [
+    'Error: the android framework needs additional inputs. Gather these (inspect the project rather than asking the user where possible) and call again with all of them:',
+    ...missing.map((entry) => `  - ${entry}`),
+    ...typeNote,
+  ];
+  return createErrorResponse(lines.join('\n'));
 }
 
 export const QUICKSTART_HANDLERS: Record<

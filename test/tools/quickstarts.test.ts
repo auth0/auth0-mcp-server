@@ -768,15 +768,19 @@ describe('auth0_get_quickstart_guide', () => {
         );
 
       it('requires app_package_name', async () => {
-        const response = await call({ callback_url_type: 'universal_links' });
+        const response = await call({
+          app_package_name: undefined,
+          callback_url_type: 'universal_links',
+          android_sha256_fingerprint: 'AB:CD',
+        });
         expect(response.isError).toBe(true);
-        expect(response.content[0].text).toContain('app_package_name is required');
+        expect(response.content[0].text).toContain('app_package_name');
       });
 
       it('requires a valid callback_url_type', async () => {
         const response = await call({ app_package_name: 'com.auth0.samples' });
         expect(response.isError).toBe(true);
-        expect(response.content[0].text).toContain('callback_url_type is required');
+        expect(response.content[0].text).toContain('callback_url_type');
       });
 
       it('rejects an unknown callback_url_type', async () => {
@@ -785,7 +789,7 @@ describe('auth0_get_quickstart_guide', () => {
           callback_url_type: 'bogus',
         });
         expect(response.isError).toBe(true);
-        expect(response.content[0].text).toContain('callback_url_type is required');
+        expect(response.content[0].text).toContain('callback_url_type');
       });
 
       it('requires android_sha256_fingerprint for universal_links', async () => {
@@ -794,7 +798,7 @@ describe('auth0_get_quickstart_guide', () => {
           callback_url_type: 'universal_links',
         });
         expect(response.isError).toBe(true);
-        expect(response.content[0].text).toContain('android_sha256_fingerprint is required');
+        expect(response.content[0].text).toContain('android_sha256_fingerprint');
       });
 
       it('requires auth0_scheme for custom_scheme', async () => {
@@ -803,7 +807,20 @@ describe('auth0_get_quickstart_guide', () => {
           callback_url_type: 'custom_scheme',
         });
         expect(response.isError).toBe(true);
-        expect(response.content[0].text).toContain('auth0_scheme is required');
+        expect(response.content[0].text).toContain('auth0_scheme');
+      });
+
+      it('reports all missing inputs (and both callback-type follow-ups) in a single error', async () => {
+        // No android params at all: the caller should learn everything needed in one response
+        // rather than one field per call.
+        const response = await call({});
+        expect(response.isError).toBe(true);
+        const text = response.content[0].text;
+        expect(text).toContain('app_package_name');
+        expect(text).toContain('callback_url_type');
+        // Callback style unknown → both branches' follow-up requirements are surfaced.
+        expect(text).toContain('android_sha256_fingerprint');
+        expect(text).toContain('auth0_scheme');
       });
 
       it('rejects base_url for a custom_scheme callback', async () => {
