@@ -99,6 +99,25 @@ export const QUICKSTART_TOOLS: Tool[] = [
 ];
 
 /**
+ * Whether `raw` is a well-formed SHA256 certificate fingerprint (a 32-byte value = 64 hex
+ * digits). Lenient on separators and case — colon-, space-, or unseparated input all pass, so a
+ * paste from `./gradlew signingReport` is accepted regardless of incidental formatting. Only
+ * clearly-malformed values (truncated, non-hex, wrong length) are rejected. Does not transform
+ * the value; the original is registered as-is.
+ */
+function isValidSha256Fingerprint(raw: string): boolean {
+  return /^[0-9a-f]{64}$/.test(normalizeFingerprint(raw));
+}
+
+/**
+ * Canonical identity form of a fingerprint: separators stripped, lowercased. Used only for
+ * equality/dedup — the caller's original text is what gets registered.
+ */
+function normalizeFingerprint(raw: string): string {
+  return raw.replace(/[\s:]/g, '').toLowerCase();
+}
+
+/**
  * Validate the Android-only callback configuration inputs. Android requires the app package name,
  * the callback style, and the style-specific value (a signing fingerprint for App Links, or the
  * scheme string for a custom scheme). Reports every missing/invalid input in a single message —
@@ -150,10 +169,16 @@ function validateAndroidInputs(params: {
       'callback_url_type — "universal_links" (https App Link) or "custom_scheme" (custom URL scheme)'
     );
   }
-  if (callbackUrlType === 'universal_links' && !androidSha256Fingerprint) {
-    missing.push(
-      'android_sha256_fingerprint — the app signing-cert SHA256 fingerprint, via `./gradlew signingReport` (debug builds) or `keytool -list -v -keystore <path>`'
-    );
+  if (callbackUrlType === 'universal_links') {
+    if (!androidSha256Fingerprint) {
+      missing.push(
+        'android_sha256_fingerprint — the app signing-cert SHA256 fingerprint, via `./gradlew signingReport` (debug builds) or `keytool -list -v -keystore <path>`'
+      );
+    } else if (!isValidSha256Fingerprint(androidSha256Fingerprint)) {
+      missing.push(
+        'android_sha256_fingerprint — the supplied value is not a valid SHA256 fingerprint (expected a 32-byte value, i.e. 64 hex digits / 32 colon-separated pairs). Copy it exactly from `./gradlew signingReport` (the SHA-256 line)'
+      );
+    }
   }
   if (callbackUrlType === 'custom_scheme' && !auth0Scheme) {
     missing.push('auth0_scheme — the custom URL scheme the app claims (e.g. "demo")');
@@ -401,19 +426,24 @@ export const QUICKSTART_HANDLERS: Record<
       const existingFingerprints: string[] =
         appData.mobile?.android?.sha256_cert_fingerprints ?? [];
       const existingPackage: string | undefined = appData.mobile?.android?.app_package_name;
-      if (
-        existingPackage !== applicationId ||
-        !existingFingerprints.includes(androidSha256Fingerprint)
-      ) {
-        // The Management API replaces the nested `mobile` object wholesale on PATCH, so preserve
-        // any sibling config (e.g. mobile.ios) by spreading the existing `mobile` object.
+      // Append-only: existing fingerprints are always retained (never dropped, even on a package
+      // rename); a genuinely new one is appended. Compare by normalized identity, not exact string,
+      // so the same cert from `keytool` (colons, uppercase) vs `./gradlew signingReport` (lowercase)
+      // does not register twice.
+      const normalizedNew = normalizeFingerprint(androidSha256Fingerprint);
+      const alreadyRegistered = existingFingerprints.some(
+        (fp) => normalizeFingerprint(fp) === normalizedNew
+      );
+      if (existingPackage !== applicationId || !alreadyRegistered) {
+        // PATCH replaces the nested `mobile` object wholesale, so spread the existing one to
+        // preserve sibling config (e.g. mobile.ios).
         mobilePayload = {
           ...(appData.mobile ?? {}),
           android: {
             app_package_name: applicationId,
-            sha256_cert_fingerprints: Array.from(
-              new Set([...existingFingerprints, androidSha256Fingerprint])
-            ),
+            sha256_cert_fingerprints: alreadyRegistered
+              ? existingFingerprints
+              : [...existingFingerprints, androidSha256Fingerprint],
           },
         };
       }

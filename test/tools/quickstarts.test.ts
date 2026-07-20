@@ -404,7 +404,8 @@ describe('auth0_get_quickstart_guide', () => {
       mockFetchQuickstartSpec.mockResolvedValue(makeAndroidSpec());
 
       const expectedCallback = `https://${domain}/android/com.auth0.samples/callback`;
-      const fingerprint = 'AB:CD:EF:00:11:22';
+      const fingerprint =
+        'AB:CD:EF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:01:02:03:04:05:06:07:08:09:0A:0B:0C:0D';
       let patchBody: Record<string, any> | undefined;
       server.use(
         http.get('https://*/api/v2/clients/:clientId', () => {
@@ -458,11 +459,54 @@ describe('auth0_get_quickstart_guide', () => {
       expect(result.mobile_updated).toBe(true);
     });
 
+    it('universal_links: accepts an unseparated 64-char fingerprint and registers it verbatim', async () => {
+      mockFetchQuickstartSpec.mockResolvedValue(makeAndroidSpec());
+
+      // A valid 32-byte fingerprint with no colon separators — validation is separator/case
+      // tolerant, and the value is registered exactly as supplied (no normalization).
+      const fingerprint = 'a'.repeat(64);
+      let patchBody: Record<string, any> | undefined;
+      server.use(
+        http.get('https://*/api/v2/clients/:clientId', () => {
+          return HttpResponse.json({
+            ...mockAppData,
+            callbacks: [],
+            allowed_logout_urls: [],
+            web_origins: [],
+          });
+        }),
+        http.patch('https://*/api/v2/clients/:clientId', async ({ request }) => {
+          patchBody = (await request.json()) as Record<string, any>;
+          return HttpResponse.json({ ...mockAppData, ...patchBody });
+        })
+      );
+
+      const response = await QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
+        {
+          token,
+          parameters: {
+            client_id: 'test-client-id',
+            framework: 'android',
+            project_path: '/tmp/project',
+            app_package_name: 'com.auth0.samples',
+            callback_url_type: 'universal_links',
+            android_sha256_fingerprint: fingerprint,
+          },
+        },
+        config
+      );
+
+      expect(response.isError).toBe(false);
+      expect(patchBody).toBeDefined();
+      expect(patchBody!.mobile.android.sha256_cert_fingerprints).toEqual([fingerprint]);
+    });
+
     it('universal_links: sets mobile.android even when the callback URL is already configured', async () => {
       mockFetchQuickstartSpec.mockResolvedValue(makeAndroidSpec());
 
       const existingCallback = `https://${domain}/android/com.auth0.samples/callback`;
-      const fingerprint = 'AB:CD:EF:00:11:22';
+      const fingerprint =
+        'AB:CD:EF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:01:02:03:04:05:06:07:08:09:0A:0B:0C:0D';
       let patchBody: Record<string, any> | undefined;
       server.use(
         http.get('https://*/api/v2/clients/:clientId', () => {
@@ -508,7 +552,8 @@ describe('auth0_get_quickstart_guide', () => {
       mockFetchQuickstartSpec.mockResolvedValue(makeAndroidSpec());
 
       const iosConfig = { app_bundle_identifier: 'com.auth0.samples.ios' };
-      const fingerprint = 'AB:CD:EF:00:11:22';
+      const fingerprint =
+        'AB:CD:EF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:01:02:03:04:05:06:07:08:09:0A:0B:0C:0D';
       let patchBody: Record<string, any> | undefined;
       server.use(
         http.get('https://*/api/v2/clients/:clientId', () => {
@@ -556,8 +601,10 @@ describe('auth0_get_quickstart_guide', () => {
     it('universal_links: preserves existing android fingerprints when adding a new one', async () => {
       mockFetchQuickstartSpec.mockResolvedValue(makeAndroidSpec());
 
-      const existingFingerprint = 'AA:BB:CC:DD:EE:FF';
-      const newFingerprint = 'AB:CD:EF:00:11:22';
+      const existingFingerprint =
+        'AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99';
+      const newFingerprint =
+        'AB:CD:EF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:01:02:03:04:05:06:07:08:09:0A:0B:0C:0D';
       let patchBody: Record<string, any> | undefined;
       server.use(
         http.get('https://*/api/v2/clients/:clientId', () => {
@@ -604,11 +651,122 @@ describe('auth0_get_quickstart_guide', () => {
       ]);
     });
 
+    it('universal_links: treats a reformatted fingerprint as already registered (no PATCH)', async () => {
+      mockFetchQuickstartSpec.mockResolvedValue(makeAndroidSpec());
+
+      const existingCallback = `https://${domain}/android/com.auth0.samples/callback`;
+      // Already registered from `keytool`: uppercase, colon-separated.
+      const existingFingerprint =
+        'AB:CD:EF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:01:02:03:04:05:06:07:08:09:0A:0B:0C:0D';
+      // The same certificate re-supplied from `./gradlew signingReport`: lowercase, no separators.
+      const reformattedFingerprint = existingFingerprint.replace(/:/g, '').toLowerCase();
+      let patchBody: Record<string, any> | undefined;
+      server.use(
+        http.get('https://*/api/v2/clients/:clientId', () => {
+          return HttpResponse.json({
+            ...mockAppData,
+            callbacks: [existingCallback],
+            allowed_logout_urls: [existingCallback],
+            web_origins: [],
+            mobile: {
+              android: {
+                app_package_name: 'com.auth0.samples',
+                sha256_cert_fingerprints: [existingFingerprint],
+              },
+            },
+          });
+        }),
+        http.patch('https://*/api/v2/clients/:clientId', async ({ request }) => {
+          patchBody = (await request.json()) as Record<string, any>;
+          return HttpResponse.json({ ...mockAppData, ...patchBody });
+        })
+      );
+
+      const response = await QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
+        {
+          token,
+          parameters: {
+            client_id: 'test-client-id',
+            framework: 'android',
+            project_path: '/tmp/project',
+            app_package_name: 'com.auth0.samples',
+            callback_url_type: 'universal_links',
+            android_sha256_fingerprint: reformattedFingerprint,
+          },
+        },
+        config
+      );
+
+      expect(response.isError).toBe(false);
+      // Nothing genuinely changed: URLs already match and the certificate is already registered
+      // (only its formatting differs), so no PATCH is issued at all.
+      expect(patchBody).toBeUndefined();
+      const result = JSON.parse(response.content[0].text);
+      expect(result.urls_updated).toBe(false);
+      expect(result.mobile_updated).toBe(false);
+    });
+
+    it('universal_links: preserves existing fingerprint text verbatim when appending a new one', async () => {
+      mockFetchQuickstartSpec.mockResolvedValue(makeAndroidSpec());
+
+      // Existing entry is uppercase + colon-separated; it must survive byte-for-byte.
+      const existingFingerprint =
+        'AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99';
+      // A genuinely different certificate, supplied lowercase + unseparated.
+      const newFingerprint = 'abcdef0011223344556677889900aabbccddeeff0102030405060708090a0b0c';
+      let patchBody: Record<string, any> | undefined;
+      server.use(
+        http.get('https://*/api/v2/clients/:clientId', () => {
+          return HttpResponse.json({
+            ...mockAppData,
+            callbacks: [],
+            allowed_logout_urls: [],
+            web_origins: [],
+            mobile: {
+              android: {
+                app_package_name: 'com.auth0.samples',
+                sha256_cert_fingerprints: [existingFingerprint],
+              },
+            },
+          });
+        }),
+        http.patch('https://*/api/v2/clients/:clientId', async ({ request }) => {
+          patchBody = (await request.json()) as Record<string, any>;
+          return HttpResponse.json({ ...mockAppData, ...patchBody });
+        })
+      );
+
+      const response = await QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
+        {
+          token,
+          parameters: {
+            client_id: 'test-client-id',
+            framework: 'android',
+            project_path: '/tmp/project',
+            app_package_name: 'com.auth0.samples',
+            callback_url_type: 'universal_links',
+            android_sha256_fingerprint: newFingerprint,
+          },
+        },
+        config
+      );
+
+      expect(response.isError).toBe(false);
+      expect(patchBody).toBeDefined();
+      // Neither value is canonicalized: the existing entry keeps its original text and the new
+      // one is stored exactly as supplied.
+      expect(patchBody!.mobile.android.sha256_cert_fingerprints).toEqual([
+        existingFingerprint,
+        newFingerprint,
+      ]);
+    });
+
     it('universal_links: registers mobile.android when the package name differs even if the fingerprint matches', async () => {
       mockFetchQuickstartSpec.mockResolvedValue(makeAndroidSpec());
 
       const existingCallback = `https://${domain}/android/com.auth0.samples/callback`;
-      const fingerprint = 'AB:CD:EF:00:11:22';
+      const fingerprint =
+        'AB:CD:EF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:01:02:03:04:05:06:07:08:09:0A:0B:0C:0D';
       let patchBody: Record<string, any> | undefined;
       server.use(
         http.get('https://*/api/v2/clients/:clientId', () => {
@@ -661,7 +819,8 @@ describe('auth0_get_quickstart_guide', () => {
       mockFetchQuickstartSpec.mockResolvedValue(makeAndroidSpec());
 
       const existingCallback = `https://${domain}/android/com.auth0.samples/callback`;
-      const fingerprint = 'AB:CD:EF:00:11:22';
+      const fingerprint =
+        'AB:CD:EF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:01:02:03:04:05:06:07:08:09:0A:0B:0C:0D';
       let patchCalled = false;
       server.use(
         http.get('https://*/api/v2/clients/:clientId', () => {
@@ -796,6 +955,16 @@ describe('auth0_get_quickstart_guide', () => {
         const response = await call({
           app_package_name: 'com.auth0.samples',
           callback_url_type: 'universal_links',
+        });
+        expect(response.isError).toBe(true);
+        expect(response.content[0].text).toContain('android_sha256_fingerprint');
+      });
+
+      it('rejects a malformed android_sha256_fingerprint for universal_links', async () => {
+        const response = await call({
+          app_package_name: 'com.auth0.samples',
+          callback_url_type: 'universal_links',
+          android_sha256_fingerprint: 'not-a-fingerprint',
         });
         expect(response.isError).toBe(true);
         expect(response.content[0].text).toContain('android_sha256_fingerprint');
