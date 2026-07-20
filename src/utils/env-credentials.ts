@@ -340,7 +340,7 @@ async function buildSpecCredentials(
       continue;
     }
 
-    const resolved = resolvePlaceholders(entry.value, placeholderMap);
+    const resolved = resolveEnvPlaceholders(entry.value, placeholderMap);
     if (resolved && !resolved.includes('%')) {
       credentialMap[entry.name] = resolved;
     }
@@ -371,9 +371,13 @@ function buildPlaceholderMap(
 }
 
 /**
- * Resolves all %PLACEHOLDER% tokens in a template string using the placeholder map.
+ * Resolves all %PLACEHOLDER% tokens in an env-file template using a pre-built placeholder map,
+ * leaving unknown tokens in place (the caller rejects any value that still contains a `%`).
  */
-function resolvePlaceholders(template: string, placeholderMap: Record<string, string>): string {
+function resolveEnvPlaceholders(
+  template: string,
+  placeholderMap: Record<string, string>
+): string {
   return template.replace(/%[A-Z0-9_]+%/g, (token) => placeholderMap[token] ?? token);
 }
 
