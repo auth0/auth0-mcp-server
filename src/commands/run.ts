@@ -1,6 +1,8 @@
 import { startServer } from '../server.js';
 import trackEvent from '../utils/analytics.js';
 import { log, logError, logInfo } from '../utils/logger.js';
+import { validatePatterns } from '../utils/tools.js';
+import { TOOLS } from '../tools/index.js';
 import * as os from 'os';
 import { keychain } from '../utils/keychain.js';
 import { isTokenExpired } from '../auth/device-auth-flow.js';
@@ -101,9 +103,19 @@ const run = async (options: RunOptions): Promise<void> => {
       if (options.tools.length === 0) {
         options.tools = ['*'];
       }
+      // Validate patterns same way as CLI path, but skip validation for wildcard
+      if (!(options.tools.length === 1 && options.tools[0] === '*')) {
+        validatePatterns(options.tools, TOOLS);
+      }
     }
 
     trackEvent.trackServerRun();
+
+    // Check if AUTH0_TOKEN is set without AUTH0_DOMAIN
+    if (process.env.AUTH0_TOKEN && !process.env.AUTH0_DOMAIN) {
+      logError('AUTH0_TOKEN is set but AUTH0_DOMAIN is required. Set AUTH0_DOMAIN to your Auth0 tenant domain (e.g. your-tenant.auth0.com)');
+      process.exit(1);
+    }
 
     // Skip keychain-based validation when credentials are provided via env (MCPB-style launch).
     // Startup validation in server.ts and per-tool validation still enforce correctness.

@@ -74,18 +74,20 @@ describe('config', () => {
       expect(keychain.getDomain).not.toHaveBeenCalled();
     });
 
-    it('infers the domain from the token when AUTH0_DOMAIN is missing', async () => {
+    it('falls through to keychain when AUTH0_TOKEN is set but AUTH0_DOMAIN is missing', async () => {
       process.env.AUTH0_TOKEN = 'env-token';
 
       const { loadConfig } = await importConfigModule();
 
       await expect(loadConfig()).resolves.toEqual({
-        token: 'env-token',
-        domain: 'inferred.auth0.com',
-        tenantName: 'inferred.auth0.com',
-        source: 'env',
+        token: 'keychain-token',
+        domain: 'keychain.auth0.com',
+        tenantName: 'keychain.auth0.com',
+        source: 'keychain',
       });
-      expect(getTenantFromToken).toHaveBeenCalledWith('env-token');
+      expect(getTenantFromToken).not.toHaveBeenCalled();
+      expect(getValidAccessToken).toHaveBeenCalledTimes(1);
+      expect(keychain.getDomain).toHaveBeenCalledTimes(1);
     });
 
     it('falls back to keychain-backed credentials when AUTH0_TOKEN is absent', async () => {
@@ -99,6 +101,21 @@ describe('config', () => {
       });
       expect(getValidAccessToken).toHaveBeenCalledTimes(1);
       expect(keychain.getDomain).toHaveBeenCalledTimes(1);
+    });
+
+    it('returns null from env path when AUTH0_TOKEN is set but AUTH0_DOMAIN is missing', async () => {
+      process.env.AUTH0_TOKEN = 'env-token';
+      // AUTH0_DOMAIN is not set
+
+      const { loadConfig } = await importConfigModule();
+
+      await expect(loadConfig()).resolves.toEqual({
+        token: 'keychain-token',
+        domain: 'keychain.auth0.com',
+        tenantName: 'keychain.auth0.com',
+        source: 'keychain',
+      });
+      expect(getTenantFromToken).not.toHaveBeenCalled();
     });
   });
 
