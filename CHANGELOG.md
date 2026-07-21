@@ -1,5 +1,15 @@
 # Change Log
 
+## [v0.1.0-beta.17](https://github.com/auth0/auth0-mcp-server/tree/v0.1.0-beta.17) (2026-07-21)
+[Full Changelog](https://github.com/auth0/auth0-mcp-server/compare/v0.1.0-beta.16...v0.1.0-beta.17)
+
+**Added**
+- [DXAA-651] ProdSec updates to onboarding tool [\#179](https://github.com/auth0/auth0-mcp-server/pull/179) ([mchang16-auth](https://github.com/mchang16-auth))
+
+**Security**
+- fix(security): run npm i with --ignore-scripts [\#143](https://github.com/auth0/auth0-mcp-server/pull/143) ([jcchavezs](https://github.com/jcchavezs))
+- security: sandbox credential writes and fail-closed tool allowlist [\#192](https://github.com/auth0/auth0-mcp-server/pull/192) ([kushalshit27](https://github.com/kushalshit27))
+
 ## [v0.1.0-beta.16](https://github.com/auth0/auth0-mcp-server/tree/v0.1.0-beta.16) (2026-06-29)
 [Full Changelog](https://github.com/auth0/auth0-mcp-server/compare/v0.1.0-beta.15...v0.1.0-beta.16)
 
