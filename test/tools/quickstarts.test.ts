@@ -8,7 +8,8 @@ vi.mock('../../src/utils/logger', () => ({
 }));
 
 const mockFetchQuickstartSpec = vi.fn();
-vi.mock('../../src/utils/quickstarts', () => ({
+vi.mock('../../src/utils/quickstarts', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../src/utils/quickstarts')>()),
   fetchQuickstartSpec: (...args: any[]) => mockFetchQuickstartSpec(...args),
 }));
 
@@ -905,118 +906,6 @@ describe('auth0_get_quickstart_guide', () => {
       expect(patchBody!.skip_non_verifiable_callback_uri_confirmation_prompt).toBe(true);
       // No fingerprint/App Links association for a custom scheme.
       expect(patchBody!.mobile).toBeUndefined();
-    });
-
-    describe('android conditional-required validation', () => {
-      beforeEach(() => {
-        mockFetchQuickstartSpec.mockResolvedValue(makeAndroidSpec());
-      });
-
-      const call = (extra: Record<string, any>) =>
-        QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
-          {
-            token,
-            parameters: {
-              client_id: 'test-client-id',
-              framework: 'android',
-              project_path: '/tmp/project',
-              ...extra,
-            },
-          },
-          config
-        );
-
-      it('requires app_package_name', async () => {
-        const response = await call({
-          app_package_name: undefined,
-          callback_url_type: 'universal_links',
-          android_sha256_fingerprint: 'AB:CD',
-        });
-        expect(response.isError).toBe(true);
-        expect(response.content[0].text).toContain('app_package_name');
-      });
-
-      it('requires a valid callback_url_type', async () => {
-        const response = await call({ app_package_name: 'com.auth0.samples' });
-        expect(response.isError).toBe(true);
-        expect(response.content[0].text).toContain('callback_url_type');
-      });
-
-      it('rejects an unknown callback_url_type', async () => {
-        const response = await call({
-          app_package_name: 'com.auth0.samples',
-          callback_url_type: 'bogus',
-        });
-        expect(response.isError).toBe(true);
-        expect(response.content[0].text).toContain('callback_url_type');
-      });
-
-      it('requires android_sha256_fingerprint for universal_links', async () => {
-        const response = await call({
-          app_package_name: 'com.auth0.samples',
-          callback_url_type: 'universal_links',
-        });
-        expect(response.isError).toBe(true);
-        expect(response.content[0].text).toContain('android_sha256_fingerprint');
-      });
-
-      it('rejects a malformed android_sha256_fingerprint for universal_links', async () => {
-        const response = await call({
-          app_package_name: 'com.auth0.samples',
-          callback_url_type: 'universal_links',
-          android_sha256_fingerprint: 'not-a-fingerprint',
-        });
-        expect(response.isError).toBe(true);
-        expect(response.content[0].text).toContain('android_sha256_fingerprint');
-      });
-
-      it('requires auth0_scheme for custom_scheme', async () => {
-        const response = await call({
-          app_package_name: 'com.auth0.samples',
-          callback_url_type: 'custom_scheme',
-        });
-        expect(response.isError).toBe(true);
-        expect(response.content[0].text).toContain('auth0_scheme');
-      });
-
-      it('reports all missing inputs (and both callback-type follow-ups) in a single error', async () => {
-        // No android params at all: the caller should learn everything needed in one response
-        // rather than one field per call.
-        const response = await call({});
-        expect(response.isError).toBe(true);
-        const text = response.content[0].text;
-        expect(text).toContain('app_package_name');
-        expect(text).toContain('callback_url_type');
-        // Callback style unknown → both branches' follow-up requirements are surfaced.
-        expect(text).toContain('android_sha256_fingerprint');
-        expect(text).toContain('auth0_scheme');
-      });
-
-      it('rejects base_url for a custom_scheme callback', async () => {
-        // Otherwise-valid custom_scheme inputs; base_url would silently clobber the scheme.
-        const response = await call({
-          app_package_name: 'com.auth0.samples',
-          callback_url_type: 'custom_scheme',
-          auth0_scheme: 'demo',
-          base_url: 'http://localhost:8081',
-        });
-        expect(response.isError).toBe(true);
-        expect(response.content[0].text).toContain('base_url is not applicable');
-      });
-
-      it('rejects base_url for a universal_links callback', async () => {
-        // Otherwise-valid universal_links inputs; base_url would register the App Link against
-        // the wrong domain, making assetlinks verification impossible.
-        const response = await call({
-          app_package_name: 'com.auth0.samples',
-          callback_url_type: 'universal_links',
-          android_sha256_fingerprint:
-            'AB:CD:EF:12:34:56:78:90:AB:CD:EF:12:34:56:78:90:AB:CD:EF:12:34:56:78:90:AB:CD:EF:12:34:56:78:90',
-          base_url: 'https://staging.example.com',
-        });
-        expect(response.isError).toBe(true);
-        expect(response.content[0].text).toContain('base_url is not applicable');
-      });
     });
 
     it('non-android frameworks ignore the android callback params', async () => {

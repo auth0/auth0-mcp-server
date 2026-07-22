@@ -1,6 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { http, HttpResponse } from 'msw';
 import { server } from '../setup';
+import {
+  isValidSha256Fingerprint,
+  normalizeFingerprint,
+  validateAndroidInputs,
+} from '../../src/utils/quickstarts.js';
 
 vi.mock('../../src/utils/logger.js', () => ({
   log: vi.fn(),
@@ -550,5 +555,151 @@ describe('fetchQuickstartSpec', () => {
       expect(result).not.toBeNull();
       expect(result!.envSnippet!.fileName).toBe('.env.local');
     });
+  });
+});
+
+describe('isValidSha256Fingerprint', () => {
+  it('accepts a colon-separated 64-hex-digit fingerprint', () => {
+    const fingerprint =
+      'AB:CD:EF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:01:02:03:04:05:06:07:08:09:0A:0B:0C:0D';
+    expect(isValidSha256Fingerprint(fingerprint)).toBe(true);
+  });
+
+  it('accepts an unseparated lowercase 64-hex-digit fingerprint', () => {
+    expect(isValidSha256Fingerprint('a'.repeat(64))).toBe(true);
+  });
+
+  it('rejects a value with the wrong length', () => {
+    expect(isValidSha256Fingerprint('AB:CD')).toBe(false);
+  });
+
+  it('rejects a non-hex value', () => {
+    expect(isValidSha256Fingerprint('not-a-fingerprint')).toBe(false);
+  });
+});
+
+describe('normalizeFingerprint', () => {
+  it('strips colons and lowercases the value', () => {
+    const fingerprint =
+      'AB:CD:EF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:01:02:03:04:05:06:07:08:09:0A:0B:0C:0D';
+    expect(normalizeFingerprint(fingerprint)).toBe(
+      'abcdef00112233445566778899aabbccddeeff0102030405060708090a0b0c0d'
+    );
+  });
+
+  it('strips whitespace separators', () => {
+    expect(normalizeFingerprint('AB CD EF')).toBe('abcdef');
+  });
+
+  it('is a no-op for an already-normalized value', () => {
+    expect(normalizeFingerprint('abcdef')).toBe('abcdef');
+  });
+});
+
+describe('validateAndroidInputs', () => {
+  it('returns null when not Android, regardless of other inputs', () => {
+    expect(validateAndroidInputs({ isAndroid: false })).toBeNull();
+  });
+
+  it('returns null when all universal_links inputs are valid', () => {
+    const result = validateAndroidInputs({
+      isAndroid: true,
+      applicationId: 'com.auth0.samples',
+      callbackUrlType: 'universal_links',
+      androidSha256Fingerprint: 'a'.repeat(64),
+    });
+    expect(result).toBeNull();
+  });
+
+  it('returns null when all custom_scheme inputs are valid', () => {
+    const result = validateAndroidInputs({
+      isAndroid: true,
+      applicationId: 'com.auth0.samples',
+      callbackUrlType: 'custom_scheme',
+      auth0Scheme: 'demo',
+    });
+    expect(result).toBeNull();
+  });
+
+  it('rejects base_url for android', () => {
+    const result = validateAndroidInputs({
+      isAndroid: true,
+      applicationId: 'com.auth0.samples',
+      callbackUrlType: 'custom_scheme',
+      auth0Scheme: 'demo',
+      baseUrl: 'http://localhost:8081',
+    });
+    expect(result?.isError).toBe(true);
+    expect(result?.content[0].text).toContain('base_url is not applicable');
+  });
+
+  it('requires app_package_name', () => {
+    const result = validateAndroidInputs({
+      isAndroid: true,
+      callbackUrlType: 'universal_links',
+      androidSha256Fingerprint: 'a'.repeat(64),
+    });
+    expect(result?.isError).toBe(true);
+    expect(result?.content[0].text).toContain('app_package_name');
+  });
+
+  it('requires a valid callback_url_type', () => {
+    const result = validateAndroidInputs({
+      isAndroid: true,
+      applicationId: 'com.auth0.samples',
+    });
+    expect(result?.isError).toBe(true);
+    expect(result?.content[0].text).toContain('callback_url_type');
+  });
+
+  it('rejects an unknown callback_url_type', () => {
+    const result = validateAndroidInputs({
+      isAndroid: true,
+      applicationId: 'com.auth0.samples',
+      callbackUrlType: 'bogus',
+    });
+    expect(result?.isError).toBe(true);
+    expect(result?.content[0].text).toContain('callback_url_type');
+  });
+
+  it('requires androidSha256Fingerprint for universal_links', () => {
+    const result = validateAndroidInputs({
+      isAndroid: true,
+      applicationId: 'com.auth0.samples',
+      callbackUrlType: 'universal_links',
+    });
+    expect(result?.isError).toBe(true);
+    expect(result?.content[0].text).toContain('android_sha256_fingerprint');
+  });
+
+  it('rejects a malformed androidSha256Fingerprint for universal_links', () => {
+    const result = validateAndroidInputs({
+      isAndroid: true,
+      applicationId: 'com.auth0.samples',
+      callbackUrlType: 'universal_links',
+      androidSha256Fingerprint: 'not-a-fingerprint',
+    });
+    expect(result?.isError).toBe(true);
+    expect(result?.content[0].text).toContain('android_sha256_fingerprint');
+  });
+
+  it('requires auth0Scheme for custom_scheme', () => {
+    const result = validateAndroidInputs({
+      isAndroid: true,
+      applicationId: 'com.auth0.samples',
+      callbackUrlType: 'custom_scheme',
+    });
+    expect(result?.isError).toBe(true);
+    expect(result?.content[0].text).toContain('auth0_scheme');
+  });
+
+  it('reports all missing inputs (and both callback-type follow-ups) in a single error', () => {
+    const result = validateAndroidInputs({ isAndroid: true });
+    expect(result?.isError).toBe(true);
+    const text = result?.content[0].text;
+    expect(text).toContain('app_package_name');
+    expect(text).toContain('callback_url_type');
+    expect(text).toContain('android_sha256_fingerprint');
+    expect(text).toContain('auth0_scheme');
   });
 });

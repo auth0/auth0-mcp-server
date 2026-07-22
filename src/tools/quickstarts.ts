@@ -3,7 +3,11 @@ import * as path from 'path';
 import type { HandlerConfig, HandlerRequest, HandlerResponse, Tool } from '../utils/types.js';
 import { log } from '../utils/logger.js';
 import { createErrorResponse, createSuccessResponse } from '../utils/http-utility.js';
-import { fetchQuickstartSpec } from '../utils/quickstarts.js';
+import {
+  fetchQuickstartSpec,
+  normalizeFingerprint,
+  validateAndroidInputs,
+} from '../utils/quickstarts.js';
 import {
   resolveCallbackUrls,
   isFrameworkSupported,
@@ -97,112 +101,6 @@ export const QUICKSTART_TOOLS: Tool[] = [
     },
   },
 ];
-
-/**
- * Whether `raw` is a well-formed SHA256 certificate fingerprint (a 32-byte value = 64 hex
- * digits). Lenient on separators and case — colon-, space-, or unseparated input all pass, so a
- * paste from `./gradlew signingReport` is accepted regardless of incidental formatting. Only
- * clearly-malformed values (truncated, non-hex, wrong length) are rejected. Does not transform
- * the value; the original is registered as-is.
- */
-function isValidSha256Fingerprint(raw: string): boolean {
-  return /^[0-9a-f]{64}$/.test(normalizeFingerprint(raw));
-}
-
-/**
- * Canonical identity form of a fingerprint: separators stripped, lowercased. Used only for
- * equality/dedup — the caller's original text is what gets registered.
- */
-function normalizeFingerprint(raw: string): string {
-  return raw.replace(/[\s:]/g, '').toLowerCase();
-}
-
-/**
- * Validate the Android-only callback configuration inputs. Android requires the app package name,
- * the callback style, and the style-specific value (a signing fingerprint for App Links, or the
- * scheme string for a custom scheme). Reports every missing/invalid input in a single message —
- * with a hint on where to source each value and the conditional follow-ups — so the caller can
- * gather everything in one pass and supply it in one further call, rather than discovering the
- * requirements one error at a time. Rejects base_url, which has no meaning for a native app.
- * Returns null when the inputs are valid (or not Android).
- */
-function validateAndroidInputs(params: {
-  isAndroid: boolean;
-  applicationId?: string;
-  callbackUrlType?: string;
-  androidSha256Fingerprint?: string;
-  auth0Scheme?: string;
-  baseUrl?: string;
-}): HandlerResponse | null {
-  const {
-    isAndroid,
-    applicationId,
-    callbackUrlType,
-    androidSha256Fingerprint,
-    auth0Scheme,
-    baseUrl,
-  } = params;
-  if (!isAndroid) {
-    return null;
-  }
-
-  // base_url is a web-dev-server concept (localhost/port). Android callbacks derive from the
-  // custom scheme or the Auth0 tenant domain, so a base_url can only misconfigure them — reject
-  // it outright rather than silently ignoring a value the caller believes is taking effect.
-  if (baseUrl) {
-    return createErrorResponse(
-      'Error: base_url is not applicable to the android framework. Android callbacks are ' +
-        'derived from the custom URL scheme (custom_scheme) or the Auth0 tenant domain ' +
-        '(universal_links), not a base URL — remove base_url and call again.'
-    );
-  }
-
-  const hasValidType = callbackUrlType === 'universal_links' || callbackUrlType === 'custom_scheme';
-  const missing: string[] = [];
-  if (!applicationId) {
-    missing.push(
-      'app_package_name — the app package name; read it from the Gradle `applicationId` in app/build.gradle(.kts) (e.g. "com.auth0.samples")'
-    );
-  }
-  if (!hasValidType) {
-    missing.push(
-      'callback_url_type — "universal_links" (https App Link) or "custom_scheme" (custom URL scheme)'
-    );
-  }
-  if (callbackUrlType === 'universal_links') {
-    if (!androidSha256Fingerprint) {
-      missing.push(
-        'android_sha256_fingerprint — the app signing-cert SHA256 fingerprint, via `./gradlew signingReport` (debug builds) or `keytool -list -v -keystore <path>`'
-      );
-    } else if (!isValidSha256Fingerprint(androidSha256Fingerprint)) {
-      missing.push(
-        'android_sha256_fingerprint — the supplied value is not a valid SHA256 fingerprint (expected a 32-byte value, i.e. 64 hex digits / 32 colon-separated pairs). Copy it exactly from `./gradlew signingReport` (the SHA-256 line)'
-      );
-    }
-  }
-  if (callbackUrlType === 'custom_scheme' && !auth0Scheme) {
-    missing.push('auth0_scheme — the custom URL scheme the app claims (e.g. "demo")');
-  }
-
-  if (missing.length === 0) {
-    return null;
-  }
-
-  // When the callback style is not yet known, spell out both branches' follow-ups so the caller
-  // can supply the right one on the next call.
-  const typeNote = hasValidType
-    ? []
-    : [
-        'Note: "universal_links" additionally requires android_sha256_fingerprint; "custom_scheme" additionally requires auth0_scheme. If the signing key is managed elsewhere (e.g. Google Play App Signing) or no keystore exists yet, use "custom_scheme" (no fingerprint required).',
-      ];
-
-  const lines = [
-    'Error: the android framework needs additional inputs. Gather these (inspect the project rather than asking the user where possible) and call again with all of them:',
-    ...missing.map((entry) => `  - ${entry}`),
-    ...typeNote,
-  ];
-  return createErrorResponse(lines.join('\n'));
-}
 
 export const QUICKSTART_HANDLERS: Record<
   string,
