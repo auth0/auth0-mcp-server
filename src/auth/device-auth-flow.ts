@@ -52,7 +52,10 @@ async function requestAuthorization(selectedScopes?: string[], interaction: bool
 
     const jsonRes = await response.json();
     if (!jsonRes.error) {
-      cliOutput(`\nVerify this code on screen: ${chalk.bold.green(jsonRes.user_code)}\n`);
+      cliOutput(
+        `\nYour device confirmation code is: ${chalk.bold.green(jsonRes.user_code)}\n` +
+          `\nNext, press Enter to open a browser window and sign in. Once the browser opens, confirm that the code shown there matches the one above, then approve the request to finish authenticating.\n`
+      );
       // Wait for user to press Enter to open browser
       if (interaction) {
         await promptForBrowserPermission();
