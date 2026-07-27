@@ -83,7 +83,9 @@ export const APPLICATION_TOOLS: Tool[] = [
         app_type: {
           type: 'string',
           enum: ['spa', 'native', 'non_interactive', 'regular_web'],
-          description: 'Type of client used to determine which settings are applicable.',
+          description:
+            'Application type. Use non_interactive for Machine-to-Machine (M2M) or API-to-API apps. ' +
+            'Use spa for Single Page Apps, regular_web for server-rendered apps, native for mobile/desktop.',
         },
         description: {
           type: 'string',
@@ -148,16 +150,74 @@ export const APPLICATION_TOOLS: Tool[] = [
         },
         grant_types: {
           type: 'array',
-          items: { type: 'string' },
-          description: 'List of grant types for this client',
+          items: { type: 'string', minLength: 1 },
+          description:
+            'List of grant types supported for this application. Can include ' +
+            '`authorization_code`, `implicit`, `refresh_token`, `client_credentials`, `password`, ' +
+            '`http://auth0.com/oauth/grant-type/password-realm`, ' +
+            '`http://auth0.com/oauth/grant-type/mfa-oob`, ' +
+            '`http://auth0.com/oauth/grant-type/mfa-otp`, ' +
+            '`http://auth0.com/oauth/grant-type/mfa-recovery-code`, ' +
+            '`urn:openid:params:grant-type:ciba`, ' +
+            '`urn:ietf:params:oauth:grant-type:device_code`, and ' +
+            '`urn:auth0:params:oauth:grant-type:token-exchange:federated-connection-access-token`.',
         },
         jwt_configuration: {
           type: 'object',
-          description: 'JWT configuration settings',
+          description: 'JWT configuration.',
+          properties: {
+            alg: {
+              type: 'string',
+              enum: ['HS256', 'RS256', 'RS512', 'PS256'],
+              description: 'JWT signing algorithm.',
+            },
+            lifetime_in_seconds: {
+              type: 'number',
+              description: 'Token expiry in seconds.',
+            },
+          },
         },
         refresh_token: {
-          type: 'object',
-          description: 'Refresh token configuration',
+          type: ['object', 'null'],
+          description: 'Refresh token configuration.',
+          additionalProperties: false,
+          properties: {
+            rotation_type: {
+              type: 'string',
+              enum: ['rotating', 'non-rotating'],
+              description: 'Rotation policy.',
+            },
+            expiration_type: {
+              type: 'string',
+              enum: ['expiring', 'non-expiring'],
+              description: 'Expiration policy.',
+            },
+            leeway: {
+              type: 'integer',
+              minimum: 0,
+              description: 'Grace period in seconds before breach detection triggers.',
+            },
+            token_lifetime: {
+              type: 'integer',
+              minimum: 1,
+              maximum: 157788000,
+              description: 'Refresh token lifetime in seconds.',
+            },
+            infinite_token_lifetime: {
+              type: 'boolean',
+              description: 'If true, tokens never expire (overrides token_lifetime).',
+            },
+            idle_token_lifetime: {
+              type: 'integer',
+              minimum: 1,
+              description: 'Idle lifetime in seconds.',
+            },
+            infinite_idle_token_lifetime: {
+              type: 'boolean',
+              description: 'If true, tokens do not expire from inactivity (overrides idle_token_lifetime).',
+            },
+          },
+          required: ['rotation_type', 'expiration_type'],
         },
         mobile: {
           type: 'object',
@@ -221,7 +281,9 @@ export const APPLICATION_TOOLS: Tool[] = [
         app_type: {
           type: 'string',
           enum: ['spa', 'native', 'non_interactive', 'regular_web'],
-          description: 'Type of client used to determine which settings are applicable',
+          description:
+            'Application type. Use non_interactive for Machine-to-Machine (M2M) or API-to-API apps. ' +
+            'Use spa for Single Page Apps, regular_web for server-rendered apps, native for mobile/desktop.',
         },
         description: {
           type: 'string',
@@ -250,8 +312,17 @@ export const APPLICATION_TOOLS: Tool[] = [
         },
         grant_types: {
           type: 'array',
-          items: { type: 'string' },
-          description: 'List of grant types for this client',
+          items: { type: 'string', minLength: 1 },
+          description:
+            'List of grant types supported for this application. Can include ' +
+            '`authorization_code`, `implicit`, `refresh_token`, `client_credentials`, `password`, ' +
+            '`http://auth0.com/oauth/grant-type/password-realm`, ' +
+            '`http://auth0.com/oauth/grant-type/mfa-oob`, ' +
+            '`http://auth0.com/oauth/grant-type/mfa-otp`, ' +
+            '`http://auth0.com/oauth/grant-type/mfa-recovery-code`, ' +
+            '`urn:openid:params:grant-type:ciba`, ' +
+            '`urn:ietf:params:oauth:grant-type:device_code`, and ' +
+            '`urn:auth0:params:oauth:grant-type:token-exchange:federated-connection-access-token`.',
         },
         token_endpoint_auth_method: {
           type: 'string',
@@ -290,11 +361,60 @@ export const APPLICATION_TOOLS: Tool[] = [
         },
         jwt_configuration: {
           type: 'object',
-          description: 'JWT configuration settings',
+          description: 'JWT configuration.',
+          properties: {
+            alg: {
+              type: 'string',
+              enum: ['HS256', 'RS256', 'RS512', 'PS256'],
+              description: 'JWT signing algorithm.',
+            },
+            lifetime_in_seconds: {
+              type: 'number',
+              description: 'Token expiry in seconds.',
+            },
+          },
         },
         refresh_token: {
-          type: 'object',
-          description: 'Refresh token configuration',
+          type: ['object', 'null'],
+          description: 'Refresh token configuration.',
+          additionalProperties: false,
+          properties: {
+            rotation_type: {
+              type: 'string',
+              enum: ['rotating', 'non-rotating'],
+              description: 'Rotation policy.',
+            },
+            expiration_type: {
+              type: 'string',
+              enum: ['expiring', 'non-expiring'],
+              description: 'Expiration policy.',
+            },
+            leeway: {
+              type: 'integer',
+              minimum: 0,
+              description: 'Grace period in seconds before breach detection triggers.',
+            },
+            token_lifetime: {
+              type: 'integer',
+              minimum: 1,
+              maximum: 157788000,
+              description: 'Refresh token lifetime in seconds.',
+            },
+            infinite_token_lifetime: {
+              type: 'boolean',
+              description: 'If true, tokens never expire (overrides token_lifetime).',
+            },
+            idle_token_lifetime: {
+              type: 'integer',
+              minimum: 1,
+              description: 'Idle lifetime in seconds.',
+            },
+            infinite_idle_token_lifetime: {
+              type: 'boolean',
+              description: 'If true, tokens do not expire from inactivity (overrides idle_token_lifetime).',
+            },
+          },
+          required: ['rotation_type', 'expiration_type'],
         },
         mobile: {
           type: 'object',
