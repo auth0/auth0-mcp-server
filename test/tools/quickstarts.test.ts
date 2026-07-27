@@ -599,6 +599,54 @@ describe('auth0_get_quickstart_guide', () => {
       });
     });
 
+    it('universal_links: preserves unmanaged fields within mobile.android', async () => {
+      mockFetchQuickstartSpec.mockResolvedValue(makeAndroidSpec());
+
+      const fingerprint =
+        'AB:CD:EF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:01:02:03:04:05:06:07:08:09:0A:0B:0C:0D';
+      let patchBody: Record<string, any> | undefined;
+      server.use(
+        http.get('https://*/api/v2/clients/:clientId', () => {
+          return HttpResponse.json({
+            ...mockAppData,
+            callbacks: [],
+            allowed_logout_urls: [],
+            web_origins: [],
+            // Stands in for a field this tool does not manage — either one the Management API
+            // gains later or one set out-of-band.
+            mobile: { android: { some_future_field: 'keep-me' } },
+          });
+        }),
+        http.patch('https://*/api/v2/clients/:clientId', async ({ request }) => {
+          patchBody = (await request.json()) as Record<string, any>;
+          return HttpResponse.json({ ...mockAppData, ...patchBody });
+        })
+      );
+
+      const response = await QUICKSTART_HANDLERS.auth0_get_quickstart_guide(
+        {
+          token,
+          parameters: {
+            client_id: 'test-client-id',
+            framework: 'android',
+            project_path: '/tmp/project',
+            app_package_name: 'com.auth0.samples',
+            callback_url_type: 'universal_links',
+            android_sha256_fingerprint: fingerprint,
+          },
+        },
+        config
+      );
+
+      expect(response.isError).toBe(false);
+      expect(patchBody).toBeDefined();
+      expect(patchBody!.mobile.android).toEqual({
+        some_future_field: 'keep-me',
+        app_package_name: 'com.auth0.samples',
+        sha256_cert_fingerprints: [fingerprint],
+      });
+    });
+
     it('universal_links: preserves existing android fingerprints when adding a new one', async () => {
       mockFetchQuickstartSpec.mockResolvedValue(makeAndroidSpec());
 

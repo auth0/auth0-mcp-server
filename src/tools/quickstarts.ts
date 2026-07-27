@@ -333,11 +333,12 @@ export const QUICKSTART_HANDLERS: Record<
         (fp) => normalizeFingerprint(fp) === normalizedNew
       );
       if (existingPackage !== applicationId || !alreadyRegistered) {
-        // PATCH replaces the nested `mobile` object wholesale, so spread the existing one to
-        // preserve sibling config (e.g. mobile.ios).
+        // PATCH replaces nested objects wholesale, so spread at both levels to preserve config we
+        // do not manage — siblings of `android` (e.g. mobile.ios) and any future field within it.
         mobilePayload = {
           ...(appData.mobile ?? {}),
           android: {
+            ...(appData.mobile?.android ?? {}),
             app_package_name: applicationId,
             sha256_cert_fingerprints: alreadyRegistered
               ? existingFingerprints
