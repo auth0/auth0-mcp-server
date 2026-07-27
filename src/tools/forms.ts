@@ -60,38 +60,63 @@ export const FORM_TOOLS: Tool[] = [
       properties: {
         name: {
           type: 'string',
-          description: 'Name of the form. Required.',
+          minLength: 1,
+          maxLength: 150,
+          description: 'Form name. Required. Maximum 150 characters.',
         },
         messages: {
           type: 'object',
-          description: 'Message settings for the form',
+          description:
+            'Message settings for the form. IMPORTANT: the Auth0 Forms API enforces strict field validation ' +
+            '(additionalProperties: false). Only send fields defined in the Auth0 Forms API spec.',
         },
         languages: {
           type: 'object',
-          description: 'Language settings for the form',
+          description:
+            'Language settings for the form. IMPORTANT: strict field validation enforced — ' +
+            'only send fields defined in the Auth0 Forms API spec.',
         },
         translations: {
           type: 'object',
-          description: 'Translations for form content',
+          description:
+            'Locale translations for form content. ' +
+            'Outer keys are locale codes (e.g. "fr", "es", "pt-BR"). ' +
+            'Inner keys are translation string identifiers with their translated values.',
         },
         nodes: {
           type: 'array',
-          description: 'Nodes defining form structure and behavior',
+          description:
+            'Form nodes defining structure and routing. IMPORTANT: the Auth0 Forms API enforces strict field ' +
+            'validation (additionalProperties: false) at every level. Each node must be one of: FormFlow, ' +
+            'FormRouter, or FormStep with exact required fields. Unknown fields at any depth cause a 400 error.',
           items: {
             type: 'object',
           },
         },
         start: {
           type: 'object',
-          description: 'Settings for form start configuration',
+          description:
+            'Settings for form start configuration. IMPORTANT: strict field validation enforced — ' +
+            'only send fields defined in the Auth0 Forms API spec.',
         },
         ending: {
           type: 'object',
-          description: 'Settings for form completion',
+          description:
+            'Settings for form completion. IMPORTANT: strict field validation enforced — ' +
+            'only send fields defined in the Auth0 Forms API spec.',
         },
         style: {
           type: 'object',
-          description: 'Style settings for the form',
+          additionalProperties: false,
+          description: 'CSS styling for the form. Only the css field is accepted — do not send color, theme, font, or other properties.',
+          properties: {
+            css: {
+              type: 'string',
+              minLength: 1,
+              maxLength: 5000,
+              description: 'Raw CSS string for the form. This is the only accepted style field.',
+            },
+          },
         },
       },
       required: ['name'],
@@ -119,38 +144,60 @@ export const FORM_TOOLS: Tool[] = [
         },
         name: {
           type: 'string',
-          description: 'Name of the form',
+          minLength: 1,
+          maxLength: 150,
+          description: 'Form name. Maximum 150 characters.',
         },
         messages: {
           type: 'object',
-          description: 'Message settings for the form',
+          description:
+            'Message settings for the form. IMPORTANT: the Auth0 Forms API enforces strict field validation ' +
+            '(additionalProperties: false). Only send fields defined in the Auth0 Forms API spec.',
         },
         languages: {
           type: 'object',
-          description: 'Language settings for the form',
+          description:
+            'Language settings for the form. IMPORTANT: strict field validation enforced — ' +
+            'only send fields defined in the Auth0 Forms API spec.',
         },
         translations: {
           type: 'object',
-          description: 'Translations for form content',
+          description:
+            'Locale translations for form content. ' +
+            'Outer keys are locale codes (e.g. "fr", "es", "pt-BR"). ' +
+            'Inner keys are translation string identifiers with their translated values.',
         },
         nodes: {
           type: 'array',
-          description: 'Nodes defining form structure and behavior',
+          description:
+            'Form nodes defining structure and routing. IMPORTANT: the Auth0 Forms API enforces strict field ' +
+            'validation (additionalProperties: false) at every level. Each node must be one of: FormFlow, ' +
+            'FormRouter, or FormStep with exact required fields. Unknown fields at any depth cause a 400 error.',
           items: {
             type: 'object',
           },
         },
         start: {
           type: 'object',
-          description: 'Settings for form start configuration',
+          description:
+            'Settings for form start configuration. IMPORTANT: strict field validation enforced — ' +
+            'only send fields defined in the Auth0 Forms API spec.',
         },
         ending: {
           type: 'object',
-          description: 'Settings for form completion',
+          description:
+            'Settings for form completion. IMPORTANT: strict field validation enforced — ' +
+            'only send fields defined in the Auth0 Forms API spec.',
         },
         style: {
           type: 'object',
-          description: 'Style settings for the form',
+          description: 'CSS styling for the form. Include this field to apply custom CSS. Only the css field is accepted.',
+          properties: {
+            css: {
+              type: 'string',
+              description: 'Raw CSS string for the form.',
+            },
+          },
         },
       },
       required: ['id'],
