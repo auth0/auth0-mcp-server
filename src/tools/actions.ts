@@ -92,50 +92,74 @@ export const ACTION_TOOLS: Tool[] = [
         },
         supported_triggers: {
           type: 'array',
-          description: 'The list of triggers that this action supports. Required.',
+          description: 'Triggers this action handles. Required. One entry only.',
           items: {
             type: 'object',
             properties: {
-              id: { type: 'string', description: 'ID of the trigger' },
-              version: { type: 'string', description: 'Version of the trigger (e.g., "v2")' },
+              id: {
+                type: 'string',
+                enum: [
+                  'post-login',
+                  'credentials-exchange',
+                  'pre-user-registration',
+                  'post-user-registration',
+                  'post-change-password',
+                  'send-phone-message',
+                  'custom-phone-provider',
+                  'custom-email-provider',
+                  'custom-token-exchange',
+                  'password-reset-post-challenge',
+                  'event-stream',
+                  'password-hash-migration',
+                  'login-post-identifier',
+                  'signup-post-identifier',
+                ],
+                description: 'Trigger ID. Use exact hyphenated values — e.g. post-login, not login or onLogin.',
+              },
+              version: {
+                type: 'string',
+                description: 'Version of the trigger, e.g. "v3".',
+              },
             },
             required: ['id', 'version'],
           },
         },
         code: {
           type: 'string',
-          description: 'The source code of the action. Required.',
+          description: 'JavaScript source code of the action. Required.',
         },
         runtime: {
           type: 'string',
-          description: 'The Node runtime. For example: "node18" or "node16". Defaults to "node18".',
+          description:
+            'Node.js runtime for this action. Use node22 (current default). ' +
+            'node18 is supported on most tenants. Avoid node16 — deprecated and unavailable on most tenants.',
         },
         dependencies: {
           type: 'array',
-          description: 'List of third party npm modules that this action depends on.',
+          description: 'NPM modules this action depends on.',
           items: {
             type: 'object',
             properties: {
-              name: { type: 'string', description: 'Name of the NPM package' },
-              version: { type: 'string', description: 'Version of the NPM package' },
+              name: { type: 'string', description: 'Package name.' },
+              version: { type: 'string', description: 'Package version.' },
             },
             required: ['name', 'version'],
           },
         },
         secrets: {
           type: 'array',
-          description: 'List of secrets that are included in the action.',
+          description: 'Secrets available to the action.',
           items: {
             type: 'object',
             properties: {
-              name: { type: 'string', description: 'Name of the secret' },
-              value: { type: 'string', description: 'Value of the secret' },
+              name: { type: 'string', description: 'Secret name.' },
+              value: { type: 'string', description: 'Secret value.' },
             },
             required: ['name', 'value'],
           },
         },
       },
-      required: ['name', 'supported_triggers'],
+      required: ['name', 'supported_triggers', 'code'],
     },
     _meta: {
       requiredScopes: ['create:actions'],
@@ -164,41 +188,59 @@ export const ACTION_TOOLS: Tool[] = [
         },
         supported_triggers: {
           type: 'array',
-          description: 'The list of triggers that this action supports. Optional.',
+          description: 'Triggers this action handles. One entry only.',
           items: {
             type: 'object',
             properties: {
-              id: { type: 'string', description: 'ID of the trigger' },
-              version: { type: 'string', description: 'Version of the trigger (e.g., "v2")' },
+              id: {
+                type: 'string',
+                enum: [
+                  'post-login',
+                  'credentials-exchange',
+                  'pre-user-registration',
+                  'post-user-registration',
+                  'post-change-password',
+                  'send-phone-message',
+                  'custom-phone-provider',
+                  'custom-email-provider',
+                  'custom-token-exchange',
+                  'password-reset-post-challenge',
+                  'event-stream',
+                  'password-hash-migration',
+                  'login-post-identifier',
+                  'signup-post-identifier',
+                ],
+                description: 'Trigger ID. Use exact hyphenated values — e.g. post-login, not login or onLogin.',
+              },
+              version: {
+                type: 'string',
+                description: 'Version of the trigger, e.g. "v3".',
+              },
             },
             required: ['id', 'version'],
           },
         },
         code: {
           type: 'string',
-          description: 'New JavaScript code for the action. Optional.',
+          description: 'JavaScript source code of the action.',
         },
         runtime: {
           type: 'string',
-          description: 'The Node runtime. For example: "node18" or "node16".',
+          description:
+            'Node.js runtime for this action. Use node22 (current default). ' +
+            'node18 is supported on most tenants. Avoid node16 — deprecated and unavailable on most tenants.',
         },
         dependencies: {
           type: 'array',
+          description: 'Updated NPM dependencies.',
           items: {
             type: 'object',
             properties: {
-              name: {
-                type: 'string',
-                description: 'Name of the NPM dependency',
-              },
-              version: {
-                type: 'string',
-                description: 'Version of the NPM dependency',
-              },
+              name: { type: 'string', description: 'Package name.' },
+              version: { type: 'string', description: 'Package version.' },
             },
             required: ['name', 'version'],
           },
-          description: 'Updated NPM dependencies for the action. Optional.',
         },
         secrets: {
           type: 'array',
@@ -234,7 +276,11 @@ export const ACTION_TOOLS: Tool[] = [
   },
   {
     name: 'auth0_deploy_action',
-    description: 'Deploy an Auth0 action',
+    description:
+      'Deploy an Auth0 action to make it live. ' +
+      'The action must have been successfully created and built. ' +
+      'If the action was just created with invalid parameters, the build may have failed — ' +
+      'verify with auth0_get_action before deploying.',
     inputSchema: {
       type: 'object',
       properties: {
