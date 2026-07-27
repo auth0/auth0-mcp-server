@@ -6,7 +6,12 @@ import { fetchQuickstartSpec } from './quickstarts.js';
 import type { QuickstartSpec, DefaultAppOrigin } from './quickstarts.js';
 import { isFrameworkSupported, hasProjectMarker } from './onboarding.js';
 import { getManagementClient } from './auth0-client.js';
-import { writeCredentialsToEnv, parseEnvFile, detectExistingEnvFile, ensureGitignore } from './credentials-writer.js';
+import {
+  writeCredentialsToEnv,
+  parseEnvFile,
+  detectExistingEnvFile,
+  ensureGitignore,
+} from './credentials-writer.js';
 import type { HandlerConfig } from './types.js';
 import trackEvent from './analytics.js';
 import type { CredentialResolutionFallbackReason } from './analytics.js';
@@ -66,7 +71,15 @@ const SESSION_SECRET_PLACEHOLDER = '%AUTH0_SECRET%';
  * @returns Result indicating success (with file metadata) or failure (with error message)
  */
 const WEB_SERVED_SEGMENT_NAMES = new Set([
-  'public', 'dist', 'build', 'static', 'www', 'wwwroot', 'html', 'assets', 'out',
+  'public',
+  'dist',
+  'build',
+  'static',
+  'www',
+  'wwwroot',
+  'html',
+  'assets',
+  'out',
 ]);
 
 // Detects whether a directory is likely web-served based on its final path segment.
@@ -127,12 +140,19 @@ export async function resolveAndWriteCredentials(
   }
 
   const resolutionPath: 'spec' | 'fallback' = spec?.envSnippet ? 'spec' : 'fallback';
-  
+
   // After the guard above, the only remaining fallback case is an unsupported framework.
   const fallbackReason: CredentialResolutionFallbackReason | undefined =
     resolutionPath === 'fallback' ? 'unsupported' : undefined;
   const resolved = spec?.envSnippet
-    ? await buildSpecCredentials(params, spec.envSnippet, spec.defaultAppOrigin, config, token, spec.placeholders)
+    ? await buildSpecCredentials(
+        params,
+        spec.envSnippet,
+        spec.defaultAppOrigin,
+        config,
+        token,
+        spec.placeholders
+      )
     : await buildFallbackCredentials(params, config, token);
 
   if (!resolved.success) return resolved;
@@ -237,7 +257,11 @@ async function buildSpecCredentials(
   const envFilePath = detectExistingEnvFile(projectPath) ?? path.join(projectPath, fileName);
 
   const varEntries = envSnippet.entries.filter((e) => e.type === 'var') as {
-    type: 'var'; name: string; value: string; comment?: string; sensitive?: boolean;
+    type: 'var';
+    name: string;
+    value: string;
+    comment?: string;
+    sensitive?: boolean;
   }[];
   const secretKeys = varEntries.filter((e) => e.sensitive).map((e) => e.name);
 
@@ -252,7 +276,8 @@ async function buildSpecCredentials(
       if (sdkError.statusCode === 404) {
         error = `Application with client_id '${clientId}' not found.`;
       } else if (sdkError.statusCode === 401) {
-        error += '\nYour token may be expired or missing read:clients scope. Try running "npx @auth0/auth0-mcp-server init" to refresh your token.';
+        error +=
+          '\nYour token may be expired or missing read:clients scope. Try running "npx @auth0/auth0-mcp-server init" to refresh your token.';
       }
       return { success: false, error };
     }
@@ -281,8 +306,14 @@ async function buildSpecCredentials(
     auth0ClientId: clientId,
     auth0ClientSecret: clientSecret,
     port: resolvedPort,
-    appDomain: parsedBaseUrl ? parsedBaseUrl.hostname : (defaultAppOrigin.domain ?? 'localhost'),
-    appScheme: parsedBaseUrl ? parsedBaseUrl.protocol.replace(':', '') : (defaultAppOrigin.scheme ?? 'http'),
+    appDomain: parsedBaseUrl
+      ? parsedBaseUrl.hostname
+      : typeof defaultAppOrigin.domain === 'string'
+        ? defaultAppOrigin.domain
+        : 'localhost',
+    appScheme: parsedBaseUrl
+      ? parsedBaseUrl.protocol.replace(':', '')
+      : (defaultAppOrigin.scheme ?? 'http'),
   };
 
   if (callbackUrl) {
@@ -309,7 +340,7 @@ async function buildSpecCredentials(
       continue;
     }
 
-    const resolved = resolvePlaceholders(entry.value, placeholderMap);
+    const resolved = resolveEnvPlaceholders(entry.value, placeholderMap);
     if (resolved && !resolved.includes('%')) {
       credentialMap[entry.name] = resolved;
     }
@@ -340,9 +371,13 @@ function buildPlaceholderMap(
 }
 
 /**
- * Resolves all %PLACEHOLDER% tokens in a template string using the placeholder map.
+ * Resolves all %PLACEHOLDER% tokens in an env-file template using a pre-built placeholder map,
+ * leaving unknown tokens in place (the caller rejects any value that still contains a `%`).
  */
-function resolvePlaceholders(template: string, placeholderMap: Record<string, string>): string {
+function resolveEnvPlaceholders(
+  template: string,
+  placeholderMap: Record<string, string>
+): string {
   return template.replace(/%[A-Z0-9_]+%/g, (token) => placeholderMap[token] ?? token);
 }
 
@@ -382,13 +417,20 @@ async function buildFallbackCredentials(
       ...(resolvedCallbackUrl ? { AUTH0_CALLBACK_URL: resolvedCallbackUrl } : {}),
     };
 
-    return { success: true, credentialMap, envFilePath, generated_keys: [], secret_generated: false };
+    return {
+      success: true,
+      credentialMap,
+      envFilePath,
+      generated_keys: [],
+      secret_generated: false,
+    };
   } catch (sdkError: any) {
     let error = `Failed to retrieve application: ${sdkError.message || 'Unknown error'}`;
     if (sdkError.statusCode === 404) {
       error = `Application with client_id '${clientId}' not found.`;
     } else if (sdkError.statusCode === 401) {
-      error += '\nYour token may be expired or missing read:clients scope. Try running "npx @auth0/auth0-mcp-server init" to refresh your token.';
+      error +=
+        '\nYour token may be expired or missing read:clients scope. Try running "npx @auth0/auth0-mcp-server init" to refresh your token.';
     }
     return { success: false, error };
   }
@@ -438,7 +480,11 @@ function checkWriteGuard(projectPath: string, incomingKeys: string[]): string | 
 
 function updateWriteGuard(projectPath: string, keysWritten: string[], framework: string): void {
   const statePath = path.join(projectPath, WRITE_GUARD_FILE);
-  const state: WriteGuardState = { lastWrittenAt: new Date().toISOString(), keysWritten, framework };
+  const state: WriteGuardState = {
+    lastWrittenAt: new Date().toISOString(),
+    keysWritten,
+    framework,
+  };
   try {
     fs.writeFileSync(statePath, JSON.stringify(state, null, 2), 'utf-8');
   } catch (error) {
@@ -478,7 +524,11 @@ function appendAuditLog(
       fs.writeFileSync(tmpPath, content, 'utf-8');
       fs.renameSync(tmpPath, logPath);
     } catch (writeErr) {
-      try { fs.unlinkSync(tmpPath); } catch { /* ignore */ }
+      try {
+        fs.unlinkSync(tmpPath);
+      } catch {
+        /* ignore */
+      }
       throw writeErr;
     }
   } catch (error) {

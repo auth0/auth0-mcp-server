@@ -4,7 +4,11 @@ import type { HandlerConfig, HandlerRequest, HandlerResponse, Tool } from '../ut
 import { log } from '../utils/logger.js';
 import { createErrorResponse, createSuccessResponse } from '../utils/http-utility.js';
 import { fetchQuickstartSpec } from '../utils/quickstarts.js';
-import { isFrameworkSupported, SUPPORTED_FRAMEWORKS, hasProjectMarker } from '../utils/onboarding.js';
+import {
+  isFrameworkSupported,
+  SUPPORTED_FRAMEWORKS,
+  hasProjectMarker,
+} from '../utils/onboarding.js';
 import { APPLICATION_HANDLERS } from './applications.js';
 import trackEvent, { OnboardingStep, OnboardingStepStatus } from '../utils/analytics.js';
 
@@ -33,7 +37,7 @@ export const ONBOARDING_TOOLS: Tool[] = [
         framework: {
           type: 'string',
           enum: [...SUPPORTED_FRAMEWORKS],
-          description: 'JavaScript framework for the quickstart',
+          description: 'Framework or technology for the quickstart',
         },
         project_path: {
           type: 'string',

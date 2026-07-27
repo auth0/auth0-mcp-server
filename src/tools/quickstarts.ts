@@ -3,14 +3,19 @@ import * as path from 'path';
 import type { HandlerConfig, HandlerRequest, HandlerResponse, Tool } from '../utils/types.js';
 import { log } from '../utils/logger.js';
 import { createErrorResponse, createSuccessResponse } from '../utils/http-utility.js';
-import { fetchQuickstartSpec } from '../utils/quickstarts.js';
+import {
+  fetchQuickstartSpec,
+  normalizeFingerprint,
+  validateAndroidInputs,
+} from '../utils/quickstarts.js';
 import {
   resolveCallbackUrls,
   isFrameworkSupported,
   SUPPORTED_FRAMEWORKS,
 } from '../utils/onboarding.js';
 import { fetchWithOptions } from '../utils/fetch.js';
-import { calculateUrlUpdates, resolvePlaceholders } from '../utils/quickstart-guide.js';
+import { calculateUrlUpdates } from '../utils/quickstart-guide.js';
+import { resolvePlaceholders } from '../utils/quickstart-placeholders.js';
 import { detectExistingEnvFile } from '../utils/credentials-writer.js';
 import { APPLICATION_HANDLERS } from './applications.js';
 import trackEvent, { OnboardingStep, OnboardingStepStatus } from '../utils/analytics.js';
@@ -50,6 +55,35 @@ export const QUICKSTART_TOOLS: Tool[] = [
           description:
             'Explicit base URL override for callback resolution (e.g. http://localhost:3000)',
         },
+        app_package_name: {
+          type: 'string',
+          description:
+            'Android only. The app package name / Gradle applicationId (e.g. "com.auth0.samples"), ' +
+            'used in the callback URL and registered as mobile.android.app_package_name. ' +
+            'Required when framework is "android".',
+        },
+        callback_url_type: {
+          type: 'string',
+          enum: ['universal_links', 'custom_scheme'],
+          description:
+            'Android only. The callback style: "universal_links" (https App Link, requires ' +
+            'android_sha256_fingerprint) or "custom_scheme" (custom URL scheme, requires auth0_scheme). ' +
+            'Required when framework is "android".',
+        },
+        android_sha256_fingerprint: {
+          type: 'string',
+          description:
+            'Android only. The app signing certificate SHA256 fingerprint (colon-separated hex). ' +
+            'Registered as mobile.android.sha256_cert_fingerprints so Auth0 can serve the App Link ' +
+            'assetlinks association. Obtain via `./gradlew signingReport` (debug builds) or ' +
+            '`keytool -list -v -keystore <path>`. Required when callback_url_type is "universal_links".',
+        },
+        auth0_scheme: {
+          type: 'string',
+          description:
+            'Android only. The custom URL scheme the app claims (e.g. "com.auth0.samples" or "demo"). ' +
+            'Drives the scheme of the registered callback URL. Required when callback_url_type is "custom_scheme".',
+        },
       },
       required: ['client_id', 'framework', 'project_path'],
       additionalProperties: false,
@@ -81,6 +115,10 @@ export const QUICKSTART_HANDLERS: Record<
       framework,
       project_path: projectPath,
       base_url: baseUrl,
+      app_package_name: applicationId,
+      callback_url_type: callbackUrlType,
+      android_sha256_fingerprint: androidSha256Fingerprint,
+      auth0_scheme: auth0Scheme,
     } = request.parameters;
 
     if (!clientId) {
@@ -93,6 +131,20 @@ export const QUICKSTART_HANDLERS: Record<
       return createErrorResponse(
         `Error: Unsupported framework "${framework}". Must be one of: ${SUPPORTED_FRAMEWORKS.join(', ')}`
       );
+    }
+
+    // Android requires callback configuration; these inputs are ignored for other frameworks.
+    const isAndroid = framework.toLowerCase() === 'android';
+    const androidError = validateAndroidInputs({
+      isAndroid,
+      applicationId,
+      callbackUrlType,
+      androidSha256Fingerprint,
+      auth0Scheme,
+      baseUrl,
+    });
+    if (androidError) {
+      return androidError;
     }
 
     if (!projectPath) {
@@ -172,8 +224,41 @@ export const QUICKSTART_HANDLERS: Record<
       }
     }
 
-    // Step 4: Resolve callback URLs
-    const resolvedUrls = resolveCallbackUrls(spec, baseUrl);
+    // Step 4: Resolve callback URLs.
+    // Assemble the base-URL-independent input values first (Auth0 domain, client id, and
+    // spec.inputs defaults such as applicationId). These are needed to resolve an object-form
+    // defaultAppOrigin.domain and any %PLACEHOLDER% tokens in the callback/logout paths.
+    const baseInputValues: Record<string, string> = {
+      auth0Domain: config.domain,
+      auth0ClientId: clientId,
+    };
+    for (const [key, def] of Object.entries(spec.inputs)) {
+      if (
+        baseInputValues[key] === undefined &&
+        def &&
+        typeof def === 'object' &&
+        'default' in def
+      ) {
+        baseInputValues[key] = String((def as Record<string, unknown>).default);
+      }
+    }
+
+    // Caller-supplied Android values override the spec's inputs defaults. applicationId and
+    // auth0Scheme drive both callback-path placeholder resolution (%APPLICATION_ID%) and the
+    // LLM prompt (%AUTH0_SCHEME%).
+    if (isAndroid) {
+      baseInputValues.applicationId = applicationId;
+      if (callbackUrlType === 'custom_scheme') {
+        baseInputValues.auth0Scheme = auth0Scheme;
+      }
+    }
+
+    // For a custom-scheme Android callback, the registered callback URL must use the custom scheme
+    // rather than the spec's fixed https origin scheme.
+    const schemeOverride =
+      isAndroid && callbackUrlType === 'custom_scheme' ? auth0Scheme : undefined;
+
+    const resolvedUrls = resolveCallbackUrls(spec, baseUrl, baseInputValues, schemeOverride);
 
     // Step 5: Fetch LLM prompt
     let promptText: string;
@@ -209,21 +294,16 @@ export const QUICKSTART_HANDLERS: Record<
       (specDefaultPort !== undefined ? String(specDefaultPort) : null) ||
       (baseUrlParsed.protocol === 'https:' ? '443' : '80');
 
+    // Merge the base input values (incl. spec.inputs defaults) with the base-URL-derived
+    // values. Derived values are spread last so they take precedence over spec defaults.
     const inputValues: Record<string, string> = {
-      auth0Domain: config.domain,
-      auth0ClientId: clientId,
+      ...baseInputValues,
       port,
       appDomain: baseUrlParsed.hostname,
       appScheme: baseUrlParsed.protocol.replace(':', ''),
       auth0ClientSecret: '*******MASKED*********',
       sessionCookieSecret: '*******MASKED*********',
     };
-
-    for (const [key, def] of Object.entries(spec.inputs)) {
-      if (inputValues[key] === undefined && def && typeof def === 'object' && 'default' in def) {
-        inputValues[key] = String((def as Record<string, unknown>).default);
-      }
-    }
 
     const resolvedPrompt = resolvePlaceholders(
       promptText,
@@ -235,9 +315,49 @@ export const QUICKSTART_HANDLERS: Record<
     // Step 7: Update application after all failure-prone non-mutating work succeeds
     const { updatePayload, finalUrls } = calculateUrlUpdates(resolvedUrls, appData);
 
-    if (updatePayload) {
+    // For an Android App Link (universal_links) callback, Auth0 needs the app package name and
+    // signing-cert fingerprint to serve the assetlinks association. Register them via
+    // mobile.android unless they are already present on the application. A custom-scheme callback
+    // needs no fingerprint (there is no domain verification).
+    let mobilePayload: Record<string, any> | null = null;
+    if (isAndroid && callbackUrlType === 'universal_links') {
+      const existingFingerprints: string[] =
+        appData.mobile?.android?.sha256_cert_fingerprints ?? [];
+      const existingPackage: string | undefined = appData.mobile?.android?.app_package_name;
+      // Append-only: existing fingerprints are always retained (never dropped, even on a package
+      // rename); a genuinely new one is appended. Compare by normalized identity, not exact string,
+      // so the same cert from `keytool` (colons, uppercase) vs `./gradlew signingReport` (lowercase)
+      // does not register twice.
+      const normalizedNew = normalizeFingerprint(androidSha256Fingerprint);
+      const alreadyRegistered = existingFingerprints.some(
+        (fp) => normalizeFingerprint(fp) === normalizedNew
+      );
+      if (existingPackage !== applicationId || !alreadyRegistered) {
+        // PATCH replaces nested objects wholesale, so spread at both levels to preserve config we
+        // do not manage — siblings of `android` (e.g. mobile.ios) and any future field within it.
+        mobilePayload = {
+          ...(appData.mobile ?? {}),
+          android: {
+            ...(appData.mobile?.android ?? {}),
+            app_package_name: applicationId,
+            sha256_cert_fingerprints: alreadyRegistered
+              ? existingFingerprints
+              : [...existingFingerprints, androidSha256Fingerprint],
+          },
+        };
+      }
+    }
+
+    if (updatePayload || mobilePayload) {
       const updateResponse = await APPLICATION_HANDLERS['auth0_update_application'](
-        { token: request.token, parameters: { client_id: clientId, ...updatePayload } },
+        {
+          token: request.token,
+          parameters: {
+            client_id: clientId,
+            ...(updatePayload ?? {}),
+            ...(mobilePayload ? { mobile: mobilePayload } : {}),
+          },
+        },
         config
       );
       if (updateResponse.isError) {
@@ -267,6 +387,9 @@ export const QUICKSTART_HANDLERS: Record<
     if (finalUrls.skip_non_verifiable_callback_uri_confirmation_prompt) {
       configuredUrls.skip_non_verifiable_callback_uri_confirmation_prompt = true;
     }
+    if (mobilePayload) {
+      configuredUrls.mobile = mobilePayload;
+    }
 
     const actionsTaken: string[] = [];
     if (updatePayload !== null) {
@@ -285,6 +408,12 @@ export const QUICKSTART_HANDLERS: Record<
         );
       }
     }
+    if (mobilePayload) {
+      actionsTaken.push(
+        `Registered Android app package "${mobilePayload.android.app_package_name}" and signing-cert ` +
+          `fingerprint(s) on the application (mobile.android) so the App Link callback resolves back to the app`
+      );
+    }
     actionsTaken.push(`Fetched quickstart guide for ${framework}`);
 
     const credentialsNote = envFilePath
@@ -292,12 +421,16 @@ export const QUICKSTART_HANDLERS: Record<
         `any environment-variable or .env setup steps in the quickstart_prompt; do not create or copy a new .env file.`
       : '';
 
+    const urlsUpdated = updatePayload !== null;
+    const mobileUpdated = mobilePayload !== null;
+
     trackEvent.trackOnboardingStep(
       OnboardingStep.QuickstartGuide,
       framework,
       OnboardingStepStatus.Success,
       {
-        urls_updated: updatePayload !== null,
+        urls_updated: urlsUpdated,
+        mobile_updated: mobileUpdated,
       }
     );
 
@@ -309,7 +442,8 @@ export const QUICKSTART_HANDLERS: Record<
       app_type: spec.appType,
       quickstart_prompt: resolvedPrompt,
       configured_urls: configuredUrls,
-      urls_updated: updatePayload !== null,
+      urls_updated: urlsUpdated,
+      mobile_updated: mobileUpdated,
       url_source: resolvedUrls.url_source,
       actions_taken: actionsTaken,
       credentials_file: envFilePath,
