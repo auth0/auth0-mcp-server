@@ -177,14 +177,31 @@ export const fetchQuickstartSpec = async (framework: string): Promise<Quickstart
 };
 
 /**
- * Whether `raw` is a well-formed SHA256 certificate fingerprint (a 32-byte value = 64 hex
- * digits). Lenient on separators and case — colon-, space-, or unseparated input all pass, so a
- * paste from `./gradlew signingReport` is accepted regardless of incidental formatting. Only
- * clearly-malformed values (truncated, non-hex, wrong length) are rejected. Does not transform
- * the value; the original is registered as-is.
+ * Whether `raw` is a well-formed SHA256 certificate fingerprint (64 hex digits). Deliberately
+ * lenient on separators and case so a paste from `./gradlew signingReport` or `keytool` is accepted
+ * either way. Does not transform the value; the original is registered as-is.
  */
 export function isValidSha256Fingerprint(raw: string): boolean {
   return /^[0-9a-f]{64}$/.test(normalizeFingerprint(raw));
+}
+
+/**
+ * Whether `raw` is a well-formed Android package name. Beyond catching typos, this keeps the value
+ * safe to concatenate into the callback URL path (%APPLICATION_ID%), which is never re-parsed or
+ * escaped downstream.
+ */
+export function isValidAndroidPackageName(raw: string): boolean {
+  return /^[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z][a-zA-Z0-9_]*)+$/.test(raw);
+}
+
+/**
+ * Whether `raw` is a scheme usable in Auth0.Android's `<data android:scheme>` intent filter.
+ * Lowercase-only: `WebAuthProvider.withScheme` warns but does not normalize, so an uppercase value
+ * survives into the redirect_uri and fails as a dead redirect after login. Also gated because the
+ * value reaches the `%AUTH0_SCHEME%` prompt token and the callback URL unescaped.
+ */
+export function isValidAndroidScheme(raw: string): boolean {
+  return /^[a-z][a-z0-9+\-.]*$/.test(raw);
 }
 
 /**
@@ -196,13 +213,12 @@ export function normalizeFingerprint(raw: string): string {
 }
 
 /**
- * Validate the Android-only callback configuration inputs. Android requires the app package name,
- * the callback style, and the style-specific value (a signing fingerprint for App Links, or the
- * scheme string for a custom scheme). Reports every missing/invalid input in a single message —
- * with a hint on where to source each value and the conditional follow-ups — so the caller can
- * gather everything in one pass and supply it in one further call, rather than discovering the
- * requirements one error at a time. Rejects base_url, which has no meaning for a native app.
- * Returns null when the inputs are valid (or not Android).
+ * Validate the Android-only callback configuration inputs. Returns null when they are valid (or
+ * not Android).
+ *
+ * Values are format-checked, not just checked for presence: each flows unescaped into the
+ * registered callback URL and/or the LLM prompt. Every problem is reported in one message, with a
+ * hint on where to source each value, so the caller can gather everything in a single pass.
  */
 export function validateAndroidInputs(params: {
   isAndroid: boolean;
@@ -224,9 +240,8 @@ export function validateAndroidInputs(params: {
     return null;
   }
 
-  // base_url is a web-dev-server concept (localhost/port). Android callbacks derive from the
-  // custom scheme or the Auth0 tenant domain, so a base_url can only misconfigure them — reject
-  // it outright rather than silently ignoring a value the caller believes is taking effect.
+  // Rejected outright rather than silently ignored, so a caller who believes the value is taking
+  // effect finds out now.
   if (baseUrl) {
     return createErrorResponse(
       'Error: base_url is not applicable to the android framework. Android callbacks are ' +
@@ -240,6 +255,10 @@ export function validateAndroidInputs(params: {
   if (!applicationId) {
     missing.push(
       'app_package_name — the app package name; read it from the Gradle `applicationId` in app/build.gradle(.kts) (e.g. "com.auth0.samples")'
+    );
+  } else if (!isValidAndroidPackageName(applicationId)) {
+    missing.push(
+      'app_package_name — the supplied value is not a valid Android package name (expected two or more dot-separated segments, each starting with a letter, e.g. "com.auth0.samples"). Copy it exactly from the Gradle `applicationId` in app/build.gradle(.kts)'
     );
   }
   if (!hasValidType) {
@@ -258,8 +277,14 @@ export function validateAndroidInputs(params: {
       );
     }
   }
-  if (callbackUrlType === 'custom_scheme' && !auth0Scheme) {
-    missing.push('auth0_scheme — the custom URL scheme the app claims (e.g. "demo")');
+  if (callbackUrlType === 'custom_scheme') {
+    if (!auth0Scheme) {
+      missing.push('auth0_scheme — the custom URL scheme the app claims (e.g. "demo")');
+    } else if (!isValidAndroidScheme(auth0Scheme)) {
+      missing.push(
+        'auth0_scheme — the supplied value is not a usable Android scheme. Supply just the lowercase scheme name with no "://", slashes, or spaces (e.g. "demo" or "com.auth0.samples"). Auth0.Android requires a lowercase scheme; an uppercase value would not match the intent filter and login would fail on the redirect back to the app'
+      );
+    }
   }
 
   if (missing.length === 0) {
