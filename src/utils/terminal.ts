@@ -244,13 +244,10 @@ class Terminal {
     });
 
     return new Promise<boolean>((resolve) => {
-      rl.question(
-        chalk.yellow(`Press Enter to open the browser to log in or ${chalk.cyan('^C')} to quit.\n`),
-        () => {
-          rl.close();
-          resolve(true);
-        }
-      );
+      rl.question('', () => {
+        rl.close();
+        resolve(true);
+      });
     });
   }
 
