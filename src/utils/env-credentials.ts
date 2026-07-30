@@ -6,7 +6,12 @@ import { fetchQuickstartSpec } from './quickstarts.js';
 import type { QuickstartSpec, DefaultAppOrigin } from './quickstarts.js';
 import { isFrameworkSupported, hasProjectMarker } from './onboarding.js';
 import { getManagementClient } from './auth0-client.js';
-import { writeCredentialsToEnv, parseEnvFile, detectExistingEnvFile, ensureGitignore } from './credentials-writer.js';
+import {
+  writeCredentialsToEnv,
+  parseEnvFile,
+  detectExistingEnvFile,
+  ensureGitignore,
+} from './credentials-writer.js';
 import type { HandlerConfig } from './types.js';
 import trackEvent from './analytics.js';
 import type { CredentialResolutionFallbackReason } from './analytics.js';
@@ -41,8 +46,17 @@ type ResolvedCredentials =
       credentialMap: Record<string, string>;
       envFilePath: string;
       generated_keys: string[];
+      /** Whether the session-cookie secret was auto-generated (drives the secret_generated analytic). */
+      secret_generated: boolean;
     }
   | { success: false; error: string };
+
+/**
+ * CDN spec placeholder for the session-cookie secret. We never populate its input
+ * (`sessionCookieSecret`) — the value is generated locally — so any sensitive var
+ * templated with this token is the session secret, regardless of its output name.
+ */
+const SESSION_SECRET_PLACEHOLDER = '%AUTH0_SECRET%';
 
 /**
  * Resolves Auth0 credentials for the given framework and writes them to the project's env file.
@@ -57,7 +71,15 @@ type ResolvedCredentials =
  * @returns Result indicating success (with file metadata) or failure (with error message)
  */
 const WEB_SERVED_SEGMENT_NAMES = new Set([
-  'public', 'dist', 'build', 'static', 'www', 'wwwroot', 'html', 'assets', 'out',
+  'public',
+  'dist',
+  'build',
+  'static',
+  'www',
+  'wwwroot',
+  'html',
+  'assets',
+  'out',
 ]);
 
 // Detects whether a directory is likely web-served based on its final path segment.
@@ -118,12 +140,19 @@ export async function resolveAndWriteCredentials(
   }
 
   const resolutionPath: 'spec' | 'fallback' = spec?.envSnippet ? 'spec' : 'fallback';
-  
+
   // After the guard above, the only remaining fallback case is an unsupported framework.
   const fallbackReason: CredentialResolutionFallbackReason | undefined =
     resolutionPath === 'fallback' ? 'unsupported' : undefined;
   const resolved = spec?.envSnippet
-    ? await buildSpecCredentials(params, spec.envSnippet, spec.defaultAppOrigin, config, token, spec.placeholders)
+    ? await buildSpecCredentials(
+        params,
+        spec.envSnippet,
+        spec.defaultAppOrigin,
+        config,
+        token,
+        spec.placeholders
+      )
     : await buildFallbackCredentials(params, config, token);
 
   if (!resolved.success) return resolved;
@@ -165,7 +194,7 @@ export async function resolveAndWriteCredentials(
   trackEvent.trackCredentialResolution(
     framework,
     resolutionPath,
-    generatedKeys.includes('AUTH0_SECRET'),
+    resolved.secret_generated,
     credentialsInfo.keys_written,
     fallbackReason
   );
@@ -202,7 +231,9 @@ export async function resolveAndWriteCredentials(
  * with actual values derived from the spec's placeholder→inputKey mapping.
  *
  * SPA frameworks (empty secretKeys) skip the Management API call entirely.
- * AUTH0_SECRET is generated only when required and not already present in the existing env file.
+ * The session-cookie secret is generated only when required and not already present in the
+ * existing env file. It is identified by the %AUTH0_SECRET% placeholder rather than a fixed
+ * output name, since that name varies by framework (AUTH0_SECRET for Next.js, SECRET for Express).
  */
 async function buildSpecCredentials(
   params: EnvCredentialsParams,
@@ -226,7 +257,11 @@ async function buildSpecCredentials(
   const envFilePath = detectExistingEnvFile(projectPath) ?? path.join(projectPath, fileName);
 
   const varEntries = envSnippet.entries.filter((e) => e.type === 'var') as {
-    type: 'var'; name: string; value: string; comment?: string; sensitive?: boolean;
+    type: 'var';
+    name: string;
+    value: string;
+    comment?: string;
+    sensitive?: boolean;
   }[];
   const secretKeys = varEntries.filter((e) => e.sensitive).map((e) => e.name);
 
@@ -241,7 +276,8 @@ async function buildSpecCredentials(
       if (sdkError.statusCode === 404) {
         error = `Application with client_id '${clientId}' not found.`;
       } else if (sdkError.statusCode === 401) {
-        error += '\nYour token may be expired or missing read:clients scope. Try running "npx @auth0/auth0-mcp-server init" to refresh your token.';
+        error +=
+          '\nYour token may be expired or missing read:clients scope. Try running "npx @auth0/auth0-mcp-server init" to refresh your token.';
       }
       return { success: false, error };
     }
@@ -270,8 +306,14 @@ async function buildSpecCredentials(
     auth0ClientId: clientId,
     auth0ClientSecret: clientSecret,
     port: resolvedPort,
-    appDomain: parsedBaseUrl ? parsedBaseUrl.hostname : (defaultAppOrigin.domain ?? 'localhost'),
-    appScheme: parsedBaseUrl ? parsedBaseUrl.protocol.replace(':', '') : (defaultAppOrigin.scheme ?? 'http'),
+    appDomain: parsedBaseUrl
+      ? parsedBaseUrl.hostname
+      : typeof defaultAppOrigin.domain === 'string'
+        ? defaultAppOrigin.domain
+        : 'localhost',
+    appScheme: parsedBaseUrl
+      ? parsedBaseUrl.protocol.replace(':', '')
+      : (defaultAppOrigin.scheme ?? 'http'),
   };
 
   if (callbackUrl) {
@@ -283,23 +325,28 @@ async function buildSpecCredentials(
   const existingEnv = parseEnvFile(envFilePath);
   const credentialMap: Record<string, string> = {};
   const generated_keys: string[] = [];
+  let secret_generated = false;
 
   for (const entry of varEntries) {
-    if (entry.name === 'AUTH0_SECRET') {
-      if (!existingEnv['AUTH0_SECRET']) {
+    // Session-cookie secret: detected by the %AUTH0_SECRET% placeholder, not the output
+    // name (which varies by framework), since we generate it locally rather than fetch it.
+    // Generate only if not already present in the env file.
+    if (entry.sensitive && entry.value.includes(SESSION_SECRET_PLACEHOLDER)) {
+      if (!existingEnv[entry.name]) {
         credentialMap[entry.name] = randomBytes(32).toString('hex');
         generated_keys.push(entry.name);
+        secret_generated = true;
       }
       continue;
     }
 
-    const resolved = resolvePlaceholders(entry.value, placeholderMap);
+    const resolved = resolveEnvPlaceholders(entry.value, placeholderMap);
     if (resolved && !resolved.includes('%')) {
       credentialMap[entry.name] = resolved;
     }
   }
 
-  return { success: true, credentialMap, envFilePath, generated_keys };
+  return { success: true, credentialMap, envFilePath, generated_keys, secret_generated };
 }
 
 /**
@@ -324,9 +371,13 @@ function buildPlaceholderMap(
 }
 
 /**
- * Resolves all %PLACEHOLDER% tokens in a template string using the placeholder map.
+ * Resolves all %PLACEHOLDER% tokens in an env-file template using a pre-built placeholder map,
+ * leaving unknown tokens in place (the caller rejects any value that still contains a `%`).
  */
-function resolvePlaceholders(template: string, placeholderMap: Record<string, string>): string {
+function resolveEnvPlaceholders(
+  template: string,
+  placeholderMap: Record<string, string>
+): string {
   return template.replace(/%[A-Z0-9_]+%/g, (token) => placeholderMap[token] ?? token);
 }
 
@@ -366,13 +417,20 @@ async function buildFallbackCredentials(
       ...(resolvedCallbackUrl ? { AUTH0_CALLBACK_URL: resolvedCallbackUrl } : {}),
     };
 
-    return { success: true, credentialMap, envFilePath, generated_keys: [] };
+    return {
+      success: true,
+      credentialMap,
+      envFilePath,
+      generated_keys: [],
+      secret_generated: false,
+    };
   } catch (sdkError: any) {
     let error = `Failed to retrieve application: ${sdkError.message || 'Unknown error'}`;
     if (sdkError.statusCode === 404) {
       error = `Application with client_id '${clientId}' not found.`;
     } else if (sdkError.statusCode === 401) {
-      error += '\nYour token may be expired or missing read:clients scope. Try running "npx @auth0/auth0-mcp-server init" to refresh your token.';
+      error +=
+        '\nYour token may be expired or missing read:clients scope. Try running "npx @auth0/auth0-mcp-server init" to refresh your token.';
     }
     return { success: false, error };
   }
@@ -422,7 +480,11 @@ function checkWriteGuard(projectPath: string, incomingKeys: string[]): string | 
 
 function updateWriteGuard(projectPath: string, keysWritten: string[], framework: string): void {
   const statePath = path.join(projectPath, WRITE_GUARD_FILE);
-  const state: WriteGuardState = { lastWrittenAt: new Date().toISOString(), keysWritten, framework };
+  const state: WriteGuardState = {
+    lastWrittenAt: new Date().toISOString(),
+    keysWritten,
+    framework,
+  };
   try {
     fs.writeFileSync(statePath, JSON.stringify(state, null, 2), 'utf-8');
   } catch (error) {
@@ -462,7 +524,11 @@ function appendAuditLog(
       fs.writeFileSync(tmpPath, content, 'utf-8');
       fs.renameSync(tmpPath, logPath);
     } catch (writeErr) {
-      try { fs.unlinkSync(tmpPath); } catch { /* ignore */ }
+      try {
+        fs.unlinkSync(tmpPath);
+      } catch {
+        /* ignore */
+      }
       throw writeErr;
     }
   } catch (error) {
