@@ -1,5 +1,14 @@
 # Change Log
 
+## [v0.1.0-beta.18](https://github.com/auth0/auth0-mcp-server/tree/v0.1.0-beta.18) (2026-08-06)
+[Full Changelog](https://github.com/auth0/auth0-mcp-server/compare/v0.1.0-beta.17...v0.1.0-beta.18)
+
+**Added**
+- feat(quickstarts): add javascript, express, python, and android onboarding support [DXAA-676] [\#201](https://github.com/auth0/auth0-mcp-server/pull/201) ([GilbertLS](https://github.com/GilbertLS))
+
+**Changed**
+- updating cli output for device confirmation explanation [\#195](https://github.com/auth0/auth0-mcp-server/pull/195) ([wdaimee](https://github.com/wdaimee))
+
 ## [v0.1.0-beta.17](https://github.com/auth0/auth0-mcp-server/tree/v0.1.0-beta.17) (2026-07-21)
 [Full Changelog](https://github.com/auth0/auth0-mcp-server/compare/v0.1.0-beta.16...v0.1.0-beta.17)
 
