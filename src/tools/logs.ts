@@ -22,7 +22,12 @@ export const LOG_TOOLS: Tool[] = [
         },
         q: {
           type: 'string',
-          description: 'Query in Lucene query string syntax. Optional, used for filtering logs.',
+          description:
+            'Lucene query string to filter logs. ' +
+            'Valid fields: user_name (stores email for database users), user_id, type, ' +
+            'client_id, client_name, ip, connection, description, date. ' +
+            'Examples: user_name:"john@example.com", type:f, client_name:MyApp AND type:fp. ' +
+            'Do NOT use user_email — this field does not exist in Auth0 logs.',
         },
         sort: {
           type: 'string',
