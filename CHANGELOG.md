@@ -1,5 +1,14 @@
 # Change Log
 
+## [v0.1.0-beta.19](https://github.com/auth0/auth0-mcp-server/tree/v0.1.0-beta.19) (2026-08-13)
+[Full Changelog](https://github.com/auth0/auth0-mcp-server/compare/v0.1.0-beta.18...v0.1.0-beta.19)
+
+**Fixed**
+- fix(forms): add style sub-schema with css-only constraint, add name length bounds [\#200](https://github.com/auth0/auth0-mcp-server/pull/200) ([AkxenTech](https://github.com/AkxenTech))
+- fix(actions): align trigger enum to OAS, update runtime guidance, add code to required [\#199](https://github.com/auth0/auth0-mcp-server/pull/199) ([AkxenTech](https://github.com/AkxenTech))
+- fix(applications): add grant_types guidance, jwt_configuration alg enum, refresh_token sub-schema [\#198](https://github.com/auth0/auth0-mcp-server/pull/198) ([AkxenTech](https://github.com/AkxenTech))
+- fix(logs): add valid field names and examples to q parameter description [\#197](https://github.com/auth0/auth0-mcp-server/pull/197) ([AkxenTech](https://github.com/AkxenTech))
+
 ## [v0.1.0-beta.18](https://github.com/auth0/auth0-mcp-server/tree/v0.1.0-beta.18) (2026-08-06)
 [Full Changelog](https://github.com/auth0/auth0-mcp-server/compare/v0.1.0-beta.17...v0.1.0-beta.18)
 
