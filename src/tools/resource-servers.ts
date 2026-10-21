@@ -10,6 +10,7 @@ import { log } from '../utils/logger.js';
 import { createErrorResponse, createSuccessResponse } from '../utils/http-utility.js';
 import type { Auth0Config } from '../utils/config.js';
 import { getManagementClient } from '../utils/auth0-client.js';
+import { maskSensitiveFields } from '../utils/response-masker.js';
 
 // Define all available resource server tools
 export const RESOURCE_SERVER_TOOLS: Tool[] = [
@@ -450,7 +451,10 @@ export const RESOURCE_SERVER_HANDLERS: Record<
           `Successfully retrieved resource server: ${(resourceServer as any).name || 'Unknown'} (${(resourceServer as any).id || id})`
         );
 
-        return createSuccessResponse(resourceServer);
+        // Mask sensitive fields before returning response
+        const maskedResourceServer = maskSensitiveFields(resourceServer);
+
+        return createSuccessResponse(maskedResourceServer);
       } catch (sdkError: any) {
         // Handle SDK errors
         log('Auth0 SDK error');
@@ -564,7 +568,10 @@ export const RESOURCE_SERVER_HANDLERS: Record<
           `Successfully created resource server: ${(resourceServer as any).name || 'Unknown'} (${(resourceServer as any).id || 'Unknown ID'})`
         );
 
-        return createSuccessResponse(resourceServer);
+        // Mask sensitive fields before returning response
+        const maskedResourceServer = maskSensitiveFields(resourceServer);
+
+        return createSuccessResponse(maskedResourceServer);
       } catch (sdkError: any) {
         // Handle SDK errors
         log('Auth0 SDK error');
@@ -675,7 +682,10 @@ export const RESOURCE_SERVER_HANDLERS: Record<
           `Successfully updated resource server: ${(resourceServer as any).name || 'Unknown'} (${(resourceServer as any).id || id})`
         );
 
-        return createSuccessResponse(resourceServer);
+        // Mask sensitive fields before returning response
+        const maskedResourceServer = maskSensitiveFields(resourceServer);
+
+        return createSuccessResponse(maskedResourceServer);
       } catch (sdkError: any) {
         // Handle SDK errors
         log('Auth0 SDK error');

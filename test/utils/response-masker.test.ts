@@ -39,6 +39,21 @@ describe('response-masker', () => {
       expect(masked.normal_field).toBe('normal_value');
     });
 
+    it('should mask signing_secret in object', () => {
+      const data = {
+        id: 'rs_123',
+        name: 'Test API',
+        signing_alg: 'HS256',
+        signing_secret: 'super_secret_hs256_value',
+      };
+
+      const masked = maskSensitiveFields(data);
+
+      expect(masked.id).toBe('rs_123');
+      expect(masked.name).toBe('Test API');
+      expect(masked.signing_secret).toBe('[REDACTED]');
+    });
+
     it('should handle nested objects', () => {
       const data = {
         client_id: 'abc123',

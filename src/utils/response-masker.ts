@@ -16,6 +16,7 @@ const DEFAULT_SENSITIVE_FIELDS = [
   'signing_keys',
   'encryption_key',
   'signing_key',
+  'signing_secret',
   'private_key',
   'refresh_token',
 ];
