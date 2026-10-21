@@ -47,6 +47,20 @@ export const mockResourceServerListResponse = {
 // Mock single resource server response
 export const mockSingleResourceServer = mockResourceServers[0];
 
+// Mock HS256 resource server with a signing_secret, as returned by the real
+// Auth0 Management API on GET/POST/PATCH for symmetric-algorithm APIs
+export const mockResourceServerWithSigningSecret = {
+  id: 'rs-hs256',
+  name: 'HS256 Test API',
+  identifier: 'https://hs256-api.example.com',
+  scopes: [],
+  signing_alg: 'HS256',
+  signing_secret: 'super_secret_hs256_value',
+  token_lifetime: 86400,
+  allow_offline_access: false,
+  skip_consent_for_verifiable_first_party_clients: false,
+};
+
 // Mock create resource server response
 export const mockCreateResourceServerResponse = {
   id: 'new-rs-id',

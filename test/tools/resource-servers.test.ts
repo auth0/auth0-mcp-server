@@ -5,6 +5,7 @@ import { mockConfig } from '../mocks/config';
 import {
   mockResourceServers,
   mockResourceServerListResponse,
+  mockResourceServerWithSigningSecret,
 } from '../mocks/auth0/resource-servers';
 import { server } from '../setup';
 
@@ -186,6 +187,31 @@ describe('Resource Servers Tool Handlers', () => {
       expect(response.isError).toBe(true);
       expect(response.content[0].text).toContain('not found');
     });
+
+    it('should mask signing_secret for an HS256 resource server', async () => {
+      server.use(
+        http.get('https://*/api/v2/resource-servers/rs-hs256', () => {
+          return HttpResponse.json(mockResourceServerWithSigningSecret);
+        })
+      );
+
+      const request = {
+        token,
+        parameters: {
+          id: 'rs-hs256',
+        },
+      };
+
+      const config = { domain };
+
+      const response = await RESOURCE_SERVER_HANDLERS.auth0_get_resource_server(request, config);
+
+      expect(response.isError).toBe(false);
+
+      const parsedContent = JSON.parse(response.content[0].text);
+      expect(parsedContent.id).toBe('rs-hs256');
+      expect(parsedContent.signing_secret).toBe('[REDACTED]');
+    });
   });
 
   describe('auth0_create_resource_server', () => {
@@ -290,6 +316,28 @@ describe('Resource Servers Tool Handlers', () => {
       // The error message might be different, so we'll just check that it contains the identifier
       expect(response.content[0].text).toContain('https://api.example.com');
     });
+
+    it('should mask signing_secret when creating an HS256 resource server', async () => {
+      const request = {
+        token,
+        parameters: {
+          name: 'HS256 Test API',
+          identifier: 'https://hs256-api.example.com',
+          signing_alg: 'HS256',
+          signing_secret: 'super_secret_hs256_value',
+        },
+      };
+
+      const config = { domain };
+
+      const response = await RESOURCE_SERVER_HANDLERS.auth0_create_resource_server(request, config);
+
+      expect(response.isError).toBe(false);
+
+      const parsedContent = JSON.parse(response.content[0].text);
+      expect(parsedContent.name).toBe('HS256 Test API');
+      expect(parsedContent.signing_secret).toBe('[REDACTED]');
+    });
   });
 
   describe('auth0_update_resource_server', () => {
@@ -371,6 +419,29 @@ describe('Resource Servers Tool Handlers', () => {
 
       expect(response.isError).toBe(true);
       expect(response.content[0].text).toContain('not found');
+    });
+
+    it('should mask signing_secret when updating a resource server', async () => {
+      const resourceServerId = mockResourceServers[0].id;
+
+      const request = {
+        token,
+        parameters: {
+          id: resourceServerId,
+          signing_alg: 'HS256',
+          signing_secret: 'rotated_secret_value',
+        },
+      };
+
+      const config = { domain };
+
+      const response = await RESOURCE_SERVER_HANDLERS.auth0_update_resource_server(request, config);
+
+      expect(response.isError).toBe(false);
+
+      const parsedContent = JSON.parse(response.content[0].text);
+      expect(parsedContent.id).toBe(resourceServerId);
+      expect(parsedContent.signing_secret).toBe('[REDACTED]');
     });
   });
 });
