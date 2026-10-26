@@ -13,6 +13,7 @@ vi.mock('../../src/utils/terminal', () => ({
   getTenantFromToken: vi.fn().mockReturnValue('test-tenant.auth0.com'),
   cliOutput: vi.fn(),
   promptForBrowserPermission: vi.fn().mockResolvedValue(undefined),
+  promptForLoginHint: vi.fn().mockResolvedValue(null),
 }));
 
 vi.mock('../../src/utils/logger', () => ({
@@ -22,7 +23,7 @@ vi.mock('../../src/utils/logger', () => ({
 
 // Import the module after mocking
 import { requestAuthorization } from '../../src/auth/device-auth-flow';
-import { promptForBrowserPermission } from '../../src/utils/terminal';
+import { promptForBrowserPermission, promptForLoginHint } from '../../src/utils/terminal';
 
 describe('requestAuthorization interaction option', () => {
   let originalFetch: typeof global.fetch;
@@ -93,5 +94,43 @@ describe('requestAuthorization interaction option', () => {
     await requestAuthorization(['read:users']);
 
     expect(promptForBrowserPermission).toHaveBeenCalledTimes(1);
+  });
+
+  it('should call promptForLoginHint when interaction is true', async () => {
+    setupSuccessfulAuthFlow();
+
+    await requestAuthorization(['read:users'], true);
+
+    expect(promptForLoginHint).toHaveBeenCalledTimes(1);
+  });
+
+  it('should NOT call promptForLoginHint when interaction is false', async () => {
+    setupSuccessfulAuthFlow();
+
+    await requestAuthorization(['read:users'], false);
+
+    expect(promptForLoginHint).not.toHaveBeenCalled();
+  });
+
+  it('should include login_hint in device code request when email is provided', async () => {
+    vi.mocked(promptForLoginHint).mockResolvedValueOnce('user@enterprise.com');
+    setupSuccessfulAuthFlow();
+
+    await requestAuthorization(['read:users'], true);
+
+    const deviceCodeCall = mockFetch.mock.calls[0];
+    const body = new URLSearchParams(deviceCodeCall[1].body);
+    expect(body.get('login_hint')).toBe('user@enterprise.com');
+  });
+
+  it('should not include login_hint in device code request when email is skipped', async () => {
+    vi.mocked(promptForLoginHint).mockResolvedValueOnce(null);
+    setupSuccessfulAuthFlow();
+
+    await requestAuthorization(['read:users'], true);
+
+    const deviceCodeCall = mockFetch.mock.calls[0];
+    const body = new URLSearchParams(deviceCodeCall[1].body);
+    expect(body.get('login_hint')).toBeNull();
   });
 });

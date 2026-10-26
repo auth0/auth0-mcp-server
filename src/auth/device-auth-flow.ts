@@ -6,6 +6,7 @@ import {
   getTenantFromToken,
   cliOutput,
   promptForBrowserPermission,
+  promptForLoginHint,
 } from '../utils/terminal.js';
 import { log, logError } from '../utils/logger.js';
 import { keychain } from '../utils/keychain.js';
@@ -40,6 +41,19 @@ async function requestAuthorization(selectedScopes?: string[], interaction: bool
   if (config.scopes.length) {
     body.scope = config.scopes;
   }
+
+  // Prompt for email when running interactively so that tenants using
+  // identifier-first login and enterprise SSO (e.g. SAML) are routed to
+  // their IdP instead of being shown a password prompt. Auth0 embeds the
+  // login_hint in verification_uri_complete, which Universal Login uses to
+  // trigger Home Realm Discovery before the user sees the login form.
+  if (interaction) {
+    const loginHint = await promptForLoginHint();
+    if (loginHint) {
+      body.login_hint = loginHint;
+    }
+  }
+
   try {
     const response = await fetch(`https://${config.tenant}/oauth/device/code`, {
       method: 'POST',
