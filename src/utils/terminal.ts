@@ -267,6 +267,33 @@ class Terminal {
     const scopeSelector = new ScopeSelector();
     return scopeSelector.selectScopes();
   }
+
+  /**
+   * Prompts user for their email address to support enterprise SSO and
+   * identifier-first login flows. The value is passed as login_hint in the
+   * device authorization request so Auth0 can route to the correct IdP
+   * without prompting for a password. Skippable — pressing Enter without
+   * input leaves login_hint unset and preserves existing behavior.
+   *
+   * @returns {Promise<string | null>} - The email entered, or null if skipped
+   */
+  public async promptForLoginHint(): Promise<string | null> {
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout,
+    });
+
+    return new Promise<string | null>((resolve) => {
+      rl.question(
+        chalk.cyan('Enter your login email for enterprise SSO (press Enter to skip): '),
+        (answer) => {
+          rl.close();
+          const trimmed = answer.trim();
+          resolve(trimmed || null);
+        }
+      );
+    });
+  }
 }
 
 /**
@@ -475,6 +502,8 @@ export const promptForBrowserPermission = (): Promise<boolean> =>
   terminal.promptForBrowserPermission();
 export const promptForScopeSelection = (providedScopes?: string[]): Promise<string[]> =>
   terminal.promptForScopeSelection(providedScopes);
+export const promptForLoginHint = (): Promise<string | null> =>
+  terminal.promptForLoginHint();
 
 /**
  * Masks a tenant name according to the specified format:
