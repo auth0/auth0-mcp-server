@@ -59,6 +59,30 @@ export const ACTION_TOOLS: Tool[] = [
     },
   },
   {
+    name: 'auth0_list_trigger_bindings',
+    description: 'List actions bound to an Auth0 trigger in execution order',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        trigger_id: { type: 'string', description: 'Trigger ID, such as post-login' },
+        page: { type: 'number', description: 'Page number (0-based)' },
+        per_page: { type: 'number', description: 'Number of bindings per page' },
+      },
+      required: ['trigger_id'],
+    },
+    _meta: {
+      requiredScopes: ['read:actions'],
+      readOnly: true,
+    },
+    annotations: {
+      title: 'List Auth0 Trigger Bindings',
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
+  },
+  {
     name: 'auth0_get_action',
     description: 'Get details about a specific Auth0 action',
     inputSchema: {
@@ -114,7 +138,8 @@ export const ACTION_TOOLS: Tool[] = [
                   'login-post-identifier',
                   'signup-post-identifier',
                 ],
-                description: 'Trigger ID. Use exact hyphenated values — e.g. post-login, not login or onLogin.',
+                description:
+                  'Trigger ID. Use exact hyphenated values — e.g. post-login, not login or onLogin.',
               },
               version: {
                 type: 'string',
@@ -210,7 +235,8 @@ export const ACTION_TOOLS: Tool[] = [
                   'login-post-identifier',
                   'signup-post-identifier',
                 ],
-                description: 'Trigger ID. Use exact hyphenated values — e.g. post-login, not login or onLogin.',
+                description:
+                  'Trigger ID. Use exact hyphenated values — e.g. post-login, not login or onLogin.',
               },
               version: {
                 type: 'string',
@@ -436,6 +462,55 @@ export const ACTION_HANDLERS: Record<
 
       return createErrorResponse(
         `Error: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
+  },
+  auth0_list_trigger_bindings: async (
+    request: HandlerRequest,
+    config: HandlerConfig
+  ): Promise<HandlerResponse> => {
+    const { trigger_id, page, per_page } = request.parameters;
+
+    if (!request.token) {
+      return createErrorResponse('Error: Missing authorization token');
+    }
+
+    if (!config.domain) {
+      return createErrorResponse('Error: Auth0 domain is not configured');
+    }
+
+    if (typeof trigger_id !== 'string' || trigger_id.trim().length === 0) {
+      return createErrorResponse('Error: trigger_id is required and must be a non-empty string');
+    }
+
+    if (page !== undefined && (typeof page !== 'number' || !Number.isInteger(page) || page < 0)) {
+      return createErrorResponse('Error: page must be a non-negative integer');
+    }
+
+    if (
+      per_page !== undefined &&
+      (typeof per_page !== 'number' || !Number.isInteger(per_page) || per_page < 1)
+    ) {
+      return createErrorResponse('Error: per_page must be a positive integer');
+    }
+
+    try {
+      const managementClientConfig: Auth0Config = {
+        domain: config.domain,
+        token: request.token,
+      };
+      const managementClient = await getManagementClient(managementClientConfig, config.headers);
+      const { data: bindings } = await managementClient.actions.getTriggerBindings({
+        triggerId: trigger_id,
+        ...(page !== undefined ? { page } : {}),
+        ...(per_page !== undefined ? { per_page } : {}),
+      });
+
+      return createSuccessResponse(bindings);
+    } catch (error: any) {
+      log('Error listing trigger bindings');
+      return createErrorResponse(
+        `Failed to list trigger bindings: ${error instanceof Error ? error.message : String(error)}`
       );
     }
   },

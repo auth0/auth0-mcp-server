@@ -1,8 +1,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { http, HttpResponse } from 'msw';
-import { ACTION_HANDLERS } from '../../src/tools/actions';
+import { ACTION_HANDLERS, ACTION_TOOLS } from '../../src/tools/actions';
+import { getAvailableTools } from '../../src/utils/tools';
 import { mockConfig } from '../mocks/config';
-import { mockActions, mockActionListResponse } from '../mocks/auth0/actions';
+import {
+  mockActions,
+  mockActionListResponse,
+  mockTriggerBindingListResponse,
+} from '../mocks/auth0/actions';
 import { server } from '../setup';
 
 // Mock dependencies
@@ -13,6 +18,67 @@ vi.mock('../../src/utils/logger', () => ({
 }));
 
 describe('Actions Tool Handlers', () => {
+  describe('auth0_list_trigger_bindings', () => {
+    it('returns bindings in the API-provided execution order and forwards pagination', async () => {
+      let observedUrl: URL | undefined;
+      server.use(
+        http.get('https://*/api/v2/actions/triggers/:triggerId/bindings', ({ request }) => {
+          observedUrl = new URL(request.url);
+          return HttpResponse.json(mockTriggerBindingListResponse);
+        })
+      );
+
+      const response = await ACTION_HANDLERS.auth0_list_trigger_bindings(
+        {
+          token,
+          parameters: { trigger_id: 'post-login', page: 1, per_page: 2 },
+        },
+        { domain }
+      );
+
+      expect(response.isError).toBe(false);
+      const result = JSON.parse(response.content[0].text);
+      expect(
+        result.bindings.map((binding: { display_name: string }) => binding.display_name)
+      ).toEqual(['First binding', 'Second binding']);
+      expect(observedUrl?.pathname).toBe('/api/v2/actions/triggers/post-login/bindings');
+      expect(observedUrl?.searchParams.get('page')).toBe('1');
+      expect(observedUrl?.searchParams.get('per_page')).toBe('2');
+    });
+
+    it('rejects a missing trigger ID and invalid pagination before the API call', async () => {
+      const config = { domain };
+      const missingTrigger = await ACTION_HANDLERS.auth0_list_trigger_bindings(
+        { token, parameters: {} },
+        config
+      );
+      const invalidPage = await ACTION_HANDLERS.auth0_list_trigger_bindings(
+        { token, parameters: { trigger_id: 'post-login', page: 0.5 } },
+        config
+      );
+      const invalidPerPage = await ACTION_HANDLERS.auth0_list_trigger_bindings(
+        { token, parameters: { trigger_id: 'post-login', per_page: 0 } },
+        config
+      );
+
+      expect(missingTrigger.isError).toBe(true);
+      expect(missingTrigger.content[0].text).toContain('trigger_id is required');
+      expect(invalidPage.isError).toBe(true);
+      expect(invalidPage.content[0].text).toContain('page must be a non-negative integer');
+      expect(invalidPerPage.isError).toBe(true);
+      expect(invalidPerPage.content[0].text).toContain('per_page must be a positive integer');
+    });
+
+    it('is available in read-only mode with only the read:actions scope', () => {
+      const tool = ACTION_TOOLS.find((item) => item.name === 'auth0_list_trigger_bindings');
+      const readOnlyNames = getAvailableTools(ACTION_TOOLS, ['*'], true).map((item) => item.name);
+
+      expect(tool?._meta?.requiredScopes).toEqual(['read:actions']);
+      expect(tool?._meta?.readOnly).toBe(true);
+      expect(tool?.annotations?.readOnlyHint).toBe(true);
+      expect(readOnlyNames).toContain('auth0_list_trigger_bindings');
+    });
+  });
   const domain = mockConfig.domain;
   const token = mockConfig.token;
 
