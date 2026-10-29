@@ -1,5 +1,10 @@
 # Change Log
 
+## Unreleased
+
+**Added**
+- Add a read-only tool to list actions bound to an Auth0 trigger in execution order.
+
 ## [v0.1.0-beta.19](https://github.com/auth0/auth0-mcp-server/tree/v0.1.0-beta.19) (2026-08-13)
 [Full Changelog](https://github.com/auth0/auth0-mcp-server/compare/v0.1.0-beta.18...v0.1.0-beta.19)
 

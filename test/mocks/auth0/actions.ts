@@ -50,6 +50,31 @@ export const mockActionListResponse = {
   per_page: 10,
 };
 
+// Mock trigger bindings in Auth0's documented execution order.
+export const mockTriggerBindingListResponse = {
+  total: 2,
+  page: 0,
+  per_page: 10,
+  bindings: [
+    {
+      id: 'binding1',
+      trigger_id: 'post-login',
+      display_name: 'First binding',
+      action: mockActions[0],
+      created_at: '2026-01-01T00:00:00.000Z',
+      updated_at: '2026-01-01T00:00:00.000Z',
+    },
+    {
+      id: 'binding2',
+      trigger_id: 'post-login',
+      display_name: 'Second binding',
+      action: mockActions[1],
+      created_at: '2026-01-02T00:00:00.000Z',
+      updated_at: '2026-01-02T00:00:00.000Z',
+    },
+  ],
+};
+
 // Mock single action response
 export const mockSingleAction = mockActions[0];
 

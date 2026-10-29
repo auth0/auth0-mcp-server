@@ -1,7 +1,11 @@
 import { http, HttpResponse, delay } from 'msw';
 import { mockApplications } from './auth0/applications';
 import { mockLogs } from './auth0/logs';
-import { mockActions, mockActionListResponse } from './auth0/actions';
+import {
+  mockActions,
+  mockActionListResponse,
+  mockTriggerBindingListResponse,
+} from './auth0/actions';
 import { mockForms, mockFormListResponse } from './auth0/forms';
 import { mockResourceServers, mockResourceServerListResponse } from './auth0/resource-servers';
 
@@ -145,6 +149,10 @@ export const handlers = [
     }
 
     return HttpResponse.json(mockActionListResponse);
+  }),
+
+  http.get('https://*/api/v2/actions/triggers/:triggerId/bindings', () => {
+    return HttpResponse.json(mockTriggerBindingListResponse);
   }),
 
   http.get('https://*/api/v2/actions/actions/:actionId', ({ params }) => {

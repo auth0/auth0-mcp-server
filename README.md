@@ -230,7 +230,7 @@ The Auth0 MCP Server provides the following tools for Claude to interact with yo
 | `auth0_get_application`    | Get details about a specific Auth0 application              | - `Show me details for the application called 'Customer Portal'` <br> - `Get information about my application with client ID abc123` <br> - `What are the callback URLs for my 'Mobile App'?`                                            |
 | `auth0_create_application` | Create a new Auth0 application                              | - `Create a new single-page application called 'Analytics Dashboard'` <br> - `Set up a new native mobile app called 'iOS Client'` <br> - `Create a machine-to-machine application for our background service`                            |
 | `auth0_update_application` | Update an existing Auth0 application                        | - `Update the callback URLs for my 'Web App' to include https://staging.example.com/callback` <br> - `Change the logout URL for the 'Customer Portal'` <br> - `Add development environment metadata to my 'Admin Dashboard' application` |
-| `auth0_save_credentials_to_file` | Save an application's credentials as environment variables to a project's `.env` file (and add it to `.gitignore`) | - `Save my app's Auth0 credentials to a .env file in this project` <br> - `Write the client ID and secret for 'Web App' to .env.local` <br> - `Store these Auth0 credentials in my project's environment file` |
+| `auth0_save_credentials_to_file` | Save an application's credentials as environment variables to a project's `.env` file (and add it to `.gitignore`) | - `Save my app's Auth0 credentials to a .env file in this project` <br> - `Write the client ID and secret for 'Web App' to .env.local` <br> - `Store these Auth0 credentials in my project's environment file`                           |
 
 ### Onboarding
 
@@ -256,13 +256,14 @@ The Auth0 MCP Server provides the following tools for Claude to interact with yo
 
 ### Actions
 
-| Tool                  | Description                               | Usage Examples                                                                                                                                                                            |
-| --------------------- | ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `auth0_list_actions`  | List all actions in the Auth0 tenant      | - `Show me all my Auth0 actions` <br> - `What actions do I have configured?` <br> - `List the actions in my tenant`                                                                       |
-| `auth0_get_action`    | Get details about a specific Auth0 action | - `Show me the code for my 'Enrich User Profile' action` <br> - `Get details about my login flow action` <br> - `What does my 'Add Custom Claims' action do?`                             |
-| `auth0_create_action` | Create a new Auth0 action                 | - `Create an action that adds user roles to tokens` <br> - `Set up an action to log failed login attempts` <br> - `Create a post-login action that checks user location`                  |
-| `auth0_update_action` | Update an existing Auth0 action           | - `Update my 'Add Custom Claims' action to include department information` <br> - `Modify the IP filtering logic in my security action` <br> - `Fix the bug in my user enrichment action` |
-| `auth0_deploy_action` | Deploy an Auth0 action                    | - `Deploy my 'Add Custom Claims' action to production` <br> - `Make my new security action live` <br> - `Deploy the updated user enrichment action`                                       |
+| Tool                          | Description                                        | Usage Examples                                                                                                                                                                            |
+| ----------------------------- | -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `auth0_list_actions`          | List all actions in the Auth0 tenant               | - `Show me all my Auth0 actions` <br> - `What actions do I have configured?` <br> - `List the actions in my tenant`                                                                       |
+| `auth0_list_trigger_bindings` | List actions bound to a trigger in execution order | - `List the actions bound to the post-login trigger` <br> - `Show the execution order for my post-login actions`                                                                          |
+| `auth0_get_action`            | Get details about a specific Auth0 action          | - `Show me the code for my 'Enrich User Profile' action` <br> - `Get details about my login flow action` <br> - `What does my 'Add Custom Claims' action do?`                             |
+| `auth0_create_action`         | Create a new Auth0 action                          | - `Create an action that adds user roles to tokens` <br> - `Set up an action to log failed login attempts` <br> - `Create a post-login action that checks user location`                  |
+| `auth0_update_action`         | Update an existing Auth0 action                    | - `Update my 'Add Custom Claims' action to include department information` <br> - `Modify the IP filtering logic in my security action` <br> - `Fix the bug in my user enrichment action` |
+| `auth0_deploy_action`         | Deploy an Auth0 action                             | - `Deploy my 'Add Custom Claims' action to production` <br> - `Make my new security action live` <br> - `Deploy the updated user enrichment action`                                       |
 
 ### Logs
 
