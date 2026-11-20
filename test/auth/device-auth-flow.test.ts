@@ -187,17 +187,102 @@ describe('Device Auth Flow', () => {
   });
 
   describe('getValidAccessToken', () => {
-    // Since we can't easily test the actual implementation due to mocking challenges,
-    // we'll just test that the function exists and can be called
-    it('should be a function', () => {
-      expect(typeof deviceAuthFlow.getValidAccessToken).toBe('function');
+    const mockKeychain = (items: Record<string, string | null>) => {
+      vi.mocked(keytar.getPassword).mockImplementation(
+        async (_service: string, item: string) => items[item] ?? null
+      );
+    };
+
+    it('should return the stored token when it is not expired', async () => {
+      mockKeychain({
+        [KeychainItem.TOKEN]: 'stored-access-token',
+        [KeychainItem.TOKEN_EXPIRES_AT]: String(Date.now() + 60 * 60 * 1000),
+        [KeychainItem.REFRESH_TOKEN]: 'mock-refresh-token',
+      });
+
+      const result = await deviceAuthFlow.getValidAccessToken();
+
+      expect(result).toBe('stored-access-token');
+      expect(mockFetch).not.toHaveBeenCalled();
     });
 
-    // We'll test the individual components that getValidAccessToken uses
-    it('should use isTokenExpired and potentially refreshAccessToken', async () => {
-      // We've already tested isTokenExpired and refreshAccessToken separately
-      // So we know they work as expected
-      expect(true).toBe(true);
+    it('should use the refresh token when the access token has expired', async () => {
+      mockKeychain({
+        [KeychainItem.TOKEN]: 'expired-access-token',
+        [KeychainItem.TOKEN_EXPIRES_AT]: String(Date.now() - 60 * 1000),
+        [KeychainItem.REFRESH_TOKEN]: 'mock-refresh-token',
+      });
+      mockFetch.mockResolvedValue(
+        mockFetchResponse(200, {
+          access_token: 'new-access-token',
+          refresh_token: 'new-refresh-token',
+          expires_in: 86400,
+        })
+      );
+
+      const result = await deviceAuthFlow.getValidAccessToken();
+
+      expect(result).toBe('new-access-token');
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+      const [url, init] = mockFetch.mock.calls[0];
+      expect(String(url)).toContain('/oauth/token');
+      expect(String(init.body)).toContain('grant_type=refresh_token');
+      expect(String(init.body)).toContain('refresh_token=mock-refresh-token');
+      expect(keytar.setPassword).toHaveBeenCalledWith(
+        KEYCHAIN_SERVICE_NAME,
+        KeychainItem.TOKEN,
+        'new-access-token'
+      );
+    });
+
+    it('should return null when the token has expired and there is no refresh token', async () => {
+      mockKeychain({
+        [KeychainItem.TOKEN]: 'expired-access-token',
+        [KeychainItem.TOKEN_EXPIRES_AT]: String(Date.now() - 60 * 1000),
+      });
+
+      const result = await deviceAuthFlow.getValidAccessToken();
+
+      expect(result).toBeNull();
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    it('should return null when the token has expired and the refresh is rejected', async () => {
+      mockKeychain({
+        [KeychainItem.TOKEN]: 'expired-access-token',
+        [KeychainItem.TOKEN_EXPIRES_AT]: String(Date.now() - 60 * 1000),
+        [KeychainItem.REFRESH_TOKEN]: 'revoked-refresh-token',
+      });
+      mockFetch.mockResolvedValue(mockFetchResponse(403, { error: 'invalid_grant' }));
+
+      const result = await deviceAuthFlow.getValidAccessToken();
+
+      expect(result).toBeNull();
+      expect(keytar.setPassword).not.toHaveBeenCalled();
+    });
+
+    it('should send a single refresh request for concurrent callers', async () => {
+      mockKeychain({
+        [KeychainItem.TOKEN]: 'expired-access-token',
+        [KeychainItem.TOKEN_EXPIRES_AT]: String(Date.now() - 60 * 1000),
+        [KeychainItem.REFRESH_TOKEN]: 'mock-refresh-token',
+      });
+      mockFetch.mockResolvedValue(
+        mockFetchResponse(200, {
+          access_token: 'new-access-token',
+          refresh_token: 'new-refresh-token',
+          expires_in: 86400,
+        })
+      );
+
+      const results = await Promise.all([
+        deviceAuthFlow.getValidAccessToken(),
+        deviceAuthFlow.getValidAccessToken(),
+        deviceAuthFlow.getValidAccessToken(),
+      ]);
+
+      expect(results).toEqual(['new-access-token', 'new-access-token', 'new-access-token']);
+      expect(mockFetch).toHaveBeenCalledTimes(1);
     });
   });
 

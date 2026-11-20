@@ -5,7 +5,7 @@ import { validatePatterns } from '../utils/tools.js';
 import { TOOLS } from '../tools/index.js';
 import * as os from 'os';
 import { keychain } from '../utils/keychain.js';
-import { isTokenExpired } from '../auth/device-auth-flow.js';
+import { isTokenExpired, refreshExpiredAccessToken } from '../auth/device-auth-flow.js';
 import chalk from 'chalk';
 
 /**
@@ -47,8 +47,11 @@ const validateAuthorization = async (): Promise<boolean> => {
     return false;
   }
 
-  // Check if token is expired
-  const expired = await isTokenExpired();
+  // Check if token is expired; try the stored refresh token before asking the user to log in again
+  let expired = await isTokenExpired();
+  if (expired && (await refreshExpiredAccessToken())) {
+    expired = false;
+  }
   if (expired) {
     const expiresAt = await keychain.getTokenExpiresAt();
     const expiryDate = expiresAt ? new Date(expiresAt).toLocaleString() : 'unknown';
