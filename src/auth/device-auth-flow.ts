@@ -292,6 +292,22 @@ export async function isTokenExpired(bufferSeconds = 300): Promise<boolean> {
   }
 }
 
+let pendingRefresh: Promise<string | null> | null = null;
+
+/**
+ * Refreshes the access token once, even if several callers ask at the same time.
+ * Auth0 may rotate the refresh token on use, so parallel refresh requests with the
+ * same refresh token could invalidate each other.
+ */
+export function refreshExpiredAccessToken(): Promise<string | null> {
+  if (!pendingRefresh) {
+    pendingRefresh = refreshAccessToken().finally(() => {
+      pendingRefresh = null;
+    });
+  }
+  return pendingRefresh;
+}
+
 /**
  * Retrieves a valid access token for Auth0 API operations.
  *
@@ -303,8 +319,10 @@ export async function isTokenExpired(bufferSeconds = 300): Promise<boolean> {
  *
  * The function performs these key security checks:
  * 1. Verifies token expiration status using isTokenExpired
- * 2. Provides clear guidance to users when re-authentication is needed
- * 3. Handles errors gracefully with a fail-secure approach
+ * 2. Exchanges the stored refresh token for a new access token when the current one
+ *    has expired (only possible when a refresh token was issued during `init`)
+ * 3. Provides clear guidance to users when re-authentication is needed
+ * 4. Handles errors gracefully with a fail-secure approach
  *
  * @returns {Promise<string|null>} A valid access token, or null if no valid token is available
  */
@@ -313,6 +331,11 @@ export async function getValidAccessToken(): Promise<string | null> {
     const expired = await isTokenExpired();
 
     if (expired) {
+      const refreshed = await refreshExpiredAccessToken();
+      if (refreshed) {
+        return refreshed;
+      }
+
       log('Token is expired. Please authenticate again using `npx @auth0/auth0-mcp-server init`');
       return null;
     }

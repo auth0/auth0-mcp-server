@@ -5,7 +5,7 @@ import { log, logInfo, logError } from '../../src/utils/logger';
 import { validatePatterns } from '../../src/utils/tools.js';
 import * as os from 'os';
 import { keychain } from '../../src/utils/keychain.js';
-import { isTokenExpired } from '../../src/auth/device-auth-flow.js';
+import { isTokenExpired, refreshExpiredAccessToken } from '../../src/auth/device-auth-flow.js';
 
 // Mock dependencies first, before any imports
 vi.mock('../../src/utils/logger', () => ({
@@ -40,6 +40,7 @@ vi.mock('../../src/utils/keychain.js', () => ({
 
 vi.mock('../../src/auth/device-auth-flow.js', () => ({
   isTokenExpired: vi.fn().mockResolvedValue(false),
+  refreshExpiredAccessToken: vi.fn().mockResolvedValue(null),
 }));
 
 describe('Run Module', () => {
@@ -64,6 +65,7 @@ describe('Run Module', () => {
     vi.mocked(keychain.getDomain).mockResolvedValue('mock-domain.auth0.com');
     vi.mocked(keychain.getTokenExpiresAt).mockResolvedValue(Date.now() + 3600000);
     vi.mocked(isTokenExpired).mockResolvedValue(false);
+    vi.mocked(refreshExpiredAccessToken).mockResolvedValue(null);
   });
 
   afterEach(() => {
@@ -185,6 +187,34 @@ describe('Run Module', () => {
       await expect(run({ tools: ['*'] })).rejects.toThrow('Process exit called');
 
       expect(logError).toHaveBeenCalledWith(expect.stringContaining('Authorization Error:'));
+      expect(processExitSpy).toHaveBeenCalledWith(1);
+      expect(startServer).not.toHaveBeenCalled();
+    });
+
+    it('should start the server when an expired token is refreshed', async () => {
+      vi.mocked(isTokenExpired).mockResolvedValue(true);
+      vi.mocked(refreshExpiredAccessToken).mockResolvedValue('new-access-token');
+
+      await run({ tools: ['*'] });
+
+      expect(refreshExpiredAccessToken).toHaveBeenCalledTimes(1);
+      expect(process.exit).not.toHaveBeenCalled();
+      expect(startServer).toHaveBeenCalled();
+    });
+
+    it('should exit if token is expired and the refresh fails', async () => {
+      vi.mocked(isTokenExpired).mockResolvedValue(true);
+      vi.mocked(refreshExpiredAccessToken).mockResolvedValue(null);
+      vi.mocked(keychain.getTokenExpiresAt).mockResolvedValue(Date.now() - 3600000);
+
+      const processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => {
+        throw new Error('Process exit called');
+      });
+
+      await expect(run({ tools: ['*'] })).rejects.toThrow('Process exit called');
+
+      expect(refreshExpiredAccessToken).toHaveBeenCalledTimes(1);
+      expect(logError).toHaveBeenCalledWith(expect.stringContaining('Token has expired'));
       expect(processExitSpy).toHaveBeenCalledWith(1);
       expect(startServer).not.toHaveBeenCalled();
     });
